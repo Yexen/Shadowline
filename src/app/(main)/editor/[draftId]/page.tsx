@@ -71,7 +71,7 @@ export default function EditorPage() {
     URL.revokeObjectURL(url);
   };
 
-  const handleAskOracle = async () => {
+  const handleAskAI = async () => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
@@ -94,12 +94,12 @@ export default function EditorPage() {
     setPopoverOpen(true);
 
     try {
-      const input: GenerateContentSuggestionsInput = { prompt: selection };
-      const result = await generateContentSuggestions(input);
-      setSuggestions(result.suggestions);
+        const input: GenerateContentSuggestionsInput = { prompt: selection };
+        const result = await generateContentSuggestions(input);
+        setSuggestions(result.suggestions);
     } catch (error) {
       console.error(error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to get suggestions from Oracle.' });
+      toast({ variant: 'destructive', title: 'Error', description: `Failed to get suggestions from Oracle.` });
       setPopoverOpen(false);
     } finally {
       setIsGenerating(false);
@@ -113,9 +113,6 @@ export default function EditorPage() {
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     
-    // If text was selected, the end of selection should be the insertion point
-    const insertionPoint = content.substring(0, start).length + selectedText.length;
-
     const newContent =
       content.substring(0, start) +
       suggestion +
@@ -124,7 +121,6 @@ export default function EditorPage() {
     setContent(newContent);
     setPopoverOpen(false);
 
-    // Focus and set cursor position after the inserted text
     setTimeout(() => {
         textarea.focus();
         const newCursorPosition = start + suggestion.length;
@@ -145,10 +141,10 @@ export default function EditorPage() {
         <div className="flex items-center gap-2">
           <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm" onClick={handleAskOracle}>
-                <Sparkles />
-                Ask Oracle
-              </Button>
+                <Button variant="ghost" size="sm" onClick={handleAskAI}>
+                    <Sparkles />
+                    Ask Oracle
+                </Button>
             </PopoverTrigger>
             <PopoverContent className="w-80">
                 <div className="grid gap-4">
