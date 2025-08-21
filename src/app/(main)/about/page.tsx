@@ -15,11 +15,11 @@ export default function AboutPage() {
       </div>
 
       <Card className="overflow-hidden bg-card">
-        <Image src="https://placehold.co/1200x400" alt="Gotham skyline" width={1200} height={400} className="w-full h-48 object-cover" data-ai-hint="gotham city dark" />
+        <Image src="https://placehold.co/1200x400.png" alt="Gotham skyline" width={1200} height={400} className="w-full h-48 object-cover" data-ai-hint="gotham city dark" />
         <CardContent className="p-6">
             <div className="flex flex-col md:flex-row gap-6 -mt-16">
                 <Avatar className="w-32 h-32 border-4 border-background ring-2 ring-primary">
-                    <AvatarImage src="https://placehold.co/128x128" data-ai-hint="writer portrait" />
+                    <AvatarImage src="https://placehold.co/128x128.png" data-ai-hint="writer portrait" />
                     <AvatarFallback className="text-4xl font-headline">W</AvatarFallback>
                 </Avatar>
                 <div className="pt-16">

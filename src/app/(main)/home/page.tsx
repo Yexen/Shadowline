@@ -10,9 +10,9 @@ import { generateYoutubeFeed, type YoutubeFeedOutput } from "@/ai/flows/generate
 import { Skeleton } from "@/components/ui/skeleton";
 
 const latestIntel = [
-    { id: 1, title: "New Gotham Knights DLC Announced", source: "Gotham Gazette", date: "2 hours ago", snippet: "A new story expansion is coming to Gotham Knights, focusing on the Court of Owls...", image: "https://placehold.co/600x400", dataAiHint: "gotham city skyline" },
-    { id: 2, title: "Analysis: The Philosophy of Batman's Villains", source: "Wayne Foundation Journal", date: "1 day ago", snippet: "An in-depth look at the complex ideologies that drive Gotham's most infamous rogues...", image: "https://placehold.co/600x400", dataAiHint: "dark abstract" },
-    { id: 3, title: "The Architecture of Gotham City", source: "Metropolis Times", date: "3 days ago", snippet: "Exploring the gothic and art deco influences that define Gotham's iconic skyline...", image: "https://placehold.co/600x400", dataAiHint: "gothic architecture night" },
+    { id: 1, title: "New Gotham Knights DLC Announced", source: "Gotham Gazette", date: "2 hours ago", snippet: "A new story expansion is coming to Gotham Knights, focusing on the Court of Owls...", image: "https://placehold.co/600x400.png", dataAiHint: "gotham city skyline" },
+    { id: 2, title: "Analysis: The Philosophy of Batman's Villains", source: "Wayne Foundation Journal", date: "1 day ago", snippet: "An in-depth look at the complex ideologies that drive Gotham's most infamous rogues...", image: "https://placehold.co/600x400.png", dataAiHint: "dark abstract" },
+    { id: 3, title: "The Architecture of Gotham City", source: "Metropolis Times", date: "3 days ago", snippet: "Exploring the gothic and art deco influences that define Gotham's iconic skyline...", image: "https://placehold.co/600x400.png", dataAiHint: "gothic architecture night" },
 ];
 
 export default function HomePage() {

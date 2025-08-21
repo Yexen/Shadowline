@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
 const COVER_IMAGE_STORAGE_KEY = 'gotham-cover-image';
-const DEFAULT_COVER_IMAGE = 'https://placehold.co/1600x400';
+const DEFAULT_COVER_IMAGE = 'https://placehold.co/1600x400.png';
 
 export function useCoverImage() {
   const [coverImage, setCoverImage] = useState<string>(DEFAULT_COVER_IMAGE);
