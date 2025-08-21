@@ -4,12 +4,10 @@ export const mapHtml = `
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Canonical Gotham City Map - Complete Street Layout (v2)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        html, body { height: 100%; width: 100%; overflow: hidden; }
 
         /* THEME WRAPPER */
         body.theme-night {
@@ -23,7 +21,8 @@ export const mapHtml = `
             color: #0f172a;
         }
 
-        .container { position: relative; width: 100%; height: 100%; overflow: hidden; }
+        body { overflow: hidden; height: 100vh; }
+        .container { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
 
         /* Subtle global day/night tint via filter on the city canvas */
         .theme-night .map-container { filter: saturate(1.05) contrast(1.0); }
@@ -116,7 +115,7 @@ export const mapHtml = `
         .city-hall { top: 920px; left: 420px; background: #34495e; }
 
         /* INFO PANEL */
-        .info-panel { position: absolute; top: 20px; right: 20px; width: 380px; max-height: calc(100vh - 40px); background: rgba(44, 62, 80, 0.96); border: 2px solid #34495e; border-radius: 12px; padding: 20px; overflow-y: auto; backdrop-filter: blur(15px); box-shadow: 0 15px 35px rgba(0,0,0,0.6); transform: translateX(120%); transition: transform 0.4s ease; z-index: 2000; }
+        .info-panel { position: absolute; top: 20px; right: 20px; width: 380px; max-height: calc(100vh - 40px); background: rgba(44, 62, 80, 0.96); border: 2px solid #34495e; border-radius: 12px; padding: 20px; overflow-y: auto; backdrop-filter: blur(15px); box-shadow: 0 15px 35px rgba(0,0,0,0.6); transform: translateX(100%); transition: transform 0.4s ease; }
         .theme-day .info-panel { background: rgba(236, 244, 255, 0.96); border-color: #c7d2fe; }
         .info-panel.show { transform: translateX(0); }
         .info-panel h2 { color: #f1c40f; margin-bottom: 15px; border-bottom: 2px solid #f1c40f; padding-bottom: 8px; font-size: 1.3em; }
@@ -165,6 +164,9 @@ export const mapHtml = `
         /* Tooltip for character dots */
         .character::after { content: attr(data-name); position: absolute; top: -26px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: #fff; font-size: 10px; padding: 3px 6px; border-radius: 4px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
         .character:hover::after { opacity: 1; }
+
+        /* Utility */
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
     </style>
 </head>
 <body class="theme-night">
@@ -172,7 +174,7 @@ export const mapHtml = `
         <div class="title">
             <h1>GOTHAM CITY</h1>
             <p>Complete Canonical Map with Street Layout</p>
-            <p class="subtitle">Based on Eliot R. Brown\\'s Official No Man\\'s Land Map</p>
+            <p class="subtitle">Based on Eliot R. Brown's Official No Man's Land Map</p>
         </div>
 
         <div class="map-container" id="mapContainer">
@@ -225,7 +227,7 @@ export const mapHtml = `
 
                 <!-- LABELS -->
                 <div class="street-label" style="top:185px;left:345px;transform:rotate(90deg);">Miller Ave</div>
-                <div class="street-label" style="top:185px;left:445px;transform:rotate(90deg);">O\\'Neill Ave</div>
+                <div class="street-label" style="top:185px;left:445px;transform:rotate(90deg);">O'Neill Ave</div>
                 <div class="street-label" style="top:185px;left:545px;transform:rotate(90deg);">Finger Ave</div>
                 <div class="street-label" style="top:185px;left:645px;transform:rotate(90deg);">Kane Ave</div>
                 <div class="street-label" style="top:185px;left:745px;transform:rotate(90deg);">Brubaker Ave</div>
@@ -307,7 +309,7 @@ export const mapHtml = `
             <button class="close-btn" onclick="closePanel()" aria-label="Close info">&times;</button>
             <div id="infoContent">
                 <h2>Canonical Gotham City</h2>
-                <p>This is the official map layout created by Eliot R. Brown for DC Comics\\' "No Man\\'s Land" (1998) lineage, establishing a canonical geography used across comics for decades.</p>
+                <p>This is the official map layout created by Eliot R. Brown for DC Comics' "No Man's Land" (1998) lineage, establishing a canonical geography used across comics for decades.</p>
                 <h3>Navigation</h3>
                 <p>• <strong>Drag</strong> to pan • <strong>Zoom</strong> for details • Click <strong>districts/landmarks</strong> for lore • Toggle <strong>Streets</strong> & <strong>Characters</strong> • Switch <strong>Day/Night</strong></p>
             </div>
@@ -362,11 +364,12 @@ export const mapHtml = `
             currentOffset.x += deltaX; currentOffset.y += deltaY;
             updateMapTransform();
             lastMousePos = { x: t.clientX, y: t.clientY };
+            e.preventDefault();
         }, { passive: false });
         mapContainer.addEventListener('touchend', () => { isMouseDown = false; }, { passive: true });
 
         function updateMapTransform() {
-            gothamMap.style.transform = 'scale(' + currentZoom + ') translate(' + (currentOffset.x / currentZoom) + 'px, ' + (currentOffset.y / currentZoom) + 'px)';
+            gothamMap.style.transform = \`scale(\${currentZoom}) translate(\${currentOffset.x / currentZoom}px, \${currentOffset.y / currentZoom}px)\`;
         }
         function zoomIn() { currentZoom = Math.min(currentZoom * 1.4, 4); updateMapTransform(); }
         function zoomOut() { currentZoom = Math.max(currentZoom / 1.4, 0.4); updateMapTransform(); }
@@ -418,7 +421,7 @@ export const mapHtml = `
         function showInfo(key) {
             const info = locationInfo[key];
             if (info) {
-                infoContent.innerHTML = '<h2>' + info.title + '</h2>' + info.content;
+                infoContent.innerHTML = \`<h2>\${info.title}</h2>\${info.content}\`;
                 infoPanel.classList.add('show');
             }
         }
@@ -443,26 +446,26 @@ export const mapHtml = `
 
         // ===== Extended location info (unchanged + a few added) =====
         const locationInfo = {
-            'uptown': { title: 'Uptown Island', content: '<h3>Geographic Overview</h3><p>The northernmost of Gotham\\'s three main islands, separated from Midtown by the Sprang River. This is one of Gotham\\'s roughest areas, containing some of the city\\'s most dangerous neighborhoods.</p><h3>Key Districts</h3><p><strong>Crime Alley:</strong> Formerly Park Row, where the Wayne family was murdered. Now one of Gotham\\'s most dangerous streets.<br><strong>Burnley:</strong> Home to the Burnley Town Massive gang, a working-class district north of Sprang River.<br><strong>Amusement Mile:</strong> Entertainment district with abandoned carnival rides, often used by villains as hideouts.</p>' },
-            'midtown': { title: 'Midtown Island', content: '<h3>Central Hub</h3><p>The middle island of Gotham\\'s three-island system, dominated by Robinson Park and containing Gotham University. A mix of residential, academic, and recreational areas.</p><h3>Key Districts</h3><p><strong>Robinson Park:</strong> Gotham\\'s equivalent to Central Park, named after Joker co-creator Jerry Robinson. Often controlled by Poison Ivy.<br><strong>Coventry:</strong> Residential neighborhood with mix of housing types.<br><strong>Upper East Side:</strong> More affluent residential area with upscale apartments.</p>' },
-            'downtown': { title: 'Downtown Island', content: '<h3>Commercial Heart</h3><p>The largest and southernmost island, containing Gotham\\'s main business districts, government buildings, and financial centers. The true heart of Gotham\\'s economy and politics.</p><h3>Major Districts</h3><p><strong>Financial District:</strong> Wall Street equivalent with Wayne Tower as centerpiece.<br><strong>Diamond District:</strong> Luxury shopping and jewelry stores.<br><strong>Fashion District:</strong> Garment and clothing industry center.<br><strong>Old Gotham:</strong> Historic district with gothic architecture.<br><strong>Chinatown:</strong> Asian cultural district with traditional architecture.</p>' },
-            'arkham-island': { title: 'Arkham Island', content: '<h3>Arkham Asylum</h3><p>Small island in the Sprang River housing Gotham\\'s infamous psychiatric hospital for the criminally insane. Connected to the mainland by the Trigate Bridge.</p><h3>Security</h3><p>Isolated, drawbridge lockdown, tunnels, multiple security tiers.</p>' },
-            'blackgate-island': { title: 'Blackgate Island', content: '<h3>Blackgate Penitentiary</h3><p>Maximum security prison for non-insane criminals. Located on its own island to prevent escapes, housing regular criminals who don\\'t qualify for Arkham Asylum.</p>' },
-            'paris-island': { title: 'Paris Island', content: '<h3>Entertainment District</h3><p>Named in homage to creators; home to an abandoned funfair frequently used by the Joker.</p>' },
-            'tricorner': { title: 'Tricorner Island', content: '<h3>Industrial & Residential</h3><p>Shipyards and working-class residences. Commissioner Gordon\\'s home area.</p>' },
-            'crime-alley': { title: 'Crime Alley (Park Row)', content: '<h3>Batman\\'s Origin Point</h3><p>Where young Bruce Wayne witnessed his parents\\' murder. Leslie Thompkins\\' clinic operates here.</p>' },
-            'burnley': { title: 'Burnley District', content: '<h3>Working Class Stronghold</h3><p>Home to Burnley Town Massive. Industrial + residential mix.</p>' },
-            'robinson-park': { title: 'Robinson Park', content: '<h3>Gotham\\'s Central Park</h3><p>Often under Poison Ivy\\'s protection. Major green space.</p>' },
-            'financial-district': { title: 'Financial District', content: '<h3>Economic Center</h3><p>Wayne Tower, exchanges, banks, law firms. Deco + modern skyline.</p>' },
-            'wayne-tower': { title: 'Wayne Tower', content: '<h3>Wayne Enterprises HQ</h3><p>Corner of Finger & Broome Streets. Public face of Bruce Wayne\\'s empire.</p>' },
-            'gcpd': { title: 'GCPD Headquarters', content: '<h3>Gotham City Police Department</h3><p>Led by Commissioner Gordon. Major Crimes Unit, chronic resource strain.</p>' },
-            'robert-kane-bridge': { title: 'Robert Kane Memorial Bridge', content: '<h3>Mainland Connection</h3><p>Primary bridge to the mainland (Wayne Manor side). Critical infrastructure.</p>' },
-            'trigate-bridge': { title: 'Trigate Bridge', content: '<h3>Arkham Access</h3><p>Can be raised for lockdown. GCPD checkpoint + monitoring.</p>' },
-            'ace-chemical': { title: 'Ace Chemical', content: '<h3>Ace Chemical Processing Plant</h3><p>Site of multiple Joker origin tellings. Industrial hazard zone.</p>' },
-            'blackgate': { title: 'Blackgate Penitentiary', content: '<h3>Maximum Security Prison</h3><p>Houses mob bosses and high-risk offenders not committed to Arkham.</p>' },
-            'iceberg': { title: 'The Iceberg Lounge', content: '<h3>Penguin\\'s Club</h3><p>Front for arms deals and information brokerage. Neutral ground (sometimes).</p>' },
-            'clocktower': { title: 'The Clock Tower', content: '<h3>Oracle\\'s Former Base</h3><p>Barbara Gordon\\'s iconic intel hub.</p>' },
-            'city-hall': { title: 'Gotham City Hall', content: '<h3>Seat of Government</h3><p>Political power center, frequent target during crises.</p>' }
+            'uptown': { title: 'Uptown Island', content: \`<h3>Geographic Overview</h3><p>The northernmost of Gotham's three main islands, separated from Midtown by the Sprang River. This is one of Gotham's roughest areas, containing some of the city's most dangerous neighborhoods.</p><h3>Key Districts</h3><p><strong>Crime Alley:</strong> Formerly Park Row, where the Wayne family was murdered. Now one of Gotham's most dangerous streets.<br><strong>Burnley:</strong> Home to the Burnley Town Massive gang, a working-class district north of Sprang River.<br><strong>Amusement Mile:</strong> Entertainment district with abandoned carnival rides, often used by villains as hideouts.</p>\` },
+            'midtown': { title: 'Midtown Island', content: \`<h3>Central Hub</h3><p>The middle island of Gotham's three-island system, dominated by Robinson Park and containing Gotham University. A mix of residential, academic, and recreational areas.</p><h3>Key Districts</h3><p><strong>Robinson Park:</strong> Gotham's equivalent to Central Park, named after Joker co-creator Jerry Robinson. Often controlled by Poison Ivy.<br><strong>Coventry:</strong> Residential neighborhood with mix of housing types.<br><strong>Upper East Side:</strong> More affluent residential area with upscale apartments.</p>\` },
+            'downtown': { title: 'Downtown Island', content: \`<h3>Commercial Heart</h3><p>The largest and southernmost island, containing Gotham's main business districts, government buildings, and financial centers. The true heart of Gotham's economy and politics.</p><h3>Major Districts</h3><p><strong>Financial District:</strong> Wall Street equivalent with Wayne Tower as centerpiece.<br><strong>Diamond District:</strong> Luxury shopping and jewelry stores.<br><strong>Fashion District:</strong> Garment and clothing industry center.<br><strong>Old Gotham:</strong> Historic district with gothic architecture.<br><strong>Chinatown:</strong> Asian cultural district with traditional architecture.</p>\` },
+            'arkham-island': { title: 'Arkham Island', content: \`<h3>Arkham Asylum</h3><p>Small island in the Sprang River housing Gotham's infamous psychiatric hospital for the criminally insane. Connected to the mainland by the Trigate Bridge.</p><h3>Security</h3><p>Isolated, drawbridge lockdown, tunnels, multiple security tiers.</p>\` },
+            'blackgate-island': { title: 'Blackgate Island', content: \`<h3>Blackgate Penitentiary</h3><p>Maximum security prison for non-insane criminals. Located on its own island to prevent escapes, housing regular criminals who don't qualify for Arkham Asylum.</p>\` },
+            'paris-island': { title: 'Paris Island', content: \`<h3>Entertainment District</h3><p>Named in homage to creators; home to an abandoned funfair frequently used by the Joker.</p>\` },
+            'tricorner': { title: 'Tricorner Island', content: \`<h3>Industrial & Residential</h3><p>Shipyards and working-class residences. Commissioner Gordon's home area.</p>\` },
+            'crime-alley': { title: 'Crime Alley (Park Row)', content: \`<h3>Batman's Origin Point</h3><p>Where young Bruce Wayne witnessed his parents' murder. Leslie Thompkins' clinic operates here.</p>\` },
+            'burnley': { title: 'Burnley District', content: \`<h3>Working Class Stronghold</h3><p>Home to Burnley Town Massive. Industrial + residential mix.</p>\` },
+            'robinson-park': { title: 'Robinson Park', content: \`<h3>Gotham's Central Park</h3><p>Often under Poison Ivy's protection. Major green space.</p>\` },
+            'financial-district': { title: 'Financial District', content: \`<h3>Economic Center</h3><p>Wayne Tower, exchanges, banks, law firms. Deco + modern skyline.</p>\` },
+            'wayne-tower': { title: 'Wayne Tower', content: \`<h3>Wayne Enterprises HQ</h3><p>Corner of Finger & Broome Streets. Public face of Bruce Wayne's empire.</p>\` },
+            'gcpd': { title: 'GCPD Headquarters', content: \`<h3>Gotham City Police Department</h3><p>Led by Commissioner Gordon. Major Crimes Unit, chronic resource strain.</p>\` },
+            'robert-kane-bridge': { title: 'Robert Kane Memorial Bridge', content: \`<h3>Mainland Connection</h3><p>Primary bridge to the mainland (Wayne Manor side). Critical infrastructure.</p>\` },
+            'trigate-bridge': { title: 'Trigate Bridge', content: \`<h3>Arkham Access</h3><p>Can be raised for lockdown. GCPD checkpoint + monitoring.</p>\` },
+            'ace-chemical': { title: 'Ace Chemical', content: \`<h3>Ace Chemical Processing Plant</h3><p>Site of multiple Joker origin tellings. Industrial hazard zone.</p>\` },
+            'blackgate': { title: 'Blackgate Penitentiary', content: \`<h3>Maximum Security Prison</h3><p>Houses mob bosses and high-risk offenders not committed to Arkham.</p>\` },
+            'iceberg': { title: 'The Iceberg Lounge', content: \`<h3>Penguin's Club</h3><p>Front for arms deals and information brokerage. Neutral ground (sometimes).</p>\` },
+            'clocktower': { title: 'The Clock Tower', content: \`<h3>Oracle's Former Base</h3><p>Barbara Gordon's iconic intel hub.</p>\` },
+            'city-hall': { title: 'Gotham City Hall', content: \`<h3>Seat of Government</h3><p>Political power center, frequent target during crises.</p>\` }
         };
     </script>
 </body>
