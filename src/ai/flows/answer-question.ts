@@ -30,9 +30,9 @@ const prompt = ai.definePrompt({
   name: 'answerQuestionPrompt',
   input: {schema: AnswerQuestionInputSchema},
   output: {schema: AnswerQuestionOutputSchema},
-  prompt: `You are an AI assistant with deep knowledge of a user's custom fictional universe. Your task is to answer the user's question based *only* on the provided "Bible" context.
+  prompt: `You are an AI assistant with deep knowledge of a user's custom fictional universe. Your task is to answer the user's question.
 
-If the answer is in the bible, provide it directly. If the answer cannot be found in the bible, state that the information is not available in the provided context.
+You should first consult the provided "Bible" context. If the answer is found within the bible, you should prioritize that information. If the bible does not contain the answer, then you should use your general knowledge.
 
 {{#if bibleData}}
 BIBLE CONTEXT:
@@ -42,7 +42,7 @@ BIBLE CONTEXT:
 USER'S QUESTION:
 "{{{question}}}"
 
-Based on the bible, what is the answer?`,
+Based on the rules above, what is the answer?`,
 });
 
 const answerQuestionFlow = ai.defineFlow(
