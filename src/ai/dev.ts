@@ -1,3 +1,4 @@
+
 import { config } from 'dotenv';
 config();
 
@@ -6,3 +7,4 @@ import '@/ai/flows/generate-code.ts';
 import '@/ai/flows/answer-question.ts';
 import '@/ai/flows/generate-bible-fields.ts';
 import '@/ai/flows/generate-home-feed.ts';
+import '@/ai/flows/nyxen-chat.ts';
