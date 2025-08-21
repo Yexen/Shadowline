@@ -1,3 +1,4 @@
+
 'use client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Map as MapIcon } from "lucide-react";
@@ -5,19 +6,51 @@ import { useState } from "react";
 import { GothamMap } from "@/components/gotham-map";
 import { mapHtml as gothamHtml } from "@/lib/gotham-map-html";
 import { dcMapHtml } from "@/lib/dc-map-html";
+import { useChat } from 'ai/react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function MapsPage() {
   const [isGothamMapOpen, setIsGothamMapOpen] = useState(false);
   const [isDcMapOpen, setIsDcMapOpen] = useState(false);
+
+  // This chat hook is for a potential future feature where the user can chat with the map
+  const { messages, input, handleInputChange, handleSubmit } = useChat({
+    api: '/api/map-chat'
+  });
 
   return (
     <>
       <div className="space-y-8">
         <div>
           <p className="mt-2 text-muted-foreground">
-            Explore the cartography of your universe.
+            Explore the cartography of your universe. Click a map to open the interactive version.
           </p>
         </div>
+        
+        {/* Optional Chat Interface - can be uncommented later */}
+        {/*
+        <div className="bg-card p-4 rounded-lg">
+          <h3 className="font-headline">Chat with the Map Daemon</h3>
+            <div className="max-h-48 overflow-y-auto space-y-2 mb-2">
+                {messages.filter(m => m.role !== 'system').map(m => (
+                  <div key={m.id}>
+                    <strong>{m.role === 'user' ? 'You: ' : 'Nyxen: '}</strong>
+                    {m.content}
+                  </div>
+                ))}
+            </div>
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <Input
+              value={input}
+              onChange={handleInputChange}
+              placeholder="e.g., Compare Arkham and Blackgate security..."
+            />
+            <Button type="submit">Send</Button>
+          </form>
+        </div>
+        */}
+
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* DC Universe */}
