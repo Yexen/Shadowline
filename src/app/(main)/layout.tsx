@@ -21,7 +21,7 @@ import { BatLogo } from '@/components/bat-logo';
 import { BatSignal } from '@/components/bat-signal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Home, PenSquare, BrainCircuit, Info, LogOut, FilePlus, BookCopy, PlusCircle } from 'lucide-react';
+import { Home, PenSquare, BrainCircuit, Info, LogOut, FilePlus, BookCopy, PlusCircle, Images } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -65,6 +65,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { href: '/home', label: 'Home', icon: Home },
     { href: '/editor', label: 'Editor', icon: PenSquare },
     { href: '/ai-tools', label: 'AI Tools', icon: BrainCircuit },
+    { href: '/gallery', label: 'Gallery', icon: Images },
     { href: '/about', label: 'About', icon: Info },
   ];
   
@@ -113,7 +114,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                         onClick={() => router.push(item.href.startsWith('/editor') ? '/editor/new-draft' : item.href)}
-                        isActive={pathname === item.href || (item.href === '/editor' && pathname.startsWith('/editor'))}
+                        isActive={pathname === item.href || (item.href === '/editor' && pathname.startsWith('/editor')) || (item.href === '/gallery' && pathname.startsWith('/gallery'))}
                         tooltip={{ children: item.label, side: "right", align: "center" }}
                     >
                         <item.icon />
