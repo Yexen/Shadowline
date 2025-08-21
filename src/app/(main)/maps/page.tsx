@@ -91,7 +91,7 @@ export default function MapsPage() {
                 />
                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button variant="secondary" size="sm" onClick={handleStartEdit}>
-                        <Pencil className="mr-2"/>
+                        <Pencil className="mr-2 h-4 w-4"/>
                         Edit Cover
                     </Button>
                 </div>
@@ -105,9 +105,10 @@ export default function MapsPage() {
                   srcDoc={mapHtml}
                   className="w-full h-full border-0"
                   title="Interactive Gotham City Map Preview"
+                  sandbox="allow-scripts allow-same-origin"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
-                <div className="absolute bottom-4 left-4 pointer-events-none">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="absolute bottom-4 left-4">
                     <h3 className="font-headline text-xl text-white drop-shadow-lg">Gotham City</h3>
                     <p className="text-sm text-white/80 drop-shadow-md">Interactive Map</p>
                 </div>
