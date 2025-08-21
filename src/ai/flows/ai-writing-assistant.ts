@@ -23,8 +23,7 @@ const GenerateContentOutputSchema = z.object({
 export type GenerateContentOutput = z.infer<typeof GenerateContentOutputSchema>;
 
 export async function generateContent(input: GenerateContentInput): Promise<GenerateContentOutput> {
-  const {output} = await generateContentFlow(input);
-  return output!;
+  return await generateContentFlow(input);
 }
 
 const generateContentFlow = ai.defineFlow(
@@ -49,13 +48,14 @@ USER PROMPT:
 
 Write the content as requested, ensuring it is consistent with the provided bible if it exists.`,
       model: 'googleai/gemini-pro',
-      input: input,
       output: {
         format: 'json',
         schema: GenerateContentOutputSchema,
       },
+    }, {
+        input,
     });
 
-    return output;
+    return output!;
   }
 );

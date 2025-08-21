@@ -23,8 +23,7 @@ const AnswerQuestionOutputSchema = z.object({
 export type AnswerQuestionOutput = z.infer<typeof AnswerQuestionOutputSchema>;
 
 export async function answerQuestion(input: AnswerQuestionInput): Promise<AnswerQuestionOutput> {
-  const {output} = await answerQuestionFlow(input);
-  return output!;
+  return await answerQuestionFlow(input);
 }
 
 const answerQuestionFlow = ai.defineFlow(
@@ -49,12 +48,13 @@ USER'S QUESTION:
 
 Based on the rules above, what is the answer?`,
       model: 'googleai/gemini-pro',
-      input: input,
       output: {
         format: 'json',
         schema: AnswerQuestionOutputSchema,
       },
+    }, {
+        input,
     });
-    return output;
+    return output!;
   }
 );

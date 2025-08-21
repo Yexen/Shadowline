@@ -24,8 +24,7 @@ const GenerateCodeOutputSchema = z.object({
 export type GenerateCodeOutput = z.infer<typeof GenerateCodeOutputSchema>;
 
 export async function generateCode(input: GenerateCodeInput): Promise<GenerateCodeOutput> {
-  const {output} = await generateCodeFlow(input);
-  return output!;
+  return await generateCodeFlow(input);
 }
 
 const generateCodeFlow = ai.defineFlow(
@@ -52,12 +51,13 @@ Language: {{{language}}}
 
 Make sure that the output is valid, runnable code.`,
       model: 'googleai/gemini-pro',
-      input: input,
       output: {
         format: 'json',
         schema: GenerateCodeOutputSchema,
       },
+    }, {
+        input,
     });
-    return output;
+    return output!;
   }
 );
