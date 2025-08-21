@@ -58,7 +58,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   };
 
   const menuItems = [
-    { href: '/', label: 'Home', icon: Home },
+    { href: '/home', label: 'Home', icon: Home },
     { href: '/editor', label: 'Editor', icon: PenSquare },
     { href: '/ai-tools', label: 'AI Tools', icon: BrainCircuit },
     { href: '/about', label: 'About', icon: Info },

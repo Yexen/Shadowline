@@ -27,7 +27,7 @@ export default function LoginPage() {
       if (password === CORRECT_PASSWORD) {
         try {
           localStorage.setItem('isLoggedIn', 'true');
-          router.replace('/');
+          router.replace('/home');
         } catch (e) {
             setError('Local storage is unavailable. Please enable it in your browser settings.');
         }
