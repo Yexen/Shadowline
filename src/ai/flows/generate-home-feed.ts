@@ -33,6 +33,19 @@ const HomeFeedOutputSchema = z.object({
 
 export type HomeFeedOutput = z.infer<typeof HomeFeedOutputSchema>;
 
+const staticFallbackData: HomeFeedOutput = {
+    videos: [
+        { id: 1, title: "The Philosophy of The Dark Knight", uploader: "FilmThink", views: "2.1M", thumbnail: "https://placehold.co/600x400.png", dataAiHint: "dark knight movie" },
+        { id: 2, title: "Building a Real-Life Grapple Gun", uploader: "Hacksmith", views: "12M", thumbnail: "https://placehold.co/600x400.png", dataAiHint: "grapple gun tech" },
+        { id: 3, title: "Batman: Arkham Knight - Full Story Movie", uploader: "GameCin", views: "8.9M", thumbnail: "https://placehold.co/600x400.png", dataAiHint: "arkham knight game" },
+    ],
+    articles: [
+        { id: 1, title: "Wayne Enterprises Announces New Tech Grant", source: "Gotham Gazette", date: "4 hours ago", snippet: "Wayne Enterprises continues its commitment to Gotham's future with a new grant for tech startups.", image: "https://placehold.co/600x400.png", dataAiHint: "wayne tower" },
+        { id: 2, title: "Unusual Seismic Activity Detected Beneath Arkham", source: "GCN News", date: "1 day ago", snippet: "Geologists are baffled by strange readings from beneath the asylum, sparking wild theories.", image: "https://placehold.co/600x400.png", dataAiHint: "arkham asylum" },
+        { id: 3, title: "New Bat-Signal Unveiled at GCPD Headquarters", source: "Channel 8 News", date: "2 days ago", snippet: "Commissioner Gordon demonstrated the new, more powerful Bat-Signal last night.", image: "https://placehold.co/600x400.png", dataAiHint: "bat signal" },
+    ]
+}
+
 export async function generateHomeFeed(): Promise<HomeFeedOutput> {
   return await generateHomeFeedFlow();
 }
@@ -44,8 +57,9 @@ const generateHomeFeedFlow = ai.defineFlow(
     outputSchema: HomeFeedOutputSchema,
   },
   async () => {
-    const { output } = await ai.generate({
-      prompt: `You are a content aggregator for a private intelligence dashboard about the Batman universe.
+    try {
+        const { output } = await ai.generate({
+          prompt: `You are a content aggregator for a private intelligence dashboard about the Batman universe.
 Your task is to generate a plausible list of trending content: 3 YouTube videos and 3 news articles.
 
 For YouTube videos, think about what's currently popular: new movie theories, video game analyses, retrospective essays, or fan-made content. Create realistic titles, channel names, and view counts.
@@ -56,12 +70,16 @@ For each item, provide all the necessary fields as defined in the output schema.
 - Provide a 1-2 word AI hint for a relevant thumbnail image for each item.
 
 Return your response as a single JSON object matching the required schema.`,
-      model: 'googleai/gemini-1.5-flash-latest',
-      output: {
-        schema: HomeFeedOutputSchema,
-        format: 'json',
-      },
-    });
-    return output!;
+          model: 'googleai/gemini-1.5-flash-latest',
+          output: {
+            schema: HomeFeedOutputSchema,
+            format: 'json',
+          },
+        });
+        return output!;
+    } catch (error) {
+        console.warn("AI call failed for home feed, returning static data. Error:", error);
+        return staticFallbackData;
+    }
   }
 );
