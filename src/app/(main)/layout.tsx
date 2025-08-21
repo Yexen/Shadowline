@@ -134,7 +134,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 ))}
-                 <SidebarMenuItem>
+                <SidebarMenuItem>
                     <SidebarMenuButton onClick={() => setSettingsOpen(true)} tooltip={{ children: "Settings", side: "right", align: "center" }}>
                         <Settings />
                         <span>Settings</span>
