@@ -12,12 +12,17 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import OpenAI from 'openai';
+import { ChatCompletionMessageParam } from 'openai/resources/chat';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 const NyxenMessageSchema = z.object({
-    role: z.enum(['user', 'model']),
+    role: z.enum(['user', 'model', 'system']),
     content: z.string(),
 });
-type NyxenMessage = z.infer<typeof NyxenMessageSchema>;
 
 const NyxenChatInputSchema = z.object({
   history: z.array(NyxenMessageSchema).describe("The history of the conversation so far."),
@@ -41,8 +46,8 @@ const nyxenChatFlow = ai.defineFlow(
     outputSchema: NyxenChatOutputSchema,
   },
   async ({ history, bibleData }) => {
-    const { output } = await ai.generate({
-      prompt: `You are Nyxen, an AI assistant integrated into the 'Shadows of Gotham Writer's Protocol'. Your personality is inspired by the Batcomputer and Oracle (Barbara Gordon) - you are highly intelligent, analytical, slightly dry, but ultimately helpful and dedicated to assisting the writer in their creative process.
+
+    const systemPrompt = `You are Nyxen, an AI assistant integrated into the 'Shadows of Gotham Writer's Protocol'. Your personality is inspired by the Batcomputer and Oracle (Barbara Gordon) - you are highly intelligent, analytical, slightly dry, but ultimately helpful and dedicated to assisting the writer in their creative process.
 
 You are communicating with the writer. Address them professionally.
 
@@ -52,19 +57,25 @@ You have been provided with the user's "Gotham Bible" which contains their custo
 
 When answering, prioritize information from the bible. If the information isn't there, you can use your general knowledge but note that it's not from their established lore.
 
-{{#if bibleData}}
-GOTHAM BIBLE CONTEXT:
-{{{bibleData}}}
-{{/if}}
-
-Based on the provided bible and the conversation history, generate the next response in the conversation.`,
-      model: 'googleai/gemini-1.5-flash-latest',
-      history: history,
-      output: {
-        schema: NyxenChatOutputSchema,
-      },
+${bibleData ? `GOTHAM BIBLE CONTEXT:\n${bibleData}` : ''}
+`;
+    
+    // The 'model' role in our app corresponds to 'assistant' in OpenAI's API
+    const messages: ChatCompletionMessageParam[] = [
+      { role: 'system', content: systemPrompt },
+      ...history.map(msg => ({
+        role: msg.role === 'model' ? 'assistant' : 'user',
+        content: msg.content
+      }))
+    ];
+    
+    const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: messages,
     });
 
-    return output!;
+    const reply = response.choices[0].message.content || "I'm sorry, I don't have a response for that.";
+
+    return { reply };
   }
 );
