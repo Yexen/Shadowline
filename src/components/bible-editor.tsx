@@ -81,7 +81,7 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
         const result = await generateBibleFields(input);
         if (result.fields) {
             const newFields = result.fields.map(label => ({ label, value: '' }));
-            setFields(prevFields => [...prevFields, ...newFields]);
+            setFields(prevFields => [...(prevFields || []), ...newFields]);
         }
     } catch (error) {
         console.error("Failed to suggest fields:", error);
