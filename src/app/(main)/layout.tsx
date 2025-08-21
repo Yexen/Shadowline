@@ -114,8 +114,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   return (
     <SidebarProvider>
       <Sidebar>
-        <SidebarHeader className="p-4 flex items-center justify-center">
-            <div className="flex items-center group-data-[state=expanded]:justify-between group-data-[state=collapsed]:justify-center w-full">
+        <SidebarHeader>
+            <div className="flex items-center group-data-[state=expanded]:justify-between group-data-[state=collapsed]:justify-center w-full p-2">
                  <BatLogo className="w-24 h-12 text-primary group-data-[state=collapsed]:hidden" />
                  <SidebarTrigger>
                     <BatLogo className="w-6 h-3 text-primary" />
@@ -146,7 +146,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </SidebarContent>
         <SidebarFooter>
              <SidebarMenuItem>
-                <SidebarMenuButton onClick={() => setVolumesOpen(true)} tooltip={{ children: "Volumes", side: "right", align: "center" }}>
+                <SidebarMenuButton onClick={() => setVolumesOpen(true)} tooltip={{ children: "Volumes", side: "right", align: "center" }} className="font-headline text-base">
                     <BookOpenCheck />
                     <span>Volumes</span>
                 </SidebarMenuButton>
@@ -154,7 +154,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <Sheet>
                 <SheetTrigger asChild>
                      <SidebarMenuItem>
-                        <SidebarMenuButton tooltip={{ children: "Bible", side: "right", align: "center" }}>
+                        <SidebarMenuButton tooltip={{ children: "Bible", side: "right", align: "center" }} className="font-headline text-base">
                             <BookCopy />
                             <span>Bible</span>
                         </SidebarMenuButton>
@@ -208,8 +208,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 </SheetContent>
             </Sheet>
 
-            <SidebarSeparator />
-            <div className="p-2">
+            <div className="p-2 border-t border-sidebar-border">
                 <button className="flex items-center p-2 rounded-md hover:bg-accent w-full group" onClick={() => setWriterProfileOpen(true)}>
                     <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">
