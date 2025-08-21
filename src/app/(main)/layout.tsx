@@ -165,7 +165,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                                         {entry.items.map(item => (
                                             <li key={item.title} className="p-2 rounded-md hover:bg-accent cursor-pointer" onClick={() => setEditingEntry({ category: entry.category, entry: item })}>
                                                 <h4 className="font-bold">{item.title}</h4>
-                                                <p className="text-sm text-muted-foreground truncate">{item.fields && item.fields.length > 0 ? item.fields[0].value : 'No description'}</p>
+                                                <p className="text-sm text-muted-foreground truncate">{item.fields?.[0]?.value || 'No description'}</p>
                                             </li>
                                         ))}
                                         <li>
