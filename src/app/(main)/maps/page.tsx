@@ -45,9 +45,8 @@ export default function MapsPage() {
             <CardContent className="p-0 relative aspect-video">
                  <iframe
                   srcDoc={mapHtml}
-                  className="w-full h-full border-0 pointer-events-none"
+                  className="w-full h-full border-0"
                   title="Interactive Gotham City Map Preview"
-                  sandbox=""
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
                 <div className="absolute bottom-4 left-4 pointer-events-none">
