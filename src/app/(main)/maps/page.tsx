@@ -110,27 +110,19 @@ export default function MapsPage() {
                     Gotham City
                 </CardTitle>
             </CardHeader>
-            <CardContent className="flex-grow p-0 relative">
-                 <button
-                    onClick={() => setIsMapOpen(true)}
-                    className="absolute inset-0 w-full h-full cursor-pointer z-10"
-                    aria-label="Open interactive Gotham City Map"
-                 >
-                    <span className="sr-only">Open interactive Gotham City Map</span>
-                 </button>
-                 <iframe
-                  srcDoc={mapHtml}
-                  className="w-full h-full border-0"
-                  title="Interactive Gotham City Map Preview"
-                />
-                <div 
-                    className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-0"
-                >
-                    <div className="absolute bottom-4 left-4">
-                        <h3 className="font-headline text-xl text-white drop-shadow-lg">Interactive Map</h3>
-                        <p className="text-sm text-white/80 drop-shadow-md">Click to explore</p>
+            <CardContent className="flex-grow flex flex-col p-0 relative">
+                 <div className="w-full flex-grow relative">
+                    <iframe
+                      srcDoc={mapHtml}
+                      className="w-full h-full border-0 absolute inset-0"
+                      title="Interactive Gotham City Map Preview"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex items-center justify-center">
+                        <Button onClick={() => setIsMapOpen(true)} variant="secondary">
+                            Click to Explore Map
+                        </Button>
                     </div>
-                </div>
+                 </div>
             </CardContent>
           </Card>
 
