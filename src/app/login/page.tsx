@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Terminal } from 'lucide-react';
 
 // In a real app, this would be handled by a proper auth system.
-const CORRECT_PASSWORD = 'gotham';
+const CORRECT_PASSWORD = 'Livfreya';
 
 export default function LoginPage() {
   const [password, setPassword] = useState('');
