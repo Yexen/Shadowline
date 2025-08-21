@@ -7,13 +7,17 @@ import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { CalendarDays, CheckSquare, Clipboard, Plus } from "lucide-react";
+import { CalendarDays, CheckSquare, Clipboard, Plus, Trash2 } from "lucide-react";
 
 interface Task {
   id: number;
   text: string;
   completed: boolean;
+}
+
+interface Note {
+  id: number;
+  text: string;
 }
 
 export default function OrganizationPage() {
@@ -24,7 +28,13 @@ export default function OrganizationPage() {
     { id: 3, text: "Develop Catwoman's backstory", completed: false },
   ]);
   const [newTask, setNewTask] = useState('');
-  const [notes, setNotes] = useState("Remember to check the old case files for details on the Falcone crime family's downfall.\n\nNeed to define the exact chemical compound for the new fear toxin variant.");
+  
+  const [notes, setNotes] = useState<Note[]>([
+      { id: 1, text: "Check old case files for Falcone crime family details." },
+      { id: 2, text: "Define the chemical compound for the new fear toxin." },
+  ]);
+  const [newNote, setNewNote] = useState('');
+
 
   const handleToggleTask = (id: number) => {
     setTasks(
@@ -43,6 +53,20 @@ export default function OrganizationPage() {
       setNewTask('');
     }
   };
+  
+  const handleAddNote = () => {
+    if (newNote.trim()) {
+        setNotes([
+            ...notes,
+            { id: Date.now(), text: newNote, completed: false },
+        ]);
+        setNewNote('');
+    }
+  }
+
+  const handleDeleteNote = (id: number) => {
+    setNotes(notes.filter(note => note.id !== id));
+  }
 
 
   return (
@@ -53,8 +77,8 @@ export default function OrganizationPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        <div className="space-y-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <div className="lg:col-span-1 space-y-8">
             <Card className="bg-card">
               <CardHeader>
                 <CardTitle className="font-headline flex items-center gap-2"><CalendarDays/> Mission Calendar</CardTitle>
@@ -68,58 +92,73 @@ export default function OrganizationPage() {
                 />
               </CardContent>
             </Card>
-
+        </div>
+        
+        <div className="lg:col-span-2 grid grid-cols-1 gap-8">
+            <Card className="bg-card">
+              <CardHeader>
+                <CardTitle className="font-headline flex items-center gap-2"><CheckSquare /> Task List</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Add a new task..."
+                      value={newTask}
+                      onChange={(e) => setNewTask(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
+                    />
+                    <Button onClick={handleAddTask} size="icon"><Plus/></Button>
+                  </div>
+                  <div className="space-y-2">
+                    {tasks.map(task => (
+                      <div key={task.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-accent/50">
+                        <Checkbox
+                          id={`task-${task.id}`}
+                          checked={task.completed}
+                          onCheckedChange={() => handleToggleTask(task.id)}
+                        />
+                        <label
+                          htmlFor={`task-${task.id}`}
+                          className={`flex-grow text-sm ${task.completed ? 'text-muted-foreground line-through' : ''}`}
+                        >
+                          {task.text}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
             <Card className="bg-card">
                 <CardHeader>
                     <CardTitle className="font-headline flex items-center gap-2"><Clipboard/> Field Notes</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <Textarea
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        rows={8}
-                        className="font-code"
-                        placeholder="Jot down your secret notes here..."
-                    />
+                    <div className="space-y-4">
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Add a new note..."
+                          value={newNote}
+                          onChange={(e) => setNewNote(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleAddNote()}
+                        />
+                        <Button onClick={handleAddNote} size="icon"><Plus/></Button>
+                      </div>
+                      <div className="space-y-2 font-code">
+                        {notes.map(note => (
+                          <div key={note.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-accent/50 group">
+                            <span className="flex-grow text-sm">{note.text}</span>
+                             <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => handleDeleteNote(note.id)}>
+                                <Trash2 className="h-4 w-4 text-destructive"/>
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                 </CardContent>
             </Card>
         </div>
-        
-        <Card className="bg-card">
-          <CardHeader>
-            <CardTitle className="font-headline flex items-center gap-2"><CheckSquare /> Task List</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Add a new task..."
-                  value={newTask}
-                  onChange={(e) => setNewTask(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
-                />
-                <Button onClick={handleAddTask} size="icon"><Plus/></Button>
-              </div>
-              <div className="space-y-2">
-                {tasks.map(task => (
-                  <div key={task.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-accent/50">
-                    <Checkbox
-                      id={`task-${task.id}`}
-                      checked={task.completed}
-                      onCheckedChange={() => handleToggleTask(task.id)}
-                    />
-                    <label
-                      htmlFor={`task-${task.id}`}
-                      className={`flex-grow text-sm ${task.completed ? 'text-muted-foreground line-through' : ''}`}
-                    >
-                      {task.text}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
