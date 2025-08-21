@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 const MAP_COVER_STORAGE_KEY = 'gotham-map-cover-image';
 
@@ -101,8 +102,7 @@ export default function MapsPage() {
           </Card>
           
           <Card 
-            className="bg-card hover:border-primary/50 transition-colors group flex flex-col cursor-pointer"
-            onClick={() => setIsMapOpen(true)}
+            className="bg-card hover:border-primary/50 transition-colors group flex flex-col"
           >
             <CardHeader>
                 <CardTitle className="font-headline flex items-center gap-2">
@@ -111,13 +111,20 @@ export default function MapsPage() {
                 </CardTitle>
             </CardHeader>
             <CardContent className="flex-grow p-0 relative">
+                 <button
+                    onClick={() => setIsMapOpen(true)}
+                    className="absolute inset-0 w-full h-full cursor-pointer z-10"
+                    aria-label="Open interactive Gotham City Map"
+                 >
+                    <span className="sr-only">Open interactive Gotham City Map</span>
+                 </button>
                  <iframe
                   srcDoc={mapHtml}
-                  className="w-full h-full border-0 pointer-events-none"
+                  className="w-full h-full border-0"
                   title="Interactive Gotham City Map Preview"
                 />
                 <div 
-                    className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"
+                    className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-0"
                 >
                     <div className="absolute bottom-4 left-4">
                         <h3 className="font-headline text-xl text-white drop-shadow-lg">Interactive Map</h3>
