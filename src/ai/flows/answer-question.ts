@@ -51,9 +51,10 @@ Based on the rules above, what is the answer? Your response must be ONLY a valid
       model: 'googleai/gemini-1.5-flash-latest',
       input,
     });
-    // The model is instructed to return JSON, so we parse it.
+    // The model is instructed to return a JSON string, so we parse it.
     try {
-        return JSON.parse(output as string);
+        const result = JSON.parse(output as string);
+        return result;
     } catch (e) {
         // If parsing fails, it might be because the model returned a raw string.
         // We'll wrap it in the expected object structure.
