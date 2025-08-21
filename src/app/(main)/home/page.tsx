@@ -10,7 +10,7 @@ import { generateYoutubeFeed, type YoutubeFeedOutput } from "@/ai/flows/generate
 import { generateLatestIntel, type LatestIntelOutput } from "@/ai/flows/generate-latest-intel";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 export default function HomePage() {
     const [surveillanceFootage, setSurveillanceFootage] = useState<YoutubeFeedOutput['videos']>([]);
@@ -20,56 +20,63 @@ export default function HomePage() {
 
     useEffect(() => {
         const fetchFeeds = async () => {
-            setIsFootageLoading(true);
-            setIsIntelLoading(true);
-
+            const now = new Date().getTime();
+            
+            // Fetch YouTube Feed
             try {
-                const now = new Date().getTime();
-                
-                // Fetch YouTube Feed
                 const cachedFootageItem = localStorage.getItem('youtube-feed-cache');
                 if (cachedFootageItem) {
                     const { timestamp, data } = JSON.parse(cachedFootageItem);
                     if (now - timestamp < CACHE_DURATION) {
                         setSurveillanceFootage(data.videos);
                         setIsFootageLoading(false);
+                    } else {
+                         // Cache is old, fetch new data
+                         const feed = await generateYoutubeFeed();
+                         setSurveillanceFootage(feed.videos);
+                         localStorage.setItem('youtube-feed-cache', JSON.stringify({ timestamp: now, data: feed }));
+                         setIsFootageLoading(false);
                     }
-                }
-                
-                if (isFootageLoading) { // This will be true if cache is old or missing
+                } else {
+                    // No cache, fetch new data
                     const feed = await generateYoutubeFeed();
                     setSurveillanceFootage(feed.videos);
                     localStorage.setItem('youtube-feed-cache', JSON.stringify({ timestamp: now, data: feed }));
                     setIsFootageLoading(false);
                 }
+            } catch (error) {
+                console.error("Failed to fetch YouTube feed:", error);
+                setIsFootageLoading(false); // Stop loading on error
+            }
 
-                // Fetch Latest Intel
+            // Fetch Latest Intel
+            try {
                 const cachedIntelItem = localStorage.getItem('latest-intel-cache');
-                if (cachedIntelItem) {
+                 if (cachedIntelItem) {
                     const { timestamp, data } = JSON.parse(cachedIntelItem);
                     if (now - timestamp < CACHE_DURATION) {
                         setLatestIntel(data.articles);
                         setIsIntelLoading(false);
+                    } else {
+                        const intel = await generateLatestIntel();
+                        setLatestIntel(intel.articles);
+                        localStorage.setItem('latest-intel-cache', JSON.stringify({ timestamp: now, data: intel }));
+                        setIsIntelLoading(false);
                     }
-                }
-
-                if (isIntelLoading) { // This will be true if cache is old or missing
+                } else {
                     const intel = await generateLatestIntel();
                     setLatestIntel(intel.articles);
                     localStorage.setItem('latest-intel-cache', JSON.stringify({ timestamp: now, data: intel }));
                     setIsIntelLoading(false);
                 }
-
             } catch (error) {
-                console.error("Failed to fetch dynamic feeds:", error);
-                // In case of error, clear loading states so it doesn't hang
-                setIsFootageLoading(false);
-                setIsIntelLoading(false);
+                 console.error("Failed to fetch latest intel:", error);
+                 setIsIntelLoading(false); // Stop loading on error
             }
         };
 
         fetchFeeds();
-    }, [isFootageLoading, isIntelLoading]);
+    }, []);
 
   return (
     <div className="space-y-8">
