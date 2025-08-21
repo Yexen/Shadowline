@@ -18,7 +18,8 @@ const HomeFeedOutputSchema = z.object({
     uploader: z.string().describe("The name of a plausible YouTube channel."),
     views: z.string().describe("The view count, formatted as a string (e.g., '1.2M', '450K')."),
     thumbnail: z.string().describe("A placeholder image URL for the video thumbnail. Use 'https://placehold.co/600x400.png'."),
-    dataAiHint: z.string().describe("A 1-2 word hint for a relevant image (e.g., 'dark knight movie', 'batmobile retro').")
+    dataAiHint: z.string().describe("A 1-2 word hint for a relevant image (e.g., 'dark knight movie', 'batmobile retro')."),
+    url: z.string().url().describe("A plausible YouTube video URL (e.g., https://www.youtube.com/watch?v=...).")
   })).describe("An array of 3 trending Batman-related YouTube videos from the real internet."),
   articles: z.array(z.object({
     id: z.number(),
@@ -27,7 +28,8 @@ const HomeFeedOutputSchema = z.object({
     date: z.string().describe("A relative date for the article (e.g., '2 hours ago', '1 day ago')."),
     snippet: z.string().describe("A short, one-sentence summary of the news article, as if it were a real news report."),
     image: z.string().describe("A placeholder image URL. Use 'https://placehold.co/600x400.png'."),
-    dataAiHint: z.string().describe("A 1-2 word hint for a relevant image (e.g., 'gotham city', 'batman movie').")
+    dataAiHint: z.string().describe("A 1-2 word hint for a relevant image (e.g., 'gotham city', 'batman movie')."),
+    url: z.string().url().describe("A plausible news article URL from a site like IGN, Variety, etc.")
   })).describe("An array of 3 trending Batman-related news articles from the real internet.")
 });
 
@@ -49,8 +51,8 @@ const generateHomeFeedFlow = ai.defineFlow(
     const { output } = await ai.generate({
       prompt: `You are a content curator for a Batman fan dashboard. Your task is to generate a list of 3 trending YouTube videos and 3 trending news articles that a real fan would find on the internet.
 
-For YouTube videos, invent realistic titles, channel names, and view counts. Think about video essays, movie reviews, or fan-made projects.
-For news articles, invent realistic headlines, sources (like IGN, Variety, ScreenRant, or in-universe papers like the Gotham Gazette), and snippets about movie news, comic reviews, or game updates.
+For YouTube videos, invent realistic titles, channel names, view counts, and a plausible YouTube URL.
+For news articles, invent realistic headlines, sources (like IGN, Variety, ScreenRant, or in-universe papers like the Gotham Gazette), snippets, and a plausible URL for the article.
 
 For all items, provide all fields as defined in the output schema.
 - Use "https://placehold.co/600x400.png" for all image and thumbnail URLs.

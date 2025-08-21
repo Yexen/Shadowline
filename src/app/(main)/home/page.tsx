@@ -8,6 +8,7 @@ import Image from "next/image";
 import { Youtube, Newspaper } from "lucide-react";
 import { generateHomeFeed, type HomeFeedOutput } from "@/ai/flows/generate-home-feed";
 import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
 
 const CACHE_KEY = 'home-feed-cache';
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
@@ -98,16 +99,18 @@ export default function HomePage() {
             ))
           ) : (
             surveillanceFootage.map(video => (
-              <Card key={video.id} className="overflow-hidden bg-card hover:border-primary/50 transition-colors">
-                <CardContent className="p-0">
-                  <Image src={video.thumbnail} alt={video.title} width={600} height={400} className="aspect-video object-cover" data-ai-hint={video.dataAiHint} />
-                  <div className="p-4">
-                      <h3 className="font-bold font-headline truncate">{video.title}</h3>
-                      <p className="text-sm text-muted-foreground">{video.uploader}</p>
-                      <p className="text-xs text-muted-foreground">{video.views} views</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <a href={video.url} key={video.id} target="_blank" rel="noopener noreferrer" className="block overflow-hidden bg-card hover:border-primary/50 transition-colors rounded-lg">
+                <Card className="border-0 shadow-none h-full">
+                  <CardContent className="p-0">
+                    <Image src={video.thumbnail} alt={video.title} width={600} height={400} className="aspect-video object-cover" data-ai-hint={video.dataAiHint} />
+                    <div className="p-4">
+                        <h3 className="font-bold font-headline truncate">{video.title}</h3>
+                        <p className="text-sm text-muted-foreground">{video.uploader}</p>
+                        <p className="text-xs text-muted-foreground">{video.views} views</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </a>
             ))
           )}
         </div>
@@ -141,19 +144,21 @@ export default function HomePage() {
                 ))
             ) : (
                 latestIntel.map(news => (
-                    <Card key={news.id} className="flex flex-col bg-card hover:border-primary/50 transition-colors">
-                        <CardHeader>
-                            <Image src={news.image} alt={news.title} width={600} height={400} className="aspect-video object-cover rounded-t-lg -mt-6 -mx-6" data-ai-hint={news.dataAiHint} />
-                            <CardTitle className="font-headline pt-4">{news.title}</CardTitle>
-                            <CardDescription>{news.source} - {news.date}</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex-grow">
-                            <p className="text-muted-foreground">{news.snippet}</p>
-                        </CardContent>
-                        <div className="p-6 pt-0">
-                            <Button variant="link" className="p-0 text-primary">Read More</Button>
-                        </div>
-                    </Card>
+                    <a href={news.url} key={news.id} target="_blank" rel="noopener noreferrer" className="block bg-card hover:border-primary/50 transition-colors rounded-lg">
+                      <Card className="flex flex-col border-0 shadow-none h-full">
+                          <CardHeader>
+                              <Image src={news.image} alt={news.title} width={600} height={400} className="aspect-video object-cover rounded-t-lg -mt-6 -mx-6" data-ai-hint={news.dataAiHint} />
+                              <CardTitle className="font-headline pt-4">{news.title}</CardTitle>
+                              <CardDescription>{news.source} - {news.date}</CardDescription>
+                          </CardHeader>
+                          <CardContent className="flex-grow">
+                              <p className="text-muted-foreground">{news.snippet}</p>
+                          </CardContent>
+                          <div className="p-6 pt-0">
+                              <span className="text-primary font-bold">Read More &rarr;</span>
+                          </div>
+                      </Card>
+                    </a>
                 ))
             )}
         </div>
