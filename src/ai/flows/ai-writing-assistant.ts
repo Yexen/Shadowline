@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -18,7 +19,7 @@ const openai = new OpenAI({
 
 const GenerateContentInputSchema = z.object({
   prompt: z.string().describe('The writing prompt to generate content for.'),
-  bibleData: z.any().optional().describe("A JSON string representing the user's world bible for context."),
+  bibleData: z.any().optional().describe("A JSON string representing all of the user's project data for context. This includes the bible, drafts, volumes, gallery, and writers."),
 });
 export type GenerateContentInput = z.infer<typeof GenerateContentInputSchema>;
 
@@ -41,9 +42,9 @@ const generateContentFlow = ai.defineFlow(
     const systemPrompt = `You are a creative writing assistant for a user writing stories set in a Gotham City-like universe.
 Your task is to write a compelling piece of content based on the user's prompt. This could be a scene, a character description, or a plot point.
 ${bibleData ? `
-You have been provided with the user's "Gotham Bible" which contains their custom worldbuilding details. This is your primary source of truth. The bible is structured into categories, with each entry having key-value 'fields' and detailed 'pages' for deeper lore. You MUST consider content from both 'fields' and 'pages'.
+You have been provided with the user's project data which contains their custom worldbuilding details (bible, drafts, volumes, etc). This is your primary source of truth.
 
-GOTHAM BIBLE CONTEXT:
+PROJECT CONTEXT:
 ${bibleData}` : ''}
 `;
 

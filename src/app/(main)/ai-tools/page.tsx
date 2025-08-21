@@ -16,6 +16,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useBible } from '@/hooks/use-bible';
 import { useGallery } from '@/hooks/use-gallery';
 import Image from 'next/image';
+import { useDrafts } from '@/hooks/use-drafts';
+import { useVolumes } from '@/hooks/use-volumes';
+import { useWriters } from '@/hooks/use-writers';
 
 export default function AiToolsPage() {
   const [writingPrompt, setWritingPrompt] = useState('');
@@ -39,7 +42,21 @@ export default function AiToolsPage() {
 
   const { toast } = useToast();
   const { bibleData } = useBible();
-  const { addImageToFolder, folders } = useGallery();
+  const { folders, addImageToFolder } = useGallery();
+  const { drafts } = useDrafts();
+  const { volumes } = useVolumes();
+  const { writers, activeWriter } = useWriters();
+  
+  const getFullContext = () => {
+    return JSON.stringify({
+        bible: bibleData,
+        drafts,
+        volumes,
+        gallery: folders,
+        writers,
+        activeWriter,
+    });
+  }
 
   const handleGenerateScene = async () => {
     if (!writingPrompt) return;
@@ -48,7 +65,7 @@ export default function AiToolsPage() {
     try {
       const input: GenerateContentInput = { 
         prompt: writingPrompt,
-        bibleData: JSON.stringify(bibleData) 
+        bibleData: getFullContext()
       };
       const result = await generateContent(input);
       setGeneratedScene(result.content);
@@ -67,7 +84,7 @@ export default function AiToolsPage() {
     try {
       const input: AnswerQuestionInput = {
         question: question,
-        bibleData: JSON.stringify(bibleData)
+        bibleData: getFullContext()
       };
       const result = await answerQuestion(input);
       setAnswer(result.answer);
@@ -88,7 +105,7 @@ export default function AiToolsPage() {
       const input: GenerateCodeInput = { 
         description: codeDescription, 
         language: codeLanguage,
-        bibleData: JSON.stringify(bibleData) 
+        bibleData: getFullContext()
       };
       const result = await generateCode(input);
       setGeneratedCode(result.code);

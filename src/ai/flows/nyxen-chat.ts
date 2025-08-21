@@ -26,7 +26,7 @@ const NyxenMessageSchema = z.object({
 
 const NyxenChatInputSchema = z.object({
   history: z.array(NyxenMessageSchema).describe("The history of the conversation so far."),
-  bibleData: z.any().optional().describe("A JSON string representing the user's world bible for context."),
+  bibleData: z.any().optional().describe("A JSON string representing all of the user's project data for context. This includes the bible, drafts, volumes, gallery, and writers."),
 });
 export type NyxenChatInput = z.infer<typeof NyxenChatInputSchema>;
 
@@ -53,11 +53,11 @@ You are communicating with the writer. Address them professionally.
 
 Your primary function is to assist with worldbuilding, plot development, character creation, and answering questions about their project's lore.
 
-You have been provided with the user's "Gotham Bible" which contains their custom worldbuilding details. This is your primary source of truth. The bible is structured into categories, with each entry having key-value 'fields' and detailed 'pages' for deeper lore. You MUST consider content from both 'fields' and 'pages'.
+You have been provided with all of the user's project data, which contains their custom worldbuilding details (bible, drafts, volumes, etc). This is your primary source of truth.
 
-When answering, prioritize information from the bible. If the information isn't there, you can use your general knowledge but note that it's not from their established lore.
+When answering, prioritize information from the provided context. If the information isn't there, you can use your general knowledge but note that it's not from their established lore.
 
-${bibleData ? `GOTHAM BIBLE CONTEXT:\n${bibleData}` : ''}
+${bibleData ? `PROJECT CONTEXT:\n${bibleData}` : ''}
 `;
     
     // The 'model' role in our app corresponds to 'assistant' in OpenAI's API

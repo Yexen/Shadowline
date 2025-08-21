@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -19,7 +20,7 @@ const openai = new OpenAI({
 const GenerateCodeInputSchema = z.object({
   description: z.string().describe('A text description of the desired code snippet.'),
   language: z.enum(['CSS', 'JavaScript']).describe('The programming language for the code snippet.'),
-  bibleData: z.any().optional().describe("A JSON string representing the user's world bible for context."),
+  bibleData: z.any().optional().describe("A JSON string representing all of the user's project data for context. This includes the bible, drafts, volumes, gallery, and writers."),
 });
 export type GenerateCodeInput = z.infer<typeof GenerateCodeInputSchema>;
 
@@ -45,9 +46,9 @@ You should generate a code snippet that matches the description and language.
 The output should only be the raw code, without any markdown formatting or explanations.
 
 ${bibleData ? `
-You have been provided with the user's "Gotham Bible" which contains their custom worldbuilding details. If the user's request seems to be related to their project's theme, use the bible as context. For example, if they ask for a "dark button," you can infer the color scheme from the bible's tone. The bible is structured into categories, with each entry having key-value 'fields' and detailed 'pages' for deeper lore. You MUST consider content from both 'fields' and 'pages' for context.
+You have been provided with the user's project data which contains their custom worldbuilding details (bible, drafts, volumes, etc). If the user's request seems to be related to their project's theme, use this data as context. For example, if they ask for a "dark button," you can infer the color scheme from the project's overall tone.
 
-GOTHAM BIBLE CONTEXT:
+PROJECT CONTEXT:
 ${bibleData}` : ''}
 
 Description: "${description}"

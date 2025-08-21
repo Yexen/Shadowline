@@ -11,6 +11,9 @@ import { cn } from '@/lib/utils';
 import { useBible } from '@/hooks/use-bible';
 import { useWriters } from '@/hooks/use-writers';
 import { continueConversation } from '@/ai/flows/nyxen-chat';
+import { useDrafts } from '@/hooks/use-drafts';
+import { useVolumes } from '@/hooks/use-volumes';
+import { useGallery } from '@/hooks/use-gallery';
 
 // Define the type directly in the client component
 export interface NyxenMessage {
@@ -23,8 +26,12 @@ export default function NyxenChatPage() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  
   const { bibleData } = useBible();
-  const { activeWriter } = useWriters();
+  const { drafts } = useDrafts();
+  const { volumes } = useVolumes();
+  const { folders } = useGallery();
+  const { writers, activeWriter } = useWriters();
   
   useEffect(() => {
       if (scrollAreaRef.current) {
@@ -34,6 +41,17 @@ export default function NyxenChatPage() {
           });
       }
   }, [messages]);
+  
+  const getFullContext = () => {
+    return JSON.stringify({
+        bible: bibleData,
+        drafts,
+        volumes,
+        gallery: folders,
+        writers,
+        activeWriter,
+    });
+  }
 
   const handleSend = async () => {
     if (input.trim() === '' || isLoading) return;
@@ -46,7 +64,7 @@ export default function NyxenChatPage() {
     try {
       const response = await continueConversation({
           history: [...messages, userMessage],
-          bibleData: JSON.stringify(bibleData)
+          bibleData: getFullContext()
       });
       
       const nyxenMessage: NyxenMessage = { role: 'model', content: response.reply };

@@ -25,13 +25,15 @@ import { useBible } from '@/hooks/use-bible';
 import { useDrafts } from '@/hooks/use-drafts';
 import { useVolumes } from '@/hooks/use-volumes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useGallery } from '@/hooks/use-gallery';
+import { useWriters } from '@/hooks/use-writers';
 
 export default function EditorPage() {
   const params = useParams();
   const router = useRouter();
   const draftId = params.draftId as string;
   
-  const { getDraft, addDraft, updateDraft } = useDrafts();
+  const { getDraft, addDraft, updateDraft, drafts } = useDrafts();
   const { volumes, addChapter } = useVolumes();
   
   const [content, setContent] = useState('');
@@ -45,6 +47,8 @@ export default function EditorPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
   const { bibleData } = useBible();
+  const { folders } = useGallery();
+  const { writers, activeWriter } = useWriters();
 
   // AI Assistant State
   const [isGenerating, setIsGenerating] = useState(false);
@@ -85,6 +89,17 @@ export default function EditorPage() {
   const wordCount = useMemo(() => {
     return content.trim().split(/\s+/).filter(Boolean).length;
   }, [content]);
+
+  const getFullContext = () => {
+    return JSON.stringify({
+        bible: bibleData,
+        drafts,
+        volumes,
+        gallery: folders,
+        writers,
+        activeWriter,
+    });
+  }
 
   const handleSave = () => {
     setIsSaving(true);
@@ -147,7 +162,7 @@ export default function EditorPage() {
     try {
         const input: GenerateContentInput = { 
           prompt: `Based on the following text, give me a few short, creative suggestions to continue or improve it: "${selection}"`,
-          bibleData: JSON.stringify(bibleData) 
+          bibleData: getFullContext()
         };
         const result = await generateContent(input);
         setSuggestions(result.content.split('\n').filter(s => s.trim().length > 0));
@@ -189,7 +204,7 @@ export default function EditorPage() {
     try {
       const input: GenerateContentInput = { 
         prompt: scenePrompt,
-        bibleData: JSON.stringify(bibleData)
+        bibleData: getFullContext()
       };
       const result = await generateContent(input);
       setGeneratedScene(result.content);

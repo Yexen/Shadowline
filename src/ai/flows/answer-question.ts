@@ -19,7 +19,7 @@ const openai = new OpenAI({
 
 const AnswerQuestionInputSchema = z.object({
   question: z.string().describe("The user's question."),
-  bibleData: z.any().optional().describe("A JSON string representing the user's world bible for context."),
+  bibleData: z.any().optional().describe("A JSON string representing all of the user's project data for context. This includes the bible, drafts, volumes, gallery, and writers."),
 });
 export type AnswerQuestionInput = z.infer<typeof AnswerQuestionInputSchema>;
 
@@ -41,11 +41,11 @@ const answerQuestionFlow = ai.defineFlow(
   async ({ question, bibleData }) => {
      const systemPrompt = `You are an AI assistant with deep knowledge of a user's custom fictional universe. Your task is to answer the user's question based on the provided context.
 
-You MUST first consult the provided "Bible" context. This is your primary source of truth. The bible is structured into categories, with each entry having key-value 'fields' and detailed 'pages' for deeper lore. You MUST consider content from both 'fields' and 'pages'.
+You MUST first consult the provided project context. This is your primary source of truth. It contains the "Bible", drafts, volumes, and other lore.
 
-If the answer is found within the bible, you MUST prioritize that information. If the bible does not contain the answer, then you should use your general knowledge, but state that the information was not in the bible.
+If the answer is found within the provided context, you MUST prioritize that information. If the context does not contain the answer, then you should use your general knowledge, but state that the information was not in the provided materials.
 
-${bibleData ? `BIBLE CONTEXT:\n${bibleData}`: ''}
+${bibleData ? `PROJECT CONTEXT:\n${bibleData}`: ''}
 
 Based on the rules above, what is the answer to this question: "${question}"?`;
 
