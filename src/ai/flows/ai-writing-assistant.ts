@@ -23,14 +23,19 @@ const GenerateContentOutputSchema = z.object({
 export type GenerateContentOutput = z.infer<typeof GenerateContentOutputSchema>;
 
 export async function generateContent(input: GenerateContentInput): Promise<GenerateContentOutput> {
-  return generateContentFlow(input);
+  const {output} = await generateContentFlow(input);
+  return output!;
 }
 
-const prompt = ai.definePrompt({
-  name: 'generateContentPrompt',
-  input: {schema: GenerateContentInputSchema},
-  output: {schema: GenerateContentOutputSchema, format: 'json'},
-  prompt: `You are a creative writing assistant for a user writing stories set in a Gotham City-like universe.
+const generateContentFlow = ai.defineFlow(
+  {
+    name: 'generateContentFlow',
+    inputSchema: GenerateContentInputSchema,
+    outputSchema: GenerateContentOutputSchema,
+  },
+  async (input) => {
+    const {output} = await ai.generate({
+      prompt: `You are a creative writing assistant for a user writing stories set in a Gotham City-like universe.
 Your task is to write a compelling piece of content based on the user's prompt. This could be a scene, a character description, or a plot point.
 
 {{#if bibleData}}
@@ -43,16 +48,14 @@ USER PROMPT:
 "{{{prompt}}}"
 
 Write the content as requested, ensuring it is consistent with the provided bible if it exists.`,
-});
+      model: 'googleai/gemini-pro',
+      input: input,
+      output: {
+        format: 'json',
+        schema: GenerateContentOutputSchema,
+      },
+    });
 
-const generateContentFlow = ai.defineFlow(
-  {
-    name: 'generateContentFlow',
-    inputSchema: GenerateContentInputSchema,
-    outputSchema: GenerateContentOutputSchema,
-  },
-  async (input) => {
-    const {output} = await prompt(input);
-    return output!;
+    return output;
   }
 );

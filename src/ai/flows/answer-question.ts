@@ -12,7 +12,7 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const AnswerQuestionInputSchema = z.object({
-  question: z.string().describe('The user\'s question.'),
+  question: z.string().describe("The user's question."),
   bibleData: z.any().optional().describe("A JSON string representing the user's world bible for context."),
 });
 export type AnswerQuestionInput = z.infer<typeof AnswerQuestionInputSchema>;
@@ -23,14 +23,19 @@ const AnswerQuestionOutputSchema = z.object({
 export type AnswerQuestionOutput = z.infer<typeof AnswerQuestionOutputSchema>;
 
 export async function answerQuestion(input: AnswerQuestionInput): Promise<AnswerQuestionOutput> {
-  return answerQuestionFlow(input);
+  const {output} = await answerQuestionFlow(input);
+  return output!;
 }
 
-const prompt = ai.definePrompt({
-  name: 'answerQuestionPrompt',
-  input: {schema: AnswerQuestionInputSchema},
-  output: {schema: AnswerQuestionOutputSchema, format: 'json'},
-  prompt: `You are an AI assistant with deep knowledge of a user's custom fictional universe. Your task is to answer the user's question.
+const answerQuestionFlow = ai.defineFlow(
+  {
+    name: 'answerQuestionFlow',
+    inputSchema: AnswerQuestionInputSchema,
+    outputSchema: AnswerQuestionOutputSchema,
+  },
+  async (input) => {
+    const {output} = await ai.generate({
+      prompt: `You are an AI assistant with deep knowledge of a user's custom fictional universe. Your task is to answer the user's question.
 
 You should first consult the provided "Bible" context. If the answer is found within the bible, you should prioritize that information. If the bible does not contain the answer, then you should use your general knowledge.
 
@@ -43,16 +48,13 @@ USER'S QUESTION:
 "{{{question}}}"
 
 Based on the rules above, what is the answer?`,
-});
-
-const answerQuestionFlow = ai.defineFlow(
-  {
-    name: 'answerQuestionFlow',
-    inputSchema: AnswerQuestionInputSchema,
-    outputSchema: AnswerQuestionOutputSchema,
-  },
-  async (input) => {
-    const {output} = await prompt(input);
-    return output!;
+      model: 'googleai/gemini-pro',
+      input: input,
+      output: {
+        format: 'json',
+        schema: AnswerQuestionOutputSchema,
+      },
+    });
+    return output;
   }
 );

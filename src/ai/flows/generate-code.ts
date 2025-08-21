@@ -24,14 +24,19 @@ const GenerateCodeOutputSchema = z.object({
 export type GenerateCodeOutput = z.infer<typeof GenerateCodeOutputSchema>;
 
 export async function generateCode(input: GenerateCodeInput): Promise<GenerateCodeOutput> {
-  return generateCodeFlow(input);
+  const {output} = await generateCodeFlow(input);
+  return output!;
 }
 
-const prompt = ai.definePrompt({
-  name: 'generateCodePrompt',
-  input: {schema: GenerateCodeInputSchema},
-  output: {schema: GenerateCodeOutputSchema, format: 'json'},
-  prompt: `You are a helpful assistant that generates code snippets based on user descriptions.
+const generateCodeFlow = ai.defineFlow(
+  {
+    name: 'generateCodeFlow',
+    inputSchema: GenerateCodeInputSchema,
+    outputSchema: GenerateCodeOutputSchema,
+  },
+  async (input) => {
+    const {output} = await ai.generate({
+      prompt: `You are a helpful assistant that generates code snippets based on user descriptions.
 
 The user will provide a description of the desired code and the programming language.
 You should generate a code snippet that matches the description and language.
@@ -46,16 +51,13 @@ Description: {{{description}}}
 Language: {{{language}}}
 
 Make sure that the output is valid, runnable code.`,
-});
-
-const generateCodeFlow = ai.defineFlow(
-  {
-    name: 'generateCodeFlow',
-    inputSchema: GenerateCodeInputSchema,
-    outputSchema: GenerateCodeOutputSchema,
-  },
-  async (input) => {
-    const {output} = await prompt(input);
-    return output!;
+      model: 'googleai/gemini-pro',
+      input: input,
+      output: {
+        format: 'json',
+        schema: GenerateCodeOutputSchema,
+      },
+    });
+    return output;
   }
 );
