@@ -100,7 +100,10 @@ export default function MapsPage() {
             </CardContent>
           </Card>
           
-          <Card className="bg-card hover:border-primary/50 transition-colors group flex flex-col">
+          <Card 
+            className="bg-card hover:border-primary/50 transition-colors group flex flex-col cursor-pointer"
+            onClick={() => setIsMapOpen(true)}
+          >
             <CardHeader>
                 <CardTitle className="font-headline flex items-center gap-2">
                     <MapIcon />
@@ -114,12 +117,11 @@ export default function MapsPage() {
                   title="Interactive Gotham City Map Preview"
                 />
                 <div 
-                    className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent cursor-pointer"
-                    onClick={() => setIsMapOpen(true)}
+                    className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"
                 >
                     <div className="absolute bottom-4 left-4">
-                        <h3 className="font-headline text-xl text-white drop-shadow-lg">Gotham City</h3>
-                        <p className="text-sm text-white/80 drop-shadow-md">Interactive Map</p>
+                        <h3 className="font-headline text-xl text-white drop-shadow-lg">Interactive Map</h3>
+                        <p className="text-sm text-white/80 drop-shadow-md">Click to explore</p>
                     </div>
                 </div>
             </CardContent>
