@@ -1,7 +1,7 @@
-
 'use client';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Map as MapIcon } from 'lucide-react';
+import { Map as MapIcon } from "lucide-react";
 import { useState } from "react";
 import { GothamMap } from "@/components/gotham-map";
 import { mapHtml } from "@/lib/gotham-map-html";
@@ -28,7 +28,7 @@ export default function MapsPage() {
                 DC Universe
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex-grow flex flex-col p-0 relative">
+            <CardContent className="relative flex-grow flex flex-col p-0">
                 <button onClick={() => setIsDcMapOpen(true)} className="absolute inset-0 bg-transparent cursor-pointer z-10 group" aria-label="Explore DC Universe Map">
                     <iframe
                         srcDoc={dcMapHtml}
@@ -52,7 +52,7 @@ export default function MapsPage() {
                     Gotham City
                 </CardTitle>
             </CardHeader>
-            <CardContent className="flex-grow flex flex-col p-0 relative">
+            <CardContent className="relative flex-grow flex flex-col p-0">
                 <button onClick={() => setIsGothamMapOpen(true)} className="absolute inset-0 bg-transparent cursor-pointer z-10 group" aria-label="Explore Gotham City Map">
                     <iframe
                         srcDoc={mapHtml}

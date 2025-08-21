@@ -391,7 +391,7 @@ export const mapHtml = `
             themeBtn.setAttribute('aria-pressed', String(isDay));
         }
 
-        /* ===== NEW: Characters Layer Toggle ===== */
+        /* ===== NEW: CHARACTERS LAYER TOGGLE ===== */
         function toggleCharacters() {
             const hidden = charactersLayer.classList.toggle('hidden');
             charactersLayer.setAttribute('aria-hidden', String(hidden));
