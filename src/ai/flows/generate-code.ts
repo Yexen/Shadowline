@@ -41,7 +41,8 @@ The user will provide a description of the desired code and the programming lang
 You should generate a code snippet that matches the description and language.
   
 {{#if bibleData}}
-You have been provided with the user's "Gotham Bible" which contains their custom worldbuilding details. If the user's request seems to be related to their project's theme, use the bible as context. For example, if they ask for a "dark button," you can infer the color scheme from the bible's tone.
+You have been provided with the user's "Gotham Bible" which contains their custom worldbuilding details. If the user's request seems to be related to their project's theme, use the bible as context. For example, if they ask for a "dark button," you can infer the color scheme from the bible's tone. The bible is structured into categories, with each entry having key-value 'fields' and detailed 'pages' for deeper lore. You MUST consider content from both 'fields' and 'pages' for context.
+
 GOTHAM BIBLE CONTEXT:
 {{{bibleData}}}
 {{/if}}

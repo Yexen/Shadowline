@@ -38,7 +38,8 @@ const generateContentFlow = ai.defineFlow(
 Your task is to write a compelling piece of content based on the user's prompt. This could be a scene, a character description, or a plot point.
 
 {{#if bibleData}}
-You have been provided with the user's "Gotham Bible" which contains their custom worldbuilding details. You MUST adhere to this bible as the primary source of truth.
+You have been provided with the user's "Gotham Bible" which contains their custom worldbuilding details. This is your primary source of truth. The bible is structured into categories, with each entry having key-value 'fields' and detailed 'pages' for deeper lore. You MUST consider content from both 'fields' and 'pages'.
+
 GOTHAM BIBLE CONTEXT:
 {{{bibleData}}}
 {{/if}}
