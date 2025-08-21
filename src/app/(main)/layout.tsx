@@ -141,20 +141,20 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => setVolumesOpen(true)} tooltip={{ children: "Volumes", side: "right", align: "center" }} className="font-headline text-base group-data-[state=collapsed]:justify-center">
+                    <SidebarMenuButton onClick={() => setVolumesOpen(true)} tooltip={{ children: "Volumes", side: "right", align: "center" }} className="text-base group-data-[state=collapsed]:justify-center">
                         <span className="flex items-center gap-2">
                             <BookOpenCheck />
-                            <span className="group-data-[state=collapsed]:hidden">Volumes</span>
+                            <span className="group-data-[state=collapsed]:hidden font-headline">Volumes</span>
                         </span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem asChild>
                     <Sheet>
-                        <SidebarMenuButton tooltip={{ children: "Bible", side: "right", align: "center" }} className="font-headline text-base group-data-[state=collapsed]:justify-center">
+                        <SidebarMenuButton tooltip={{ children: "Bible", side: "right", align: "center" }} className="text-base group-data-[state=collapsed]:justify-center">
                             <SheetTrigger asChild>
                                 <span className="flex items-center gap-2">
                                     <BookCopy />
-                                    <span className="group-data-[state=collapsed]:hidden">Bible</span>
+                                    <span className="group-data-[state=collapsed]:hidden font-headline">Bible</span>
                                 </span>
                              </SheetTrigger>
                         </SidebarMenuButton>
