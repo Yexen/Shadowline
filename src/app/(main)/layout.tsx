@@ -16,10 +16,9 @@ import {
   SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { BatLogo } from '@/components/bat-logo';
-import { BatSignal } from '@/components/bat-signal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Home, PenSquare, BrainCircuit, Info, LogOut, FilePlus, BookCopy, PlusCircle, Images, Settings, BookOpenCheck, Edit, FileText } from 'lucide-react';
+import { Home, PenSquare, BrainCircuit, Info, LogOut, FileText, Images, Settings, BookCopy, BookOpenCheck, Edit } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -33,6 +32,9 @@ import { useWriters } from '@/hooks/use-writers';
 import { WriterProfile } from '@/components/writer-profile';
 import { SettingsDialog } from '@/components/settings-dialog';
 import { VolumesSidebar } from '@/components/volumes-sidebar';
+import { PlusCircle } from 'lucide-react';
+import { useDrafts } from '@/hooks/use-drafts';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -111,11 +113,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader className="p-4">
-            <div className="flex items-center justify-between">
-                <BatLogo className="w-24 h-12 text-primary" />
-                <BatSignal />
+      <Sidebar collapsible="icon">
+        <SidebarHeader className="p-4 justify-center">
+            <div className="flex items-center justify-between group-data-[collapsible=icon]:justify-center">
+                 <BatLogo className="w-24 h-12 text-primary group-data-[collapsible=icon]:hidden" />
+                 <SidebarTrigger>
+                    <BatLogo className="w-6 h-3 text-primary" />
+                 </SidebarTrigger>
             </div>
         </SidebarHeader>
         <SidebarContent className="flex-grow">
@@ -133,7 +137,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 </SidebarMenuItem>
                 ))}
                  <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => setSettingsOpen(true)}>
+                    <SidebarMenuButton onClick={() => setSettingsOpen(true)} tooltip={{ children: "Settings", side: "right", align: "center" }}>
                         <Settings />
                         <span>Settings</span>
                     </SidebarMenuButton>
@@ -141,16 +145,20 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
-            <Button variant="ghost" className="w-full justify-start gap-2" onClick={() => setVolumesOpen(true)}>
-                <BookOpenCheck className="size-4" />
-                <span className="font-headline">VOLUMES</span>
-            </Button>
+             <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => setVolumesOpen(true)} tooltip={{ children: "Volumes", side: "right", align: "center" }}>
+                    <BookOpenCheck />
+                    <span>Volumes</span>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
             <Sheet>
                 <SheetTrigger asChild>
-                    <Button variant="ghost" className="w-full justify-start gap-2">
-                        <BookCopy className="size-4" />
-                        <span className="font-headline">BIBLE</span>
-                    </Button>
+                     <SidebarMenuItem>
+                        <SidebarMenuButton tooltip={{ children: "Bible", side: "right", align: "center" }}>
+                            <BookCopy />
+                            <span>Bible</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
                 </SheetTrigger>
                 <SheetContent className="flex flex-col">
                     <SheetHeader>
@@ -201,18 +209,20 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             </Sheet>
 
             <SidebarSeparator />
-            <button className="flex items-center justify-between p-2 rounded-md hover:bg-accent w-full group" onClick={() => setWriterProfileOpen(true)}>
-                <div className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8">
-                        <AvatarImage src={activeWriter?.avatarUrl} alt={activeWriter?.name} data-ai-hint="writer avatar" />
-                        <AvatarFallback>{activeWriter?.name.charAt(0) || 'W'}</AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">{activeWriter?.name || 'The Writer'}</span>
-                </div>
-                <div className="opacity-0 group-hover:opacity-100 group-data-[collapsible=icon]:hidden">
-                    <LogOut onClick={(e) => { e.stopPropagation(); handleLogout(); }}/>
-                </div>
-            </button>
+            <div className="p-2">
+                <button className="flex items-center justify-between p-2 rounded-md hover:bg-accent w-full group" onClick={() => setWriterProfileOpen(true)}>
+                    <div className="flex items-center gap-2">
+                        <Avatar className="h-8 w-8">
+                            <AvatarImage src={activeWriter?.avatarUrl} alt={activeWriter?.name} data-ai-hint="writer avatar" />
+                            <AvatarFallback>{activeWriter?.name.charAt(0) || 'W'}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">{activeWriter?.name || 'The Writer'}</span>
+                    </div>
+                     <div className="opacity-0 group-hover:opacity-100 group-data-[collapsible=icon]:hidden">
+                        <LogOut onClick={(e) => { e.stopPropagation(); handleLogout(); }}/>
+                    </div>
+                </button>
+            </div>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>

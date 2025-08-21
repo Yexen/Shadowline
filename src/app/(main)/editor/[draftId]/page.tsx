@@ -243,7 +243,7 @@ export default function EditorPage() {
           onChange={(e) => setTitle(e.target.value)}
           className="font-headline text-2xl bg-transparent outline-none focus:border-b border-primary"
         />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
             <Dialog open={sceneGeneratorOpen} onOpenChange={setSceneGeneratorOpen}>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="sm">
@@ -409,5 +409,3 @@ export default function EditorPage() {
     </div>
   );
 }
-
-    

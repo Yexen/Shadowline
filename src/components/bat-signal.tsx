@@ -1,13 +1,15 @@
+
 "use client";
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { BatLogo } from './bat-logo';
+import { useSidebar } from './ui/sidebar';
 
 const BatSignalOverlay = () => {
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/90 animate-bat-signal-fade-in [--animation-delay:4s] animate-out fade-out">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/90 animate-bat-signal-fade-in [--animation-delay:4s] animate-out fade-out pointer-events-none">
             <div 
                 className={cn(
                     "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
@@ -27,6 +29,8 @@ const BatSignalOverlay = () => {
 
 export function BatSignal() {
   const [showSignal, setShowSignal] = useState(false);
+  const { toggleSidebar } = useSidebar();
+
 
   const triggerSignal = () => {
     setShowSignal(true);
@@ -37,7 +41,7 @@ export function BatSignal() {
 
   return (
     <>
-      <Button variant="ghost" size="icon" onClick={triggerSignal} aria-label="Activate Bat-Signal">
+      <Button variant="ghost" size="icon" onClick={toggleSidebar} onDoubleClick={triggerSignal} aria-label="Toggle Sidebar">
         <BatLogo className="w-6 h-3 text-primary" />
       </Button>
       {showSignal && <BatSignalOverlay />}
