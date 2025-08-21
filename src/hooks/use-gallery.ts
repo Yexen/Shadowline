@@ -27,7 +27,7 @@ const defaultGalleryData: GalleryFolder[] = [
             { id: 'img-2', url: 'https://placehold.co/600x400.png', caption: 'Gotham City Rooftops', dataAiHint: 'gothic rooftops night'},
             { id: 'img-3', url: 'https://placehold.co/600x400.png', caption: 'Character sketch: Penguin', dataAiHint: 'villain character design'},
         ]
-    },
+    }
 ];
 
 export function useGallery() {

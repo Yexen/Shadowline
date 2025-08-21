@@ -8,12 +8,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { BrainCircuit, PenLine, Sparkles, Wand2, Copy, MessageSquareQuote } from 'lucide-react';
+import { BrainCircuit, PenLine, Sparkles, Wand2, Copy, MessageSquareQuote, ImageIcon, Save } from 'lucide-react';
 import { generateContent, GenerateContentInput } from '@/ai/flows/ai-writing-assistant';
 import { generateCode, GenerateCodeInput } from '@/ai/flows/generate-code';
 import { answerQuestion, AnswerQuestionInput, AnswerQuestionOutput } from '@/ai/flows/answer-question';
 import { useToast } from '@/hooks/use-toast';
 import { useBible } from '@/hooks/use-bible';
+import { useGallery } from '@/hooks/use-gallery';
+import Image from 'next/image';
 
 export default function AiToolsPage() {
   const [writingPrompt, setWritingPrompt] = useState('');
@@ -31,6 +33,7 @@ export default function AiToolsPage() {
 
   const { toast } = useToast();
   const { bibleData } = useBible();
+  const { addImageToFolder, folders } = useGallery();
 
   const handleGenerateScene = async () => {
     if (!writingPrompt) return;
