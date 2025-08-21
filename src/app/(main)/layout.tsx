@@ -146,9 +146,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         </span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
-                <Sheet>
-                    <SidebarMenuItem asChild>
-                         <SidebarMenuButton tooltip={{ children: "Bible", side: "right", align: "center" }} className="font-headline text-base group-data-[state=collapsed]:justify-center">
+                <SidebarMenuItem asChild>
+                    <Sheet>
+                        <SidebarMenuButton tooltip={{ children: "Bible", side: "right", align: "center" }} className="font-headline text-base group-data-[state=collapsed]:justify-center">
                             <SheetTrigger asChild>
                                 <span className="flex items-center gap-2">
                                     <BookCopy />
@@ -156,54 +156,54 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                                 </span>
                              </SheetTrigger>
                         </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SheetContent className="flex flex-col">
-                        <SheetHeader>
-                            <SheetTitle className="font-headline">GOTHAM BIBLE</SheetTitle>
-                        </SheetHeader>
-                        {!bibleLoaded ? (
-                            <div className="space-y-4 mt-4">
-                                <Skeleton className="h-12 w-full" />
-                                <Skeleton className="h-12 w-full" />
-                                <Skeleton className="h-12 w-full" />
-                            </div>
-                        ) : (
-                        <Accordion type="single" collapsible className="w-full mt-4 flex-grow overflow-y-auto">
-                            {bibleData.map(entry => (
-                                <AccordionItem value={entry.category} key={entry.category}>
-                                    <AccordionTrigger className="font-headline text-base">{entry.category}</AccordionTrigger>
-                                    <AccordionContent>
-                                        <ul className="space-y-2">
-                                            {entry.items.map(item => (
-                                                <li key={item.title} className="p-2 rounded-md hover:bg-accent cursor-pointer" onClick={() => setEditingEntry({ category: entry.category, entry: item })}>
-                                                    <h4 className="font-bold">{item.title}</h4>
-                                                    <p className="text-sm text-muted-foreground truncate">{item.fields?.[0]?.value || 'No description'}</p>
+                        <SheetContent className="flex flex-col">
+                            <SheetHeader>
+                                <SheetTitle className="font-headline">GOTHAM BIBLE</SheetTitle>
+                            </SheetHeader>
+                            {!bibleLoaded ? (
+                                <div className="space-y-4 mt-4">
+                                    <Skeleton className="h-12 w-full" />
+                                    <Skeleton className="h-12 w-full" />
+                                    <Skeleton className="h-12 w-full" />
+                                </div>
+                            ) : (
+                            <Accordion type="single" collapsible className="w-full mt-4 flex-grow overflow-y-auto">
+                                {bibleData.map(entry => (
+                                    <AccordionItem value={entry.category} key={entry.category}>
+                                        <AccordionTrigger className="font-headline text-base">{entry.category}</AccordionTrigger>
+                                        <AccordionContent>
+                                            <ul className="space-y-2">
+                                                {entry.items.map(item => (
+                                                    <li key={item.title} className="p-2 rounded-md hover:bg-accent cursor-pointer" onClick={() => setEditingEntry({ category: entry.category, entry: item })}>
+                                                        <h4 className="font-bold">{item.title}</h4>
+                                                        <p className="text-sm text-muted-foreground truncate">{item.fields?.[0]?.value || 'No description'}</p>
+                                                    </li>
+                                                ))}
+                                                <li>
+                                                    <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => handleAddNewEntry(entry.category)}>
+                                                        <PlusCircle className="mr-2" /> Add New Entry
+                                                    </Button>
                                                 </li>
-                                            ))}
-                                            <li>
-                                                <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => handleAddNewEntry(entry.category)}>
-                                                    <PlusCircle className="mr-2" /> Add New Entry
-                                                </Button>
-                                            </li>
-                                        </ul>
-                                    </AccordionContent>
-                                </AccordionItem>
-                            ))}
-                        </Accordion>
-                        )}
-                        <div className="mt-auto border-t pt-4">
-                            <div className="flex gap-2">
-                                <Input
-                                    placeholder="New Category Name..."
-                                    value={newCategory}
-                                    onChange={(e) => setNewCategory(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleAddNewCategory()}
-                                />
-                                <Button onClick={handleAddNewCategory}>Add</Button>
+                                            </ul>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                ))}
+                            </Accordion>
+                            )}
+                            <div className="mt-auto border-t pt-4">
+                                <div className="flex gap-2">
+                                    <Input
+                                        placeholder="New Category Name..."
+                                        value={newCategory}
+                                        onChange={(e) => setNewCategory(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleAddNewCategory()}
+                                    />
+                                    <Button onClick={handleAddNewCategory}>Add</Button>
+                                </div>
                             </div>
-                        </div>
-                    </SheetContent>
-                </Sheet>
+                        </SheetContent>
+                    </Sheet>
+                </SidebarMenuItem>
             </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
