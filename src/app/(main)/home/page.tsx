@@ -28,52 +28,48 @@ export default function HomePage() {
                 
                 // Fetch YouTube Feed
                 const cachedFootageItem = localStorage.getItem('youtube-feed-cache');
-                let footageData: YoutubeFeedOutput | null = null;
                 if (cachedFootageItem) {
                     const { timestamp, data } = JSON.parse(cachedFootageItem);
                     if (now - timestamp < CACHE_DURATION) {
-                        footageData = data;
+                        setSurveillanceFootage(data.videos);
+                        setIsFootageLoading(false);
                     }
                 }
                 
-                if (footageData) {
-                    setSurveillanceFootage(footageData.videos);
-                } else {
+                if (isFootageLoading) { // This will be true if cache is old or missing
                     const feed = await generateYoutubeFeed();
                     setSurveillanceFootage(feed.videos);
                     localStorage.setItem('youtube-feed-cache', JSON.stringify({ timestamp: now, data: feed }));
+                    setIsFootageLoading(false);
                 }
 
                 // Fetch Latest Intel
                 const cachedIntelItem = localStorage.getItem('latest-intel-cache');
-                let intelData: LatestIntelOutput | null = null;
                 if (cachedIntelItem) {
                     const { timestamp, data } = JSON.parse(cachedIntelItem);
                     if (now - timestamp < CACHE_DURATION) {
-                        intelData = data;
+                        setLatestIntel(data.articles);
+                        setIsIntelLoading(false);
                     }
                 }
 
-                if (intelData) {
-                    setLatestIntel(intelData.articles);
-                } else {
+                if (isIntelLoading) { // This will be true if cache is old or missing
                     const intel = await generateLatestIntel();
                     setLatestIntel(intel.articles);
                     localStorage.setItem('latest-intel-cache', JSON.stringify({ timestamp: now, data: intel }));
+                    setIsIntelLoading(false);
                 }
 
             } catch (error) {
                 console.error("Failed to fetch dynamic feeds:", error);
-                setSurveillanceFootage([]);
-                setLatestIntel([]);
-            } finally {
+                // In case of error, clear loading states so it doesn't hang
                 setIsFootageLoading(false);
                 setIsIntelLoading(false);
             }
         };
 
         fetchFeeds();
-    }, []);
+    }, [isFootageLoading, isIntelLoading]);
 
   return (
     <div className="space-y-8">
