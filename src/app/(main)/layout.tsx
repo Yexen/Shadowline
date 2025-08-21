@@ -21,7 +21,7 @@ import { BatLogo } from '@/components/bat-logo';
 import { BatSignal } from '@/components/bat-signal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Home, PenSquare, BrainCircuit, Info, LogOut, FilePlus, BookCopy, PlusCircle, Images, Settings, BookOpenCheck } from 'lucide-react';
+import { Home, PenSquare, BrainCircuit, Info, LogOut, FilePlus, BookCopy, PlusCircle, Images, Settings, BookOpenCheck, Edit } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -35,14 +35,17 @@ import { useWriters } from '@/hooks/use-writers';
 import { WriterProfile } from '@/components/writer-profile';
 import { SettingsDialog } from '@/components/settings-dialog';
 import { VolumesSidebar } from '@/components/volumes-sidebar';
+import { useDrafts } from '@/hooks/use-drafts';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
 
-  const { isLoaded, bibleData, addCategory, addOrUpdateEntry } = useBible();
-  const { writers, activeWriter, setActiveWriter, addWriter, updateWriter, isLoaded: writersLoaded } = useWriters();
+  const { isLoaded: bibleLoaded, bibleData, addCategory, addOrUpdateEntry } = useBible();
+  const { writers, activeWriter, isLoaded: writersLoaded } = useWriters();
+  const { drafts, isLoaded: draftsLoaded } = useDrafts();
 
   const [editingEntry, setEditingEntry] = useState<{ category: string; entry: BibleEntry } | null>(null);
   const [newCategory, setNewCategory] = useState('');
@@ -124,7 +127,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 {menuItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
-                        onClick={() => router.push(item.href.startsWith('/editor') ? '/editor/new-draft' : item.href)}
+                        onClick={() => router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href)}
                         isActive={pathname === item.href || (item.href === '/editor' && pathname.startsWith('/editor')) || (item.href === '/gallery' && pathname.startsWith('/gallery'))}
                         tooltip={{ children: item.label, side: "right", align: "center" }}
                     >
@@ -140,6 +143,28 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
+            <SidebarSeparator />
+            <SidebarGroup>
+                <SidebarGroupLabel>Drafts</SidebarGroupLabel>
+                <SidebarGroupContent>
+                    <ScrollArea className="h-48">
+                        <SidebarMenu>
+                            {draftsLoaded && drafts.map(draft => (
+                                <SidebarMenuItem key={draft.id}>
+                                    <SidebarMenuButton 
+                                        onClick={() => router.push(`/editor/${draft.id}`)}
+                                        isActive={pathname === `/editor/${draft.id}`}
+                                        size="sm"
+                                    >
+                                        <Edit />
+                                        <span>{draft.title || "Untitled Draft"}</span>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            ))}
+                        </SidebarMenu>
+                    </ScrollArea>
+                </SidebarGroupContent>
+            </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
             <Button variant="ghost" className="w-full justify-start gap-2" onClick={() => setVolumesOpen(true)}>
@@ -157,7 +182,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     <SheetHeader>
                         <SheetTitle className="font-headline">GOTHAM BIBLE</SheetTitle>
                     </SheetHeader>
-                    {!isLoaded ? (
+                    {!bibleLoaded ? (
                         <div className="space-y-4 mt-4">
                             <Skeleton className="h-12 w-full" />
                             <Skeleton className="h-12 w-full" />
@@ -252,3 +277,5 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     </SidebarProvider>
   );
 }
+
+    

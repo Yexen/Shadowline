@@ -2,11 +2,11 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
-import { Save, Eye, EyeOff, Download, FileText, FileCode, Sparkles, PenLine } from 'lucide-react';
+import { Save, Eye, EyeOff, Download, FileText, FileCode, Sparkles, PenLine, BookUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { generateContent, GenerateContentInput } from '@/ai/flows/ai-writing-assistant';
@@ -22,12 +22,22 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from '@/components/ui/label';
 import { useBible } from '@/hooks/use-bible';
+import { useDrafts } from '@/hooks/use-drafts';
+import { useVolumes } from '@/hooks/use-volumes';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function EditorPage() {
   const params = useParams();
+  const router = useRouter();
   const draftId = params.draftId as string;
+  
+  const { getDraft, addDraft, updateDraft } = useDrafts();
+  const { volumes, addChapter } = useVolumes();
+  
   const [content, setContent] = useState('');
-  const [title, setTitle] = useState('New Draft');
+  const [title, setTitle] = useState('Untitled Draft');
+  const [isLoaded, setIsLoaded] = useState(false);
+
   const [showPreview, setShowPreview] = useState(true);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -47,16 +57,30 @@ export default function EditorPage() {
   const [generatedScene, setGeneratedScene] = useState('');
   const [isGeneratingScene, setIsGeneratingScene] = useState(false);
   const [sceneGeneratorOpen, setSceneGeneratorOpen] = useState(false);
+  
+  // Save to Volume State
+  const [saveToVolumeOpen, setSaveToVolumeOpen] = useState(false);
+  const [selectedVolume, setSelectedVolume] = useState<string | null>(null);
+
 
   useEffect(() => {
-    if (draftId === 'new-draft') {
-      setContent('');
+    if (draftId === 'new') {
       setTitle('Untitled Draft');
+      setContent('');
+      setIsLoaded(true);
     } else {
-      setTitle(`Draft: ${draftId}`);
-      setContent(`This is the content for draft ${draftId}. Start writing your story here.`);
+      const draft = getDraft(draftId);
+      if (draft) {
+        setTitle(draft.title);
+        setContent(draft.content);
+        setLastSaved(draft.lastModified ? new Date(draft.lastModified) : null);
+      } else {
+        // If draft not found, redirect to a new one
+        router.replace('/editor/new');
+      }
+      setIsLoaded(true);
     }
-  }, [draftId]);
+  }, [draftId, getDraft, router]);
 
   const wordCount = useMemo(() => {
     return content.trim().split(/\s+/).filter(Boolean).length;
@@ -64,8 +88,16 @@ export default function EditorPage() {
 
   const handleSave = () => {
     setIsSaving(true);
+    const savedDate = new Date();
+    if (draftId === 'new') {
+        const newDraftId = addDraft(title, content);
+        router.replace(`/editor/${newDraftId}`);
+    } else {
+        updateDraft(draftId, title, content);
+    }
+    setLastSaved(savedDate);
+    
     setTimeout(() => {
-      setLastSaved(new Date());
       setIsSaving(false);
       toast({
         title: "Draft Saved",
@@ -118,7 +150,6 @@ export default function EditorPage() {
           bibleData: JSON.stringify(bibleData) 
         };
         const result = await generateContent(input);
-        // We'll split the result into a few suggestions. This is a simple heuristic.
         setSuggestions(result.content.split('\n').filter(s => s.trim().length > 0));
     } catch (error) {
       console.error(error);
@@ -189,6 +220,18 @@ export default function EditorPage() {
         textarea.setSelectionRange(newCursorPosition, newCursorPosition);
     }, 0);
   };
+
+  const handleSaveToVolume = () => {
+    if (selectedVolume) {
+        addChapter(selectedVolume, title, content);
+        toast({
+            title: "Saved to Volume",
+            description: `"${title}" has been added as a new chapter.`
+        });
+        setSaveToVolumeOpen(false);
+        setSelectedVolume(null);
+    }
+  }
 
 
   return (
@@ -289,8 +332,40 @@ export default function EditorPage() {
           </Button>
           <Button variant="ghost" size="sm" onClick={handleSave} disabled={isSaving}>
             <Save />
-            Save
+            Save Draft
           </Button>
+            <Dialog open={saveToVolumeOpen} onOpenChange={setSaveToVolumeOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                        <BookUp />
+                        Save to Volume
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Save Chapter to Volume</DialogTitle>
+                        <DialogDescription>Select which volume you want to save this draft to as a new chapter.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <Label>Volume</Label>
+                         <Select onValueChange={setSelectedVolume}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a volume..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {volumes.map(vol => (
+                                    <SelectItem key={vol.id} value={vol.id}>{vol.title}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <DialogFooter>
+                         <Button variant="outline" onClick={() => setSaveToVolumeOpen(false)}>Cancel</Button>
+                         <Button onClick={handleSaveToVolume} disabled={!selectedVolume}>Save as Chapter</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
            <Button variant="ghost" size="sm" onClick={() => handleExport('md')}>
             <FileCode />
             Export .md
@@ -310,6 +385,7 @@ export default function EditorPage() {
           value={content}
           onChange={(e) => setContent(e.target.value)}
           aria-label="Draft content"
+          disabled={!isLoaded}
         />
         {showPreview && (
           <Card className="h-full overflow-y-auto bg-card">
@@ -333,3 +409,5 @@ export default function EditorPage() {
     </div>
   );
 }
+
+    

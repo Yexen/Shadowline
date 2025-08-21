@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -91,11 +92,11 @@ export function useVolumes() {
     saveData(newVolumes);
   }
   
-  const addChapter = (volumeId: string, chapterTitle: string) => {
+  const addChapter = (volumeId: string, chapterTitle: string, chapterContent: string) => {
     const newChapter: Chapter = {
       id: `chapter-${Date.now()}`,
       title: chapterTitle,
-      content: '',
+      content: chapterContent,
     };
     const newVolumes = volumes.map(v => {
         if (v.id === volumeId) {
@@ -131,3 +132,5 @@ export function useVolumes() {
 
   return { isLoaded, volumes, addVolume, updateVolume, deleteVolume, addChapter, updateChapter, deleteChapter };
 }
+
+    
