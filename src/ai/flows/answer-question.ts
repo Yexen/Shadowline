@@ -31,6 +31,7 @@ const answerQuestionPrompt = ai.definePrompt({
   name: 'answerQuestionPrompt',
   input: { schema: AnswerQuestionInputSchema },
   output: { schema: AnswerQuestionOutputSchema },
+  model: 'googleai/gemini-1.5-flash-latest',
   prompt: `You are an AI assistant with deep knowledge of a user's custom fictional universe. Your task is to answer the user's question based on the provided context.
 
 You MUST first consult the provided "Bible" context. If the answer is found within the bible, you MUST prioritize that information. If the bible does not contain the answer, then you should use your general knowledge, but state that the information was not in the bible.
