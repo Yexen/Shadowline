@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { BrainCircuit, PenLine, Sparkles, Wand2, Copy, MessageSquareQuote } from 'lucide-react';
 import { generateContent, GenerateContentInput } from '@/ai/flows/ai-writing-assistant';
 import { generateCode, GenerateCodeInput } from '@/ai/flows/generate-code';
-import { answerQuestion, AnswerQuestionInput } from '@/ai/flows/answer-question';
+import { answerQuestion, AnswerQuestionInput, AnswerQuestionOutput } from '@/ai/flows/answer-question';
 import { useToast } from '@/hooks/use-toast';
 import { useBible } from '@/hooks/use-bible';
 
@@ -60,9 +60,8 @@ export default function AiToolsPage() {
         question: question,
         bibleData: JSON.stringify(bibleData)
       };
-      const result = await answerQuestion(input);
+      const result: AnswerQuestionOutput = await answerQuestion(input);
       
-      // The Genkit flow returns an object with the defined output schema
       if (result && result.answer) {
         setAnswer(result.answer);
       } else {
