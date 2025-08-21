@@ -174,9 +174,6 @@ const mapHtml = `
         /* Tooltip for character dots */
         .character::after { content: attr(data-name); position: absolute; top: -26px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: #fff; font-size: 10px; padding: 3px 6px; border-radius: 4px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
         .character:hover::after { opacity: 1; }
-
-        /* Utility */
-        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
     </style>
 </head>
 <body class="theme-night">
@@ -499,4 +496,3 @@ export function GothamMap({ isOpen, onClose }: GothamMapProps) {
     </Dialog>
   );
 }
-
