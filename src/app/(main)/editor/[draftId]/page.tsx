@@ -5,11 +5,11 @@ import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
-import { Save, Eye, EyeOff, Download, FileText, FileCode } from 'lucide-react';
+import { Save, Eye, EyeOff, Download, FileText, FileCode, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-// A simple markdown parser can be used here. For simplicity, we'll just render the text.
-// In a real app, you might use a library like 'marked' or 'react-markdown'.
+import { generateContentSuggestions, GenerateContentSuggestionsInput } from '@/ai/flows/ai-writing-assistant';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 export default function EditorPage() {
   const params = useParams<{ draftId: string }>();
@@ -19,15 +19,20 @@ export default function EditorPage() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const statusRef = useRef<HTMLParagraphElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
 
-  // In a real app, you would fetch draft data from an API/localStorage based on draftId
+  // AI Assistant State
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [selectedText, setSelectedText] = useState('');
+  const [popoverOpen, setPopoverOpen] = useState(false);
+
   useEffect(() => {
     if (params.draftId === 'new-draft') {
       setContent('');
       setTitle('Untitled Draft');
     } else {
-      // Fetch logic here
       setTitle(`Draft: ${params.draftId}`);
       setContent(`This is the content for draft ${params.draftId}. Start writing your story here.`);
     }
@@ -39,7 +44,6 @@ export default function EditorPage() {
 
   const handleSave = () => {
     setIsSaving(true);
-    // Simulate saving
     setTimeout(() => {
       setLastSaved(new Date());
       setIsSaving(false);
@@ -66,6 +70,67 @@ export default function EditorPage() {
     URL.revokeObjectURL(url);
   };
 
+  const handleAskOracle = async () => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selection = content.substring(start, end);
+
+    if (!selection) {
+      toast({
+        variant: 'destructive',
+        title: 'No Text Selected',
+        description: 'Please select some text to get suggestions.',
+      });
+      return;
+    }
+    
+    setSelectedText(selection);
+    setIsGenerating(true);
+    setSuggestions([]);
+    setPopoverOpen(true);
+
+    try {
+      const input: GenerateContentSuggestionsInput = { prompt: selection };
+      const result = await generateContentSuggestions(input);
+      setSuggestions(result.suggestions);
+    } catch (error) {
+      console.error(error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to get suggestions from Oracle.' });
+      setPopoverOpen(false);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleInsertSuggestion = (suggestion: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    
+    // If text was selected, the end of selection should be the insertion point
+    const insertionPoint = content.substring(0, start).length + selectedText.length;
+
+    const newContent =
+      content.substring(0, start) +
+      suggestion +
+      content.substring(end);
+
+    setContent(newContent);
+    setPopoverOpen(false);
+
+    // Focus and set cursor position after the inserted text
+    setTimeout(() => {
+        textarea.focus();
+        const newCursorPosition = start + suggestion.length;
+        textarea.setSelectionRange(newCursorPosition, newCursorPosition);
+    }, 0);
+  };
+
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
@@ -77,6 +142,40 @@ export default function EditorPage() {
           className="font-headline text-2xl bg-transparent outline-none focus:border-b border-primary"
         />
         <div className="flex items-center gap-2">
+          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" onClick={handleAskOracle}>
+                <Sparkles />
+                Ask Oracle
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <h4 className="font-medium leading-none font-headline">Oracle Suggestions</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Based on: "{selectedText}"
+                    </p>
+                  </div>
+                  <div className="grid gap-2">
+                    {isGenerating && <p>Generating insights...</p>}
+                    {suggestions.length > 0 && (
+                      <ul className="space-y-2">
+                        {suggestions.slice(0, 5).map((suggestion, i) => (
+                          <li key={i}>
+                            <Button variant="link" className="p-0 h-auto text-left whitespace-normal" onClick={() => handleInsertSuggestion(suggestion)}>
+                              {suggestion}
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {!isGenerating && suggestions.length === 0 && <p>No suggestions found.</p>}
+                  </div>
+                </div>
+            </PopoverContent>
+          </Popover>
+
           <Button variant="ghost" size="sm" onClick={() => setShowPreview(!showPreview)}>
             {showPreview ? <EyeOff /> : <Eye />}
             {showPreview ? 'Hide Preview' : 'Show Preview'}
@@ -98,6 +197,7 @@ export default function EditorPage() {
 
       <div className={cn("grid gap-4 flex-1", showPreview ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1")}>
         <Textarea
+          ref={textareaRef}
           placeholder="The darkness of Gotham is a canvas. Paint your story..."
           className="h-full w-full resize-none bg-card p-6 font-code text-base leading-relaxed"
           value={content}
@@ -108,7 +208,6 @@ export default function EditorPage() {
           <Card className="h-full overflow-y-auto bg-card">
             <CardContent className="p-6">
               <div className="prose prose-invert prose-p:font-body prose-headings:font-headline">
-                {/* Basic preview */}
                 {content.split('\n').map((line, i) => (
                     <p key={i}>{line || <>&nbsp;</>}</p>
                 ))}
