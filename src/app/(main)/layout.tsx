@@ -113,16 +113,16 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <SidebarProvider>
-      <Sidebar collapsible="icon">
-        <SidebarHeader className="p-4 justify-center">
-            <div className="flex items-center justify-between group-data-[collapsible=icon]:justify-center">
-                 <BatLogo className="w-24 h-12 text-primary group-data-[collapsible=icon]:hidden" />
+      <Sidebar>
+        <SidebarHeader className="p-4 flex items-center justify-center">
+            <div className="flex items-center group-data-[state=expanded]:justify-between group-data-[state=collapsed]:justify-center w-full">
+                 <BatLogo className="w-24 h-12 text-primary group-data-[state=collapsed]:hidden" />
                  <SidebarTrigger>
                     <BatLogo className="w-6 h-3 text-primary" />
                  </SidebarTrigger>
             </div>
         </SidebarHeader>
-        <SidebarContent className="flex-grow">
+        <SidebarContent>
             <SidebarMenu>
                 {menuItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
@@ -210,15 +210,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
             <SidebarSeparator />
             <div className="p-2">
-                <button className="flex items-center justify-between p-2 rounded-md hover:bg-accent w-full group" onClick={() => setWriterProfileOpen(true)}>
+                <button className="flex items-center p-2 rounded-md hover:bg-accent w-full group" onClick={() => setWriterProfileOpen(true)}>
                     <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">
                             <AvatarImage src={activeWriter?.avatarUrl} alt={activeWriter?.name} data-ai-hint="writer avatar" />
                             <AvatarFallback>{activeWriter?.name.charAt(0) || 'W'}</AvatarFallback>
                         </Avatar>
-                        <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">{activeWriter?.name || 'The Writer'}</span>
+                        <span className="text-sm font-semibold group-data-[state=collapsed]:hidden">{activeWriter?.name || 'The Writer'}</span>
                     </div>
-                     <div className="opacity-0 group-hover:opacity-100 group-data-[collapsible=icon]:hidden">
+                     <div className="opacity-0 group-hover:opacity-100 group-data-[state=collapsed]:hidden">
                         <LogOut onClick={(e) => { e.stopPropagation(); handleLogout(); }}/>
                     </div>
                 </button>
