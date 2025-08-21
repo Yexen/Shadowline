@@ -238,6 +238,7 @@ const Sidebar = React.forwardRef<
           className={cn(
             "duration-200 fixed inset-y-0 z-10 hidden h-svh transition-[left,right,width] ease-in-out md:flex",
             "group-data-[state=expanded]:w-[--sidebar-width]",
+            "group-data-[state=collapsed][data-collapsible=icon]:w-[var(--sidebar-width-icon)]",
             side === "left"
               ? "left-0 group-data-[state=collapsed][data-collapsible=offcanvas]:-left-[--sidebar-width]"
               : "right-0 group-data-[state=collapsed][data-collapsible=offcanvas]:-right-[--sidebar-width]",
