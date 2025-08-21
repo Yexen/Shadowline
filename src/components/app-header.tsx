@@ -23,7 +23,7 @@ const pathToTitle: { [key: string]: string } = {
 
 export function AppHeader() {
     const pathname = usePathname();
-    const { coverImage, setCoverImage } = useCoverImage();
+    const { coverImage, setCoverImage, dataAiHint } = useCoverImage();
     const [dialogOpen, setDialogOpen] = useState(false);
     const [newImageUrl, setNewImageUrl] = useState(coverImage);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -32,7 +32,7 @@ export function AppHeader() {
     const title = pathname.startsWith('/editor/') ? "The Editor" : pathToTitle[pageKey];
 
     const handleSave = () => {
-        setCoverImage(newImageUrl);
+        setCoverImage(newImageUrl, 'gotham city batman');
         setDialogOpen(false);
     }
     
@@ -54,7 +54,7 @@ export function AppHeader() {
                 alt="Gotham City skyline with Bat-signal"
                 fill
                 className="object-cover"
-                data-ai-hint="gotham city batman"
+                data-ai-hint={dataAiHint}
                 key={coverImage} // Force re-render on image change
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />

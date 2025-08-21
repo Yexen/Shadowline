@@ -17,7 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 interface GalleryFolderProps {
   folder: GalleryFolder;
   onAddImage: (folderId: string, url: string, caption: string, dataAiHint: string) => void;
-  onUpdateImage: (folderId: string, imageId: string, newUrl: string, newCaption: string) => void;
+  onUpdateImage: (folderId: string, imageId: string, newUrl: string, newCaption: string, newDataAiHint: string) => void;
   onDeleteImage: (folderId: string, imageId: string) => void;
   onUpdateFolder: (folderId: string, newName: string) => void;
   onDeleteFolder: (folderId: string) => void;
@@ -49,14 +49,16 @@ export function GalleryFolder({ folder, onAddImage, onUpdateImage, onDeleteImage
     setEditingImage(image);
     setNewImageUrl(image.url);
     setNewImageCaption(image.caption);
+    setNewImageDataAiHint(image.dataAiHint);
   }
 
   const handleUpdateImage = () => {
     if (editingImage && newImageUrl.trim() && newImageCaption.trim()) {
-        onUpdateImage(folder.id, editingImage.id, newImageUrl, newImageCaption);
+        onUpdateImage(folder.id, editingImage.id, newImageUrl, newImageCaption, newImageDataAiHint);
         setEditingImage(null);
         setNewImageUrl('');
         setNewImageCaption('');
+        setNewImageDataAiHint('');
     }
   }
   
@@ -111,7 +113,7 @@ export function GalleryFolder({ folder, onAddImage, onUpdateImage, onDeleteImage
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="image-url">Image URL</Label>
-                            <Input id="image-url" value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)} placeholder="https://placehold.co/600x400" />
+                            <Input id="image-url" value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)} placeholder="https://placehold.co/600x400.png" />
                         </div>
                         <div className="text-center text-sm text-muted-foreground">OR</div>
                          <div className="space-y-2">
@@ -227,6 +229,10 @@ export function GalleryFolder({ folder, onAddImage, onUpdateImage, onDeleteImage
                     <div className="space-y-2">
                         <Label htmlFor="edit-image-caption">Image Caption</Label>
                         <Input id="edit-image-caption" value={newImageCaption} onChange={e => setNewImageCaption(e.target.value)} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="edit-image-hint">AI Image Hint</Label>
+                        <Input id="edit-image-hint" value={newImageDataAiHint} onChange={e => setNewImageDataAiHint(e.target.value)} />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="edit-image-url">Image URL</Label>

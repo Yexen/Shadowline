@@ -78,7 +78,7 @@ export function WriterProfile({ isOpen, onClose }: WriterProfileProps) {
                                     <>
                                         <div className="relative group">
                                             <Avatar className="h-10 w-10">
-                                                <AvatarImage src={editingWriter.avatarUrl} />
+                                                <AvatarImage src={editingWriter.avatarUrl} data-ai-hint={editingWriter.dataAiHint} />
                                                 <AvatarFallback>{editingWriter.name.charAt(0)}</AvatarFallback>
                                             </Avatar>
                                             <Button size="icon" variant="secondary" className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 h-10 w-10" onClick={() => fileInputRef.current?.click()}>
@@ -93,7 +93,7 @@ export function WriterProfile({ isOpen, onClose }: WriterProfileProps) {
                                 ) : (
                                     <>
                                         <Avatar className="h-10 w-10">
-                                            <AvatarImage src={writer.avatarUrl} />
+                                            <AvatarImage src={writer.avatarUrl} data-ai-hint={writer.dataAiHint} />
                                             <AvatarFallback>{writer.name.charAt(0)}</AvatarFallback>
                                         </Avatar>
                                         <div className="flex-grow">
@@ -129,5 +129,3 @@ export function WriterProfile({ isOpen, onClose }: WriterProfileProps) {
         </Dialog>
     );
 }
-
-    

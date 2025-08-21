@@ -23,9 +23,9 @@ const defaultGalleryData: GalleryFolder[] = [
         id: 'folder-1',
         name: 'Concept Art',
         images: [
-            { id: 'img-1', url: 'https://placehold.co/600x400', caption: 'Early Batmobile Design', dataAiHint: 'concept car sketch'},
-            { id: 'img-2', url: 'https://placehold.co/600x400', caption: 'Gotham City Rooftops', dataAiHint: 'gothic rooftops night'},
-            { id: 'img-3', url: 'https://placehold.co/600x400', caption: 'Character sketch: Penguin', dataAiHint: 'villain character design'},
+            { id: 'img-1', url: 'https://placehold.co/600x400.png', caption: 'Early Batmobile Design', dataAiHint: 'concept car sketch'},
+            { id: 'img-2', url: 'https://placehold.co/600x400.png', caption: 'Gotham City Rooftops', dataAiHint: 'gothic rooftops night'},
+            { id: 'img-3', url: 'https://placehold.co/600x400.png', caption: 'Character sketch: Penguin', dataAiHint: 'villain character design'},
         ]
     },
     {
@@ -100,11 +100,11 @@ export function useGallery() {
     saveData(newFolders);
   };
 
-  const updateImage = (folderId: string, imageId: string, newUrl: string, newCaption: string) => {
+  const updateImage = (folderId: string, imageId: string, newUrl: string, newCaption: string, newDataAiHint: string) => {
     const newFolders = folders.map(folder => {
         if (folder.id === folderId) {
             const newImages = folder.images.map(img => 
-                img.id === imageId ? { ...img, url: newUrl, caption: newCaption } : img
+                img.id === imageId ? { ...img, url: newUrl, caption: newCaption, dataAiHint: newDataAiHint } : img
             );
             return { ...folder, images: newImages };
         }

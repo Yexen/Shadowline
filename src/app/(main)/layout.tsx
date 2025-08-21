@@ -149,10 +149,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     <Sheet>
                         <SidebarMenuButton asChild tooltip={{ children: "Bible", side: "right", align: "center" }}>
                             <SheetTrigger asChild>
-                                 <span className="flex items-center gap-2">
+                                 <button className="flex w-full items-center gap-2">
                                     <BookCopy />
                                     <span>Bible</span>
-                                 </span>
+                                 </button>
                              </SheetTrigger>
                         </SidebarMenuButton>
                         <SheetContent className="flex flex-col">
@@ -210,7 +210,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <button className="flex items-center p-2 rounded-md hover:bg-accent w-full group" onClick={() => setWriterProfileOpen(true)}>
                     <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">
-                            <AvatarImage src={activeWriter?.avatarUrl} alt={activeWriter?.name} data-ai-hint="writer avatar" />
+                            <AvatarImage src={activeWriter?.avatarUrl} alt={activeWriter?.name} data-ai-hint={activeWriter?.dataAiHint} />
                             <AvatarFallback>{activeWriter?.name.charAt(0) || 'W'}</AvatarFallback>
                         </Avatar>
                         <span className="text-sm font-semibold group-data-[state=collapsed]:hidden">{activeWriter?.name || 'The Writer'}</span>

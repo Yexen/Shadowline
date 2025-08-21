@@ -7,14 +7,15 @@ export interface Writer {
   id: string;
   name: string;
   avatarUrl: string;
+  dataAiHint: string;
 }
 
 const WRITERS_STORAGE_KEY = 'gotham-writers';
 const ACTIVE_WRITER_STORAGE_KEY = 'gotham-active-writer';
-const DEFAULT_AVATAR = 'https://placehold.co/40x40';
+const DEFAULT_AVATAR = 'https://placehold.co/40x40.png';
 
 const defaultWriters: Writer[] = [
-    { id: 'writer-1', name: 'The Writer', avatarUrl: DEFAULT_AVATAR },
+    { id: 'writer-1', name: 'The Writer', avatarUrl: DEFAULT_AVATAR, dataAiHint: 'writer portrait' },
 ];
 
 export function useWriters() {
@@ -63,6 +64,7 @@ export function useWriters() {
             id: `writer-${Date.now()}`,
             name,
             avatarUrl: DEFAULT_AVATAR,
+            dataAiHint: 'writer portrait anonymous'
         };
         const newWriters = [...writers, newWriter];
         saveData(newWriters);
@@ -107,5 +109,3 @@ export function useWriters() {
         setActiveWriter: switchActiveWriter
     };
 }
-
-    
