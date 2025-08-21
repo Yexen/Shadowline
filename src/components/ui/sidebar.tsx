@@ -225,7 +225,7 @@ const Sidebar = React.forwardRef<
         {/* This is what handles the sidebar gap on desktop */}
         <div
           className={cn(
-            "duration-200 relative h-svh w-0 bg-transparent transition-[width] ease-in-out",
+            "duration-200 relative h-svh bg-transparent transition-[width] ease-in-out",
             "group-data-[collapsible=offcanvas]:w-0",
             "group-data-[state=expanded]:w-[--sidebar-width]",
             "group-data-[side=right]:rotate-180",
@@ -236,11 +236,11 @@ const Sidebar = React.forwardRef<
         />
         <div
           className={cn(
-            "duration-200 fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] ease-in-out md:flex",
+            "duration-200 fixed inset-y-0 z-10 hidden h-svh transition-[left,right,width] ease-in-out md:flex",
+            "group-data-[state=expanded]:w-[--sidebar-width]",
             side === "left"
-              ? "left-0 group-data-[state=collapsed]:left-[calc(var(--sidebar-width)*-1)]"
-              : "right-0 group-data-[state=collapsed]:right-[calc(var(--sidebar-width)*-1)]",
-            // Adjust the padding for floating and inset variants.
+              ? "left-0 group-data-[state=collapsed][data-collapsible=offcanvas]:-left-[--sidebar-width]"
+              : "right-0 group-data-[state=collapsed][data-collapsible=offcanvas]:-right-[--sidebar-width]",
             variant === "floating" || variant === "inset"
               ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
               : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
