@@ -470,4 +470,4 @@ export const dcMapHtml = `
     </script>
 </body>
 </html>
-`;
+`
