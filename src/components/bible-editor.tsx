@@ -14,8 +14,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { BibleEntry } from '@/hooks/use-bible';
-import { PlusCircle, Trash2 } from 'lucide-react';
+import { PlusCircle, Trash2, Sparkles } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
+import { generateBibleFields, GenerateBibleFieldsInput } from '@/ai/flows/generate-bible-fields';
+import { useToast } from '@/hooks/use-toast';
 
 interface BibleEditorProps {
   entry: BibleEntry | null;
@@ -27,6 +29,8 @@ interface BibleEditorProps {
 export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorProps) {
   const [title, setTitle] = useState('');
   const [fields, setFields] = useState<{ label: string; value: string }[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (entry) {
@@ -62,6 +66,35 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
     }
   };
 
+  const handleSuggestFields = async () => {
+    if (!title) {
+        toast({
+            variant: 'destructive',
+            title: 'Title Required',
+            description: 'Please enter a title for the entry first.',
+        });
+        return;
+    }
+    setIsGenerating(true);
+    try {
+        const input: GenerateBibleFieldsInput = { category, title };
+        const result = await generateBibleFields(input);
+        if (result.fields) {
+            const newFields = result.fields.map(label => ({ label, value: '' }));
+            setFields(prevFields => [...prevFields, ...newFields]);
+        }
+    } catch (error) {
+        console.error("Failed to suggest fields:", error);
+        toast({
+            variant: 'destructive',
+            title: 'AI Error',
+            description: 'Could not generate field suggestions.',
+        });
+    } finally {
+        setIsGenerating(false);
+    }
+  };
+
   const isOpen = !!entry;
 
   return (
@@ -85,7 +118,13 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
             />
           </div>
           
-          <Label className="font-bold text-base">Fields</Label>
+          <div className="flex justify-between items-center">
+            <Label className="font-bold text-base">Fields</Label>
+            <Button variant="ghost" size="sm" onClick={handleSuggestFields} disabled={isGenerating}>
+              {isGenerating ? "Generating..." : <><Sparkles className="mr-2 h-4 w-4" /> Suggest Fields</>}
+            </Button>
+          </div>
+
           <ScrollArea className="h-[300px] w-full pr-4">
               <div className="space-y-4">
                 {fields.map((field, index) => (
