@@ -10,7 +10,6 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { generate } from 'genkit';
 
 const HomeFeedOutputSchema = z.object({
   videos: z.array(z.object({
@@ -59,7 +58,7 @@ const generateHomeFeedFlow = ai.defineFlow(
   },
   async () => {
     try {
-        const { output } = await generate({
+        const { output } = await ai.generate({
           prompt: `You are a content aggregator for a private intelligence dashboard about the Batman universe.
 Your task is to generate a plausible list of trending content: 3 YouTube videos and 3 news articles.
 
