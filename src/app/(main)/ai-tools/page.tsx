@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,17 +12,37 @@ import { generateContentSuggestions, GenerateContentSuggestionsInput } from '@/a
 import { generateCode, GenerateCodeInput } from '@/ai/flows/generate-code';
 import { useToast } from '@/hooks/use-toast';
 
+const APPLIED_CSS_KEY = 'applied-css';
+
 export default function AiToolsPage() {
   const [writingPrompt, setWritingPrompt] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
 
   const [codeDescription, setCodeDescription] = useState('');
-  const [codeLanguage, setCodeLanguage] = useState<'CSS' | 'JavaScript'>('JavaScript');
+  const [codeLanguage, setCodeLanguage] = useState<'CSS' | 'JavaScript'>('CSS');
   const [generatedCode, setGeneratedCode] = useState('');
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
+  const [appliedCss, setAppliedCss] = useState('');
 
   const { toast } = useToast();
+
+  useEffect(() => {
+    const storedCss = localStorage.getItem(APPLIED_CSS_KEY);
+    if (storedCss) {
+      setAppliedCss(storedCss);
+    }
+  }, []);
+
+  useEffect(() => {
+    // This component will only handle CSS.
+    // For JS, a more complex implementation is needed (e.g. dynamic script loading).
+    const styleElement = document.getElementById('ai-generated-styles');
+    if (styleElement) {
+      styleElement.innerHTML = appliedCss;
+    }
+  }, [appliedCss]);
+
 
   const handleGenerateSuggestions = async () => {
     if (!writingPrompt) return;
@@ -55,6 +75,16 @@ export default function AiToolsPage() {
       setIsGeneratingCode(false);
     }
   };
+
+  const handleApplyCode = () => {
+    if (codeLanguage === 'CSS') {
+        localStorage.setItem(APPLIED_CSS_KEY, generatedCode);
+        setAppliedCss(generatedCode);
+        toast({ title: 'CSS Applied', description: 'The generated styles have been applied.' });
+    } else {
+        toast({ variant: 'destructive', title: 'Not Supported', description: 'Applying JavaScript is not currently supported.' });
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -134,7 +164,10 @@ export default function AiToolsPage() {
                 <pre className="bg-accent/50 p-4 rounded-md overflow-x-auto">
                   <code className="font-code text-sm">{generatedCode}</code>
                 </pre>
-                 <Button variant="ghost" size="sm" onClick={() => navigator.clipboard.writeText(generatedCode)}>Copy Code</Button>
+                 <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => navigator.clipboard.writeText(generatedCode)}>Copy Code</Button>
+                    <Button variant="outline" size="sm" onClick={handleApplyCode} disabled={codeLanguage !== 'CSS'}>Apply Code</Button>
+                 </div>
               </div>
             )}
           </CardContent>
