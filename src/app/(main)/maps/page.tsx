@@ -2,16 +2,10 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Image from "next/image";
-import { Map as MapIcon, ImagePlus, Pencil } from 'lucide-react';
-import { useState, useEffect, useRef } from "react";
+import { Map as MapIcon } from 'lucide-react';
+import { useState } from "react";
 import { GothamMap } from "@/components/gotham-map";
 import { mapHtml } from "@/lib/gotham-map-html";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 
 export default function MapsPage() {
   const [isGothamMapOpen, setIsGothamMapOpen] = useState(false);
@@ -27,7 +21,7 @@ export default function MapsPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Card className="bg-card hover:border-primary/50 transition-colors group flex flex-col">
+          <Card className="bg-card hover:border-primary/50 transition-colors flex flex-col">
             <CardHeader>
               <CardTitle className="font-headline flex items-center gap-2">
                 <MapIcon />
@@ -50,7 +44,7 @@ export default function MapsPage() {
             </CardContent>
           </Card>
           
-          <Card className="bg-card hover:border-primary/50 transition-colors group flex flex-col">
+          <Card className="bg-card hover:border-primary/50 transition-colors flex flex-col">
             <CardHeader>
                 <CardTitle className="font-headline flex items-center gap-2">
                     <MapIcon />
