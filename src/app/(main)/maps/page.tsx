@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Map as MapIcon } from 'lucide-react';
 import { useState } from "react";
 import { GothamMap } from "@/components/gotham-map";
+import { mapHtml } from "@/lib/gotham-map-html";
 
 export default function MapsPage() {
   const [isMapOpen, setIsMapOpen] = useState(false);
@@ -48,13 +49,12 @@ export default function MapsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="aspect-video relative w-full rounded-md overflow-hidden border">
-                <Image 
-                  src="https://placehold.co/800x450.png" 
-                  alt="Gotham City Map" 
-                  fill 
-                  className="object-cover" 
-                  data-ai-hint="gotham city map" 
+              <div className="aspect-video relative w-full rounded-md overflow-hidden border pointer-events-none">
+                <iframe
+                  srcDoc={mapHtml}
+                  className="w-full h-full border-0 scale-[0.4] origin-top-left"
+                  title="Interactive Gotham City Map Preview"
+                  sandbox=""
                 />
               </div>
               <p className="mt-4 text-muted-foreground">A detailed street-level map of Gotham City, marking important districts and landmarks.</p>
