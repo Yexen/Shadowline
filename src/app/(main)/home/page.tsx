@@ -1,14 +1,13 @@
+
+'use client';
+
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Youtube, Newspaper } from "lucide-react";
-
-const surveillanceFootage = [
-  { id: 1, title: "The Dark Knight - Hospital Scene", uploader: "WB Official", views: "15M", thumbnail: "https://placehold.co/600x400", dataAiHint: "dark knight movie" },
-  { id: 2, title: "Batman (1989) - Batmobile Scene", uploader: "Fan Archives", views: "8.2M", thumbnail: "https://placehold.co/600x400", dataAiHint: "batmobile retro" },
-  { id: 3, title: "The Batman - Penguin Chase", uploader: "Scene City", views: "21M", thumbnail: "https://placehold.co/600x400", dataAiHint: "car chase night" },
-  { id: 4, title: "Arkham Knight - Gameplay Trailer", uploader: "Rocksteady", views: "30M", thumbnail: "https://placehold.co/600x400", dataAiHint: "video game" },
-];
+import { generateYoutubeFeed, type YoutubeFeedOutput } from "@/ai/flows/generate-youtube-feed";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const latestIntel = [
     { id: 1, title: "New Gotham Knights DLC Announced", source: "Gotham Gazette", date: "2 hours ago", snippet: "A new story expansion is coming to Gotham Knights, focusing on the Court of Owls...", image: "https://placehold.co/600x400", dataAiHint: "gotham city skyline" },
@@ -17,6 +16,26 @@ const latestIntel = [
 ];
 
 export default function HomePage() {
+    const [surveillanceFootage, setSurveillanceFootage] = useState<YoutubeFeedOutput['videos']>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchFeed = async () => {
+            setIsLoading(true);
+            try {
+                const feed = await generateYoutubeFeed();
+                setSurveillanceFootage(feed.videos);
+            } catch (error) {
+                console.error("Failed to fetch YouTube feed:", error);
+                // Optionally, set some default data on error
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchFeed();
+    }, []);
+
   return (
     <div className="space-y-8">
       <div>
@@ -32,18 +51,33 @@ export default function HomePage() {
             Surveillance Footage
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {surveillanceFootage.map(video => (
-            <Card key={video.id} className="overflow-hidden bg-card hover:border-primary/50 transition-colors">
-              <CardContent className="p-0">
-                <Image src={video.thumbnail} alt={video.title} width={600} height={400} className="aspect-video object-cover" data-ai-hint={video.dataAiHint} />
-                <div className="p-4">
-                    <h3 className="font-bold font-headline truncate">{video.title}</h3>
-                    <p className="text-sm text-muted-foreground">{video.uploader}</p>
-                    <p className="text-xs text-muted-foreground">{video.views} views</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {isLoading ? (
+            Array.from({ length: 4 }).map((_, index) => (
+                <Card key={index} className="overflow-hidden bg-card">
+                    <CardContent className="p-0">
+                        <Skeleton className="w-full aspect-video" />
+                        <div className="p-4 space-y-2">
+                            <Skeleton className="h-5 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                            <Skeleton className="h-3 w-1/4" />
+                        </div>
+                    </CardContent>
+                </Card>
+            ))
+          ) : (
+            surveillanceFootage.map(video => (
+              <Card key={video.id} className="overflow-hidden bg-card hover:border-primary/50 transition-colors">
+                <CardContent className="p-0">
+                  <Image src={video.thumbnail} alt={video.title} width={600} height={400} className="aspect-video object-cover" data-ai-hint={video.dataAiHint} />
+                  <div className="p-4">
+                      <h3 className="font-bold font-headline truncate">{video.title}</h3>
+                      <p className="text-sm text-muted-foreground">{video.uploader}</p>
+                      <p className="text-xs text-muted-foreground">{video.views} views</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
       </section>
 
