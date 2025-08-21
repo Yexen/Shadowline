@@ -26,15 +26,11 @@ export async function answerQuestion(input: AnswerQuestionInput): Promise<Answer
   return await answerQuestionFlow(input);
 }
 
-const answerQuestionFlow = ai.defineFlow(
-  {
-    name: 'answerQuestionFlow',
-    inputSchema: AnswerQuestionInputSchema,
-    outputSchema: AnswerQuestionOutputSchema,
-  },
-  async (input) => {
-    const {output} = await ai.generate({
-      prompt: `You are an AI assistant with deep knowledge of a user's custom fictional universe. Your task is to answer the user's question.
+const oraclePrompt = ai.definePrompt({
+  name: 'gothamOraclePrompt',
+  input: { schema: AnswerQuestionInputSchema },
+  output: { schema: AnswerQuestionOutputSchema },
+  prompt: `You are an AI assistant with deep knowledge of a user's custom fictional universe. Your task is to answer the user's question.
 
 You should first consult the provided "Bible" context. If the answer is found within the bible, you should prioritize that information. If the bible does not contain the answer, then you should use your general knowledge.
 
@@ -47,13 +43,16 @@ USER'S QUESTION:
 "{{{question}}}"
 
 Based on the rules above, what is the answer?`,
-      model: 'googleai/gemini-pro',
-      output: {
-        format: 'json',
-        schema: AnswerQuestionOutputSchema,
-      },
-      input,
-    });
+});
+
+const answerQuestionFlow = ai.defineFlow(
+  {
+    name: 'answerQuestionFlow',
+    inputSchema: AnswerQuestionInputSchema,
+    outputSchema: AnswerQuestionOutputSchema,
+  },
+  async (input) => {
+    const { output } = await oraclePrompt(input);
     return output!;
   }
 );

@@ -27,15 +27,11 @@ export async function generateCode(input: GenerateCodeInput): Promise<GenerateCo
   return await generateCodeFlow(input);
 }
 
-const generateCodeFlow = ai.defineFlow(
-  {
-    name: 'generateCodeFlow',
-    inputSchema: GenerateCodeInputSchema,
-    outputSchema: GenerateCodeOutputSchema,
-  },
-  async (input) => {
-    const {output} = await ai.generate({
-      prompt: `You are a helpful assistant that generates code snippets based on user descriptions.
+const codePrompt = ai.definePrompt({
+  name: 'gothamCodePrompt',
+  input: { schema: GenerateCodeInputSchema },
+  output: { schema: GenerateCodeOutputSchema },
+  prompt: `You are a helpful assistant that generates code snippets based on user descriptions.
 
 The user will provide a description of the desired code and the programming language.
 You should generate a code snippet that matches the description and language.
@@ -50,13 +46,16 @@ Description: {{{description}}}
 Language: {{{language}}}
 
 Make sure that the output is valid, runnable code.`,
-      model: 'googleai/gemini-pro',
-      output: {
-        format: 'json',
-        schema: GenerateCodeOutputSchema,
-      },
-      input,
-    });
+});
+
+const generateCodeFlow = ai.defineFlow(
+  {
+    name: 'generateCodeFlow',
+    inputSchema: GenerateCodeInputSchema,
+    outputSchema: GenerateCodeOutputSchema,
+  },
+  async (input) => {
+    const { output } = await codePrompt(input);
     return output!;
   }
 );
