@@ -142,7 +142,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                     <SidebarMenuButton onClick={() => setVolumesOpen(true)} tooltip={{ children: "Volumes", side: "right", align: "center" }} className="font-headline text-base group-data-[state=collapsed]:justify-center">
-                         <span className="flex items-center gap-2">
+                        <span className="flex items-center gap-2">
                             <BookOpenCheck />
                             <span className="group-data-[state=collapsed]:hidden">Volumes</span>
                         </span>
