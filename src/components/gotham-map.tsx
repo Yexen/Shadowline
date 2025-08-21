@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Dialog, DialogContent, DialogTitle, DialogHeader, VisuallyHidden } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogHeader } from '@/components/ui/dialog';
 
 interface GothamMapProps {
   isOpen: boolean;
@@ -486,19 +486,17 @@ const mapHtml = `
 export function GothamMap({ isOpen, onClose }: GothamMapProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="w-[95vw] h-[90vh] max-w-none p-0 overflow-hidden">
-            <DialogHeader className="sr-only">
-                <DialogTitle>Interactive Gotham City Map</DialogTitle>
-                <VisuallyHidden>
-                    <p>An interactive, canonical map of Gotham City. You can pan, zoom, and click on districts for more information.</p>
-                </VisuallyHidden>
-            </DialogHeader>
-            <iframe
-                srcDoc={mapHtml}
-                className="w-full h-full border-0"
-                title="Interactive Gotham City Map"
-            />
-        </DialogContent>
+      <DialogContent className="w-[95vw] h-[90vh] max-w-none p-0 overflow-hidden">
+        <DialogHeader className="sr-only">
+            <DialogTitle>Interactive Gotham City Map</DialogTitle>
+        </DialogHeader>
+        <iframe
+          srcDoc={mapHtml}
+          className="w-full h-full border-0"
+          title="Interactive Gotham City Map"
+        />
+      </DialogContent>
     </Dialog>
   );
 }
+
