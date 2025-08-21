@@ -27,16 +27,17 @@ export default function HomePage() {
                 const now = new Date().getTime();
                 
                 // Fetch YouTube Feed
-                const cachedFootage = localStorage.getItem('youtube-feed-cache');
-                if (cachedFootage) {
-                    const { timestamp, data } = JSON.parse(cachedFootage);
+                const cachedFootageItem = localStorage.getItem('youtube-feed-cache');
+                let footageData: YoutubeFeedOutput | null = null;
+                if (cachedFootageItem) {
+                    const { timestamp, data } = JSON.parse(cachedFootageItem);
                     if (now - timestamp < CACHE_DURATION) {
-                        setSurveillanceFootage(data.videos);
-                    } else {
-                        const feed = await generateYoutubeFeed();
-                        setSurveillanceFootage(feed.videos);
-                        localStorage.setItem('youtube-feed-cache', JSON.stringify({ timestamp: now, data: feed }));
+                        footageData = data;
                     }
+                }
+                
+                if (footageData) {
+                    setSurveillanceFootage(footageData.videos);
                 } else {
                     const feed = await generateYoutubeFeed();
                     setSurveillanceFootage(feed.videos);
@@ -44,16 +45,17 @@ export default function HomePage() {
                 }
 
                 // Fetch Latest Intel
-                const cachedIntel = localStorage.getItem('latest-intel-cache');
-                if (cachedIntel) {
-                    const { timestamp, data } = JSON.parse(cachedIntel);
+                const cachedIntelItem = localStorage.getItem('latest-intel-cache');
+                let intelData: LatestIntelOutput | null = null;
+                if (cachedIntelItem) {
+                    const { timestamp, data } = JSON.parse(cachedIntelItem);
                     if (now - timestamp < CACHE_DURATION) {
-                        setLatestIntel(data.articles);
-                    } else {
-                        const intel = await generateLatestIntel();
-                        setLatestIntel(intel.articles);
-                        localStorage.setItem('latest-intel-cache', JSON.stringify({ timestamp: now, data: intel }));
+                        intelData = data;
                     }
+                }
+
+                if (intelData) {
+                    setLatestIntel(intelData.articles);
                 } else {
                     const intel = await generateLatestIntel();
                     setLatestIntel(intel.articles);
@@ -62,7 +64,6 @@ export default function HomePage() {
 
             } catch (error) {
                 console.error("Failed to fetch dynamic feeds:", error);
-                 // Fallback to empty arrays on error to avoid crash
                 setSurveillanceFootage([]);
                 setLatestIntel([]);
             } finally {
