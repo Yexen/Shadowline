@@ -13,7 +13,7 @@ import {z} from 'genkit';
 
 const GenerateContentInputSchema = z.object({
   prompt: z.string().describe('The writing prompt to generate content for.'),
-  bibleData: z.string().optional().describe('A JSON string representing the user\'s world bible for context.'),
+  bibleData: z.string().optional().describe("A JSON string representing the user's world bible for context."),
 });
 export type GenerateContentInput = z.infer<typeof GenerateContentInputSchema>;
 

@@ -1,4 +1,3 @@
-// Implemented GenerateCodeFromDescription story in file generate-code.ts.
 'use server';
 
 /**
@@ -15,7 +14,7 @@ import {z} from 'genkit';
 const GenerateCodeInputSchema = z.object({
   description: z.string().describe('A text description of the desired code snippet.'),
   language: z.enum(['CSS', 'JavaScript']).describe('The programming language for the code snippet.'),
-  bibleData: z.string().optional().describe('A JSON string representing the user\'s world bible for context.'),
+  bibleData: z.string().optional().describe("A JSON string representing the user's world bible for context."),
 });
 export type GenerateCodeInput = z.infer<typeof GenerateCodeInputSchema>;
 
