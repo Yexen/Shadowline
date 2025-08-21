@@ -117,7 +117,7 @@ export function VolumeEditor({ volume, onSave, onClose }: VolumeEditorProps) {
                     </div>
                 ) : (
                     <div className="space-y-4 py-4 flex-grow flex flex-col">
-                        <ScrollArea className="h-[300px] w-full pr-4">
+                        <ScrollArea className="flex-grow w-full pr-4">
                             <div className="space-y-2">
                                 {(currentVolume.resources || []).length > 0 ? (
                                 (currentVolume.resources || []).map(page => (
@@ -131,7 +131,7 @@ export function VolumeEditor({ volume, onSave, onClose }: VolumeEditorProps) {
                             </div>
                         </ScrollArea>
                         <Button variant="outline" size="sm" onClick={handleAddNewResource} className="mt-auto">
-                            <PlusCircle className="mr-2" /> Add New Resource Page
+                            <PlusCircle className="mr-2" /> Add Resource Page
                         </Button>
                     </div>
                 )}
