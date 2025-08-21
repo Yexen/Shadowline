@@ -1,11 +1,11 @@
 
 'use client';
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Map as MapIcon } from 'lucide-react';
 import { useState } from "react";
 import { GothamMap } from "@/components/gotham-map";
 import { mapHtml } from "@/lib/gotham-map-html";
+import { dcMapHtml } from "@/lib/dc-map-html"; 
 
 export default function MapsPage() {
   const [isGothamMapOpen, setIsGothamMapOpen] = useState(false);
@@ -19,8 +19,8 @@ export default function MapsPage() {
             Explore the cartography of your universe.
           </p>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* DC Universe Card */}
           <Card className="bg-card hover:border-primary/50 transition-colors flex flex-col">
             <CardHeader>
               <CardTitle className="font-headline flex items-center gap-2">
@@ -31,7 +31,7 @@ export default function MapsPage() {
             <CardContent className="flex-grow flex flex-col p-0 relative">
                 <button onClick={() => setIsDcMapOpen(true)} className="absolute inset-0 bg-transparent cursor-pointer z-10 group" aria-label="Explore DC Universe Map">
                     <iframe
-                        srcDoc={mapHtml}
+                        srcDoc={dcMapHtml}
                         className="w-full h-full border-0 pointer-events-none"
                         title="Interactive DC Universe Map Preview"
                     />
@@ -44,6 +44,7 @@ export default function MapsPage() {
             </CardContent>
           </Card>
           
+          {/* Gotham City Card */}
           <Card className="bg-card hover:border-primary/50 transition-colors flex flex-col">
             <CardHeader>
                 <CardTitle className="font-headline flex items-center gap-2">
@@ -66,11 +67,21 @@ export default function MapsPage() {
                 </button>
             </CardContent>
           </Card>
-
         </div>
       </div>
-      <GothamMap isOpen={isGothamMapOpen} onClose={() => setIsGothamMapOpen(false)} />
-      <GothamMap isOpen={isDcMapOpen} onClose={() => setIsDcMapOpen(false)} />
+      
+      <GothamMap 
+        isOpen={isGothamMapOpen} 
+        onClose={() => setIsGothamMapOpen(false)}
+        mapHtml={mapHtml}
+        title="Interactive Gotham City Map"
+      />
+      <GothamMap 
+        isOpen={isDcMapOpen} 
+        onClose={() => setIsDcMapOpen(false)}
+        mapHtml={dcMapHtml}
+        title="Interactive DC Universe Map"
+      />
     </>
   );
 }

@@ -2,24 +2,25 @@
 'use client';
 
 import { Dialog, DialogContent, DialogTitle, DialogHeader } from '@/components/ui/dialog';
-import { mapHtml } from '@/lib/gotham-map-html';
 
 interface GothamMapProps {
   isOpen: boolean;
   onClose: () => void;
+  mapHtml: string;
+  title: string;
 }
 
-export function GothamMap({ isOpen, onClose }: GothamMapProps) {
+export function GothamMap({ isOpen, onClose, mapHtml, title }: GothamMapProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[95vw] h-[90vh] max-w-none p-0 overflow-hidden">
         <DialogHeader className="sr-only">
-            <DialogTitle>Interactive Gotham City Map</DialogTitle>
+            <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <iframe
           srcDoc={mapHtml}
           className="w-full h-full border-0"
-          title="Interactive Gotham City Map"
+          title={title}
         />
       </DialogContent>
     </Dialog>
