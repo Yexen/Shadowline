@@ -21,9 +21,9 @@ import { BatLogo } from '@/components/bat-logo';
 import { BatSignal } from '@/components/bat-signal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Home, PenSquare, BrainCircuit, Info, LogOut, FilePlus, BookCopy, PlusCircle, Images } from 'lucide-react';
+import { Home, PenSquare, BrainCircuit, Info, LogOut, FilePlus, BookCopy, PlusCircle, Images, ImagePlus, Shield } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useBible, type BibleEntry } from '@/hooks/use-bible';
@@ -31,6 +31,9 @@ import { BibleEditor } from '@/components/bible-editor';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AppHeader } from '@/components/app-header';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { useLogo } from '@/hooks/use-logo';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -41,6 +44,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [editingEntry, setEditingEntry] = useState<{ category: string; entry: BibleEntry } | null>(null);
   const [newCategory, setNewCategory] = useState('');
 
+  // Logo upload state
+  const { setLogoUrl } = useLogo();
+  const [logoDialogOpen, setLogoDialogOpen] = useState(false);
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -85,6 +92,19 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         setNewCategory('');
     }
   }
+
+  const handleLogoFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (loadEvent) => {
+            setLogoUrl(loadEvent.target?.result as string);
+            setLogoDialogOpen(false);
+        };
+        reader.readAsDataURL(file);
+    }
+  }
+
 
   if (!isClient) {
     return (
@@ -193,6 +213,32 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </div>
                 </SheetContent>
             </Sheet>
+
+             <Dialog open={logoDialogOpen} onOpenChange={setLogoDialogOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="ghost" className="w-full justify-start gap-2">
+                        <Shield className="size-4" />
+                        <span className="font-headline">CHANGE LOGO</span>
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Change App Logo</DialogTitle>
+                        <DialogDescription>
+                            Upload a new logo for the application. SVG, PNG, or JPG are recommended.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                         <Label>Upload from device</Label>
+                        <Input type="file" accept="image/*" className="hidden" ref={logoFileInputRef} onChange={handleLogoFileSelect} />
+                        <Button variant="outline" className="w-full mt-2" onClick={() => logoFileInputRef.current?.click()}>Browse Device</Button>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setLogoDialogOpen(false)}>Cancel</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             <SidebarSeparator />
             <div className="flex items-center justify-between p-2">
                 <div className="flex items-center gap-2">
