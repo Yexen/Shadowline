@@ -62,17 +62,17 @@ export default function AiToolsPage() {
       };
       const result = await answerQuestion(input);
       
-      // The result from a flow with an output schema is the object itself.
-      if (result && typeof result === 'object' && 'answer' in result) {
+      // The Genkit flow returns an object with the defined output schema
+      if (result && result.answer) {
         setAnswer(result.answer);
       } else {
-        // Fallback for safety, though the flow should always return the object.
-        // This case handles if the AI accidentally returns a raw string.
-        setAnswer(String(result) || 'Could not get a valid answer.');
+         throw new Error("Received an invalid response from the Oracle.");
       }
     } catch (error) {
       console.error(error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to get an answer from the Oracle.' });
+      const errorMessage = error instanceof Error ? error.message : 'Failed to get an answer from the Oracle.';
+      toast({ variant: 'destructive', title: 'Error', description: errorMessage });
+      setAnswer('The Oracle is currently unavailable. Please try again later.');
     } finally {
       setIsAsking(false);
     }
