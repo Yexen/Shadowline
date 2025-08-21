@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Image from "next/image";
@@ -14,6 +15,7 @@ import { SidebarTrigger } from "./ui/sidebar";
 
 const pathToTitle: { [key: string]: string } = {
     '/home': "Welcome, Writer",
+    '/search': "Universal Search",
     '/editor': "The Editor",
     '/drafts': "Unfinished Business",
     '/ai-tools': "Oracle AI Tools",
