@@ -57,16 +57,18 @@ export default function AiToolsPage() {
     try {
       const input: AnswerQuestionInput = {
         question: question,
-        bibleData: JSON.stringify(bibleData) 
+        bibleData: JSON.stringify(bibleData)
       };
+      // The flow returns an object { answer: '...' }
       const result = await answerQuestion(input);
-      if (typeof result === 'object' && result.answer) {
+      
+      // Check if the result and the answer property exist.
+      if (result && typeof result.answer === 'string') {
         setAnswer(result.answer);
-      } else if (typeof result === 'string') {
-        // Fallback for when the model doesn't return a JSON object
-        setAnswer(result);
       } else {
-        throw new Error("Received an unexpected response format.");
+        // Handle cases where the format is not as expected.
+        console.error("Received an unexpected response format:", result);
+        toast({ variant: 'destructive', title: 'Error', description: 'Received an unexpected response format from the Oracle.' });
       }
     } catch (error) {
       console.error(error);
