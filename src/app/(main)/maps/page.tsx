@@ -99,13 +99,12 @@ export default function MapsPage() {
               <p className="mt-4 text-muted-foreground">A high-level map of the entire DC Comics multiverse, showing key planets and dimensions.</p>
             </CardContent>
           </Card>
-          <Card className="bg-card hover:border-primary/50 transition-colors cursor-pointer" onClick={() => setIsMapOpen(true)}>
-            <CardContent className="p-0 relative aspect-video">
+          <Card className="bg-card hover:border-primary/50 transition-colors cursor-pointer group" onClick={() => setIsMapOpen(true)}>
+             <CardContent className="p-0 relative aspect-video">
                  <iframe
                   srcDoc={mapHtml}
                   className="w-full h-full border-0"
                   title="Interactive Gotham City Map Preview"
-                  sandbox="allow-scripts allow-same-origin"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                 <div className="absolute bottom-4 left-4">
