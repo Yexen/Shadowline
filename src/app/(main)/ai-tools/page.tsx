@@ -60,8 +60,7 @@ export default function AiToolsPage() {
         question: question,
         bibleData: JSON.stringify(bibleData)
       };
-      const result: AnswerQuestionOutput = await answerQuestion(input);
-      
+      const result = await answerQuestion(input);
       if (result && result.answer) {
         setAnswer(result.answer);
       } else {
