@@ -50,7 +50,7 @@ Description: {{{description}}}
 Language: {{{language}}}
 
 Make sure that the output is valid, runnable code.`,
-      model: 'googleai/gemini-pro',
+      model: 'googleai/gemini-1.5-pro-latest',
       output: {
         schema: GenerateCodeOutputSchema,
         format: 'json',

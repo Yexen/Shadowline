@@ -47,7 +47,7 @@ USER'S QUESTION:
 "{{{question}}}"
 
 Based on the rules above, what is the answer?`,
-      model: 'googleai/gemini-pro',
+      model: 'googleai/gemini-1.5-pro-latest',
       output: {
         schema: AnswerQuestionOutputSchema,
         format: 'json',
