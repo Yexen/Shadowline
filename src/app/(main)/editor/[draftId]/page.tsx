@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Save, Eye, EyeOff, Download, FileText, FileCode, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { generateContentSuggestions, GenerateContentSuggestionsInput } from '@/ai/flows/ai-writing-assistant';
+import { generateContent, GenerateContentInput } from '@/ai/flows/ai-writing-assistant';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 export default function EditorPage() {
@@ -94,9 +94,10 @@ export default function EditorPage() {
     setPopoverOpen(true);
 
     try {
-        const input: GenerateContentSuggestionsInput = { prompt: selection };
-        const result = await generateContentSuggestions(input);
-        setSuggestions(result.suggestions);
+        const input: GenerateContentInput = { prompt: `Based on the following text, give me a few short, creative suggestions to continue or improve it: "${selection}"` };
+        const result = await generateContent(input);
+        // We'll split the result into a few suggestions. This is a simple heuristic.
+        setSuggestions(result.content.split('\n').filter(s => s.trim().length > 0));
     } catch (error) {
       console.error(error);
       toast({ variant: 'destructive', title: 'Error', description: `Failed to get suggestions from Oracle.` });

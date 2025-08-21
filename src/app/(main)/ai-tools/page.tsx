@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -8,17 +7,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { BrainCircuit, PenLine, Sparkles, Wand2, Copy } from 'lucide-react';
-import { generateContentSuggestions, GenerateContentSuggestionsInput } from '@/ai/flows/ai-writing-assistant';
+import { BrainCircuit, PenLine, Sparkles, Wand2, Copy, MessageSquareQuestion } from 'lucide-react';
+import { generateContent, GenerateContentInput } from '@/ai/flows/ai-writing-assistant';
 import { generateCode, GenerateCodeInput } from '@/ai/flows/generate-code';
 import { useToast } from '@/hooks/use-toast';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal } from 'lucide-react';
 
 export default function AiToolsPage() {
   const [writingPrompt, setWritingPrompt] = useState('');
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
+  const [generatedScene, setGeneratedScene] = useState('');
+  const [isGeneratingScene, setIsGeneratingScene] = useState(false);
+
+  const [question, setQuestion] = useState('');
+  const [answer, setAnswer] = useState('');
+  const [isAsking, setIsAsking] = useState(false);
 
   const [codeDescription, setCodeDescription] = useState('');
   const [codeLanguage, setCodeLanguage] = useState<'CSS' | 'JavaScript'>('CSS');
@@ -27,19 +28,35 @@ export default function AiToolsPage() {
 
   const { toast } = useToast();
 
-  const handleGenerateSuggestions = async () => {
+  const handleGenerateScene = async () => {
     if (!writingPrompt) return;
-    setIsGeneratingSuggestions(true);
-    setSuggestions([]);
+    setIsGeneratingScene(true);
+    setGeneratedScene('');
     try {
-      const input: GenerateContentSuggestionsInput = { prompt: writingPrompt };
-      const result = await generateContentSuggestions(input);
-      setSuggestions(result.suggestions);
+      const input: GenerateContentInput = { prompt: writingPrompt };
+      const result = await generateContent(input);
+      setGeneratedScene(result.content);
     } catch (error) {
       console.error(error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate suggestions.' });
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate scene.' });
     } finally {
-      setIsGeneratingSuggestions(false);
+      setIsGeneratingScene(false);
+    }
+  };
+
+  const handleAskQuestion = async () => {
+    if (!question) return;
+    setIsAsking(true);
+    setAnswer('');
+    try {
+      const input: GenerateContentInput = { prompt: question };
+      const result = await generateContent(input);
+      setAnswer(result.content);
+    } catch (error) {
+      console.error(error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to get an answer.' });
+    } finally {
+      setIsAsking(false);
     }
   };
 
@@ -59,17 +76,13 @@ export default function AiToolsPage() {
     }
   };
 
-  const handleCopyCode = () => {
-    if (generatedCode) {
-        navigator.clipboard.writeText(generatedCode);
+  const handleCopy = (textToCopy: string, toastMessage: string) => {
+    if (textToCopy) {
+        navigator.clipboard.writeText(textToCopy);
         toast({
-          title: 'Code Copied!',
-          description: (
-            <div>
-              <p>Great! Now, just ask me to "apply this CSS" in the chat, and I'll add it to your project permanently.</p>
-            </div>
-          ),
-          duration: 10000,
+          title: 'Copied to Clipboard!',
+          description: toastMessage,
+          duration: 5000,
         });
     }
   }
@@ -86,35 +99,70 @@ export default function AiToolsPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="bg-card">
-          <CardHeader>
-            <CardTitle className="font-headline flex items-center gap-2"><PenLine/> AI Writing Assistant</CardTitle>
-            <CardDescription>Overcome writer's block with AI-powered suggestions.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="writing-prompt">Your Prompt</Label>
-              <Textarea
-                id="writing-prompt"
-                placeholder="e.g., A detective finds a mysterious object at a crime scene..."
-                value={writingPrompt}
-                onChange={(e) => setWritingPrompt(e.target.value)}
-              />
-            </div>
-            <Button onClick={handleGenerateSuggestions} disabled={isGeneratingSuggestions || !writingPrompt}>
-              {isGeneratingSuggestions ? 'Generating...' : <><Sparkles className="mr-2 h-4 w-4" /> Generate Ideas</>}
-            </Button>
-            {suggestions.length > 0 && (
-              <div className="space-y-2 pt-4">
-                <h4 className="font-bold font-headline">Suggestions:</h4>
-                <ul className="list-disc list-inside bg-accent/50 p-4 rounded-md space-y-2">
-                  {suggestions.map((s, i) => <li key={i}>{s}</li>)}
-                </ul>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        <div className="space-y-8">
+            <Card className="bg-card">
+              <CardHeader>
+                <CardTitle className="font-headline flex items-center gap-2"><PenLine/> Scene Generator</CardTitle>
+                <CardDescription>Describe a scene and Oracle will write it for you.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="writing-prompt">Scene Prompt</Label>
+                  <Textarea
+                    id="writing-prompt"
+                    placeholder="e.g., Batman corners a criminal on a rain-slicked rooftop. The criminal is surprisingly not afraid."
+                    value={writingPrompt}
+                    onChange={(e) => setWritingPrompt(e.target.value)}
+                    rows={4}
+                  />
+                </div>
+                <Button onClick={handleGenerateScene} disabled={isGeneratingScene || !writingPrompt}>
+                  {isGeneratingScene ? 'Generating...' : <><Sparkles className="mr-2 h-4 w-4" /> Generate Scene</>}
+                </Button>
+                {generatedScene && (
+                  <div className="space-y-2 pt-4">
+                    <h4 className="font-bold font-headline">Generated Scene:</h4>
+                    <div className="relative bg-accent/50 p-4 rounded-md space-y-2 prose prose-sm prose-invert max-h-60 overflow-auto">
+                      <p>{generatedScene}</p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => handleCopy(generatedScene, "Scene copied! You can now paste it in the editor.")}>
+                        <Copy className="mr-2 h-4 w-4" /> Copy Scene
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-card">
+              <CardHeader>
+                <CardTitle className="font-headline flex items-center gap-2"><MessageSquareQuestion/> Ask Oracle</CardTitle>
+                <CardDescription>Ask a question and get a direct answer from the Oracle.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="question-prompt">Your Question</Label>
+                  <Input
+                    id="question-prompt"
+                    placeholder="e.g., What is the history of Arkham Asylum?"
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                  />
+                </div>
+                <Button onClick={handleAskQuestion} disabled={isAsking || !question}>
+                  {isAsking ? 'Thinking...' : 'Ask Question'}
+                </Button>
+                {answer && (
+                  <div className="space-y-2 pt-4">
+                    <h4 className="font-bold font-headline">Oracle's Answer:</h4>
+                    <div className="bg-accent/50 p-4 rounded-md space-y-2 prose prose-sm prose-invert">
+                        <p>{answer}</p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+        </div>
 
         <Card className="bg-card">
           <CardHeader>
@@ -153,7 +201,7 @@ export default function AiToolsPage() {
                   <code className="font-code text-sm">{generatedCode}</code>
                 </pre>
                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={handleCopyCode} disabled={codeLanguage !== 'CSS'}>
+                    <Button variant="outline" size="sm" onClick={() => handleCopy(generatedCode, 'Great! Now, just ask me to "apply this CSS" in the chat, and I\'ll add it to your project permanently.')} disabled={codeLanguage !== 'CSS'}>
                       <Copy className="mr-2 h-4 w-4" />
                       Copy Code
                     </Button>
@@ -170,3 +218,4 @@ export default function AiToolsPage() {
       </div>
     </div>
   );
+}
