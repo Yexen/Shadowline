@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,7 +11,8 @@ import { cn } from '@/lib/utils';
 // A simple markdown parser can be used here. For simplicity, we'll just render the text.
 // In a real app, you might use a library like 'marked' or 'react-markdown'.
 
-export default function EditorPage({ params }: { params: { draftId: string } }) {
+export default function EditorPage() {
+  const params = useParams<{ draftId: string }>();
   const [content, setContent] = useState('');
   const [title, setTitle] = useState('New Draft');
   const [showPreview, setShowPreview] = useState(true);
