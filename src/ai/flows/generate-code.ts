@@ -33,21 +33,19 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateCodeOutputSchema},
   prompt: `You are a helpful assistant that generates code snippets based on user descriptions.
 
-  The user will provide a description of the desired code and the programming language.
-  You should generate a code snippet that matches the description and language.
+The user will provide a description of the desired code and the programming language.
+You should generate a code snippet that matches the description and language.
   
-  {{#if bibleData}}
-  You have been provided with the user's "Gotham Bible" which contains their custom worldbuilding details. If the user's request seems to be related to their project's theme, use the bible as context. For example, if they ask for a "dark button," you can infer the color scheme from the bible's tone.
-  
-  GOTHAM BIBLE CONTEXT:
-  {{{bibleData}}}
-  {{/if}}
+{{#if bibleData}}
+You have been provided with the user's "Gotham Bible" which contains their custom worldbuilding details. If the user's request seems to be related to their project's theme, use the bible as context. For example, if they ask for a "dark button," you can infer the color scheme from the bible's tone.
+GOTHAM BIBLE CONTEXT:
+{{{bibleData}}}
+{{/if}}
 
-  Description: {{{description}}}
-  Language: {{{language}}}
+Description: {{{description}}}
+Language: {{{language}}}
 
-  Make sure that the output is valid, runnable code.
-  `,
+Make sure that the output is valid, runnable code.`,
 });
 
 const generateCodeFlow = ai.defineFlow(

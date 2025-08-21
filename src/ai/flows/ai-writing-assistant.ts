@@ -33,9 +33,8 @@ const prompt = ai.definePrompt({
   prompt: `You are a creative writing assistant for a user writing stories set in a Gotham City-like universe.
 Your task is to write a compelling piece of content based on the user's prompt. This could be a scene, a character description, or a plot point.
 
-You have been provided with the user's "Gotham Bible" which contains their custom worldbuilding details. You MUST adhere to this bible as the primary source of truth.
-
 {{#if bibleData}}
+You have been provided with the user's "Gotham Bible" which contains their custom worldbuilding details. You MUST adhere to this bible as the primary source of truth.
 GOTHAM BIBLE CONTEXT:
 {{{bibleData}}}
 {{/if}}
@@ -43,7 +42,7 @@ GOTHAM BIBLE CONTEXT:
 USER PROMPT:
 "{{{prompt}}}"
 
-Write the content as requested, ensuring it is consistent with the provided bible.`,
+Write the content as requested, ensuring it is consistent with the provided bible if it exists.`,
 });
 
 const generateContentFlow = ai.defineFlow(
