@@ -18,6 +18,7 @@ const pathToTitle: { [key: string]: string } = {
     '/drafts': "Unfinished Business",
     '/ai-tools': "Oracle AI Tools",
     '/gallery': "Visual Archives",
+    '/organization': "Mission Control",
     '/about': "Project Intel"
 };
 
