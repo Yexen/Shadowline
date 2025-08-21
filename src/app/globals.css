@@ -85,3 +85,27 @@
     -moz-osx-font-smoothing: grayscale;
   }
 }
+
+.bat-signal-button { 
+  background-color: #222;
+  border: none;
+  color: yellow;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+  transition: box-shadow 0.3s ease-in-out;
+}
+
+.bat-signal-button:hover {
+  box-shadow: 0 0 20px rgba(255, 255, 0, 0.9);
+}
+
+.bat-signal-button:active {
+  box-shadow: 0 0 30px rgba(255, 255, 0, 1);
+}
