@@ -87,12 +87,12 @@ export default function SearchPage() {
         if (scope === 'all' || scope === 'bible') {
             bibleData.forEach(category => {
                 category.items.forEach(item => {
-                    const fullText = item.title + ' ' + item.fields.map(f => `${f.label} ${f.value}`).join(' ');
+                    const fullText = item.title + ' ' + (item.fields || []).map(f => `${f.label} ${f.value}`).join(' ');
                     if (fullText.toLowerCase().includes(lowerCaseQuery)) {
                         newResults.push({
                             id: `bible-${category.category}-${item.title}`,
                             title: item.title,
-                            snippet: item.fields[0]?.value.substring(0, 150) + '...' || 'Bible Entry',
+                            snippet: item.fields?.[0]?.value.substring(0, 150) + '...' || 'Bible Entry',
                             source: `Bible: ${category.category}`,
                             sourceType: 'bible',
                             url: '#' // Bible entries open in a modal, no direct URL
