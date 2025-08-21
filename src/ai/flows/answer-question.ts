@@ -46,7 +46,7 @@ BIBLE CONTEXT:
 USER'S QUESTION:
 "{{{question}}}"
 
-Based on the rules above, what is the answer?`,
+Based on the rules above, what is the answer? Your output must be a JSON object with a single key "answer".`,
       model: 'googleai/gemini-1.5-flash-latest',
       output: {
         schema: AnswerQuestionOutputSchema,

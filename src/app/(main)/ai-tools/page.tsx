@@ -60,7 +60,14 @@ export default function AiToolsPage() {
         bibleData: JSON.stringify(bibleData) 
       };
       const result = await answerQuestion(input);
-      setAnswer(result.answer);
+      if (typeof result === 'object' && result.answer) {
+        setAnswer(result.answer);
+      } else if (typeof result === 'string') {
+        // Fallback for when the model doesn't return a JSON object
+        setAnswer(result);
+      } else {
+        throw new Error("Received an unexpected response format.");
+      }
     } catch (error) {
       console.error(error);
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to get an answer.' });
