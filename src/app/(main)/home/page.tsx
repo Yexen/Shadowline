@@ -24,54 +24,40 @@ export default function HomePage() {
             setIsIntelLoading(true);
 
             try {
-                 const cachedFootage = localStorage.getItem('youtube-feed-cache');
-                 const cachedIntel = localStorage.getItem('latest-intel-cache');
-                 const now = new Date().getTime();
-
-                 let feed: YoutubeFeedOutput;
-                 let intel: LatestIntelOutput;
-
-                 if (cachedFootage) {
+                const now = new Date().getTime();
+                
+                // Fetch YouTube Feed
+                const cachedFootage = localStorage.getItem('youtube-feed-cache');
+                if (cachedFootage) {
                     const { timestamp, data } = JSON.parse(cachedFootage);
                     if (now - timestamp < CACHE_DURATION) {
-                        feed = data;
+                        setSurveillanceFootage(data.videos);
+                    } else {
+                        const feed = await generateYoutubeFeed();
+                        setSurveillanceFootage(feed.videos);
+                        localStorage.setItem('youtube-feed-cache', JSON.stringify({ timestamp: now, data: feed }));
                     }
-                 }
-
-                 if (cachedIntel) {
-                     const { timestamp, data } = JSON.parse(cachedIntel);
-                     if (now - timestamp < CACHE_DURATION) {
-                         intel = data;
-                     }
-                 }
-
-                 const promisesToAwait = [];
-                 if (!feed!) {
-                     promisesToAwait.push(generateYoutubeFeed());
-                 } else {
-                     promisesToAwait.push(Promise.resolve(feed));
-                 }
-
-                 if (!intel!) {
-                     promisesToAwait.push(generateLatestIntel());
-                 } else {
-                     promisesToAwait.push(Promise.resolve(intel));
-                 }
-                
-                const [feedResult, intelResult] = await Promise.all(promisesToAwait);
-
-                if (feedResult) {
-                    setSurveillanceFootage(feedResult.videos);
-                     if (!cachedFootage || (now - JSON.parse(cachedFootage).timestamp >= CACHE_DURATION)) {
-                        localStorage.setItem('youtube-feed-cache', JSON.stringify({ timestamp: now, data: feedResult }));
-                    }
+                } else {
+                    const feed = await generateYoutubeFeed();
+                    setSurveillanceFootage(feed.videos);
+                    localStorage.setItem('youtube-feed-cache', JSON.stringify({ timestamp: now, data: feed }));
                 }
 
-                if (intelResult) {
-                    setLatestIntel(intelResult.articles);
-                     if (!cachedIntel || (now - JSON.parse(cachedIntel).timestamp >= CACHE_DURATION)) {
-                        localStorage.setItem('latest-intel-cache', JSON.stringify({ timestamp: now, data: intelResult }));
+                // Fetch Latest Intel
+                const cachedIntel = localStorage.getItem('latest-intel-cache');
+                if (cachedIntel) {
+                    const { timestamp, data } = JSON.parse(cachedIntel);
+                    if (now - timestamp < CACHE_DURATION) {
+                        setLatestIntel(data.articles);
+                    } else {
+                        const intel = await generateLatestIntel();
+                        setLatestIntel(intel.articles);
+                        localStorage.setItem('latest-intel-cache', JSON.stringify({ timestamp: now, data: intel }));
                     }
+                } else {
+                    const intel = await generateLatestIntel();
+                    setLatestIntel(intel.articles);
+                    localStorage.setItem('latest-intel-cache', JSON.stringify({ timestamp: now, data: intel }));
                 }
 
             } catch (error) {
