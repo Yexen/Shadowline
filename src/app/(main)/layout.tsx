@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -19,23 +20,25 @@ import { BatLogo } from '@/components/bat-logo';
 import { BatSignal } from '@/components/bat-signal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Home, PenSquare, BrainCircuit, Info, LogOut, FilePlus, BookCopy } from 'lucide-react';
+import { Home, PenSquare, BrainCircuit, Info, LogOut, FilePlus, BookCopy, PlusCircle } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-
-// Mock data, in a real app this would come from a database or API
-const bibleEntries = [
-    { category: "Characters", items: [{ title: "The Joker", snippet: "An agent of chaos..." }, { title: "Catwoman", snippet: "Selina Kyle, a cat burglar..." }] },
-    { category: "Locations", items: [{ title: "Arkham Asylum", snippet: "A psychiatric hospital for the criminally insane..." }, { title: "The Batcave", snippet: "Batman's secret headquarters..." }] },
-    { category: "Gadgets", items: [{ title: "Batarang", snippet: "A bat-shaped throwing weapon..." }, { title: "Grapple Gun", snippet: "A device to fire a grappling hook..." }] },
-]
+import { useBible, type BibleEntry } from '@/hooks/use-bible';
+import { BibleEditor } from '@/components/bible-editor';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
+
+  const { isLoaded, bibleData, addCategory, addOrUpdateEntry } = useBible();
+  const [editingEntry, setEditingEntry] = useState<{ category: string; entry: BibleEntry } | null>(null);
+  const [newCategory, setNewCategory] = useState('');
+
 
   useEffect(() => {
     setIsClient(true);
@@ -63,6 +66,22 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { href: '/ai-tools', label: 'AI Tools', icon: BrainCircuit },
     { href: '/about', label: 'About', icon: Info },
   ];
+  
+  const handleSaveEntry = (category: string, entry: BibleEntry) => {
+    addOrUpdateEntry(category, entry, editingEntry?.entry.title);
+    setEditingEntry(null);
+  }
+
+  const handleAddNewEntry = (category: string) => {
+    setEditingEntry({ category, entry: { title: 'New Entry', snippet: '' } });
+  }
+
+  const handleAddNewCategory = () => {
+    if (newCategory.trim()) {
+        addCategory(newCategory.trim());
+        setNewCategory('');
+    }
+  }
 
   if (!isClient) {
     return (
@@ -124,27 +143,51 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         <span className="font-headline">BIBLE</span>
                     </Button>
                 </SheetTrigger>
-                <SheetContent>
+                <SheetContent className="flex flex-col">
                     <SheetHeader>
                         <SheetTitle className="font-headline">GOTHAM BIBLE</SheetTitle>
                     </SheetHeader>
-                    <Accordion type="single" collapsible className="w-full mt-4">
-                        {bibleEntries.map(entry => (
+                    {!isLoaded ? (
+                        <div className="space-y-4 mt-4">
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                        </div>
+                    ) : (
+                    <Accordion type="single" collapsible className="w-full mt-4 flex-grow overflow-y-auto">
+                        {bibleData.map(entry => (
                             <AccordionItem value={entry.category} key={entry.category}>
                                 <AccordionTrigger className="font-headline text-base">{entry.category}</AccordionTrigger>
                                 <AccordionContent>
                                     <ul className="space-y-2">
                                         {entry.items.map(item => (
-                                            <li key={item.title} className="p-2 rounded-md hover:bg-accent cursor-pointer">
+                                            <li key={item.title} className="p-2 rounded-md hover:bg-accent cursor-pointer" onClick={() => setEditingEntry({ category: entry.category, entry: item })}>
                                                 <h4 className="font-bold">{item.title}</h4>
                                                 <p className="text-sm text-muted-foreground">{item.snippet}</p>
                                             </li>
                                         ))}
+                                        <li>
+                                            <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => handleAddNewEntry(entry.category)}>
+                                                <PlusCircle className="mr-2" /> Add New Entry
+                                            </Button>
+                                        </li>
                                     </ul>
                                 </AccordionContent>
                             </AccordionItem>
                         ))}
                     </Accordion>
+                    )}
+                     <div className="mt-auto border-t pt-4">
+                        <div className="flex gap-2">
+                            <Input
+                                placeholder="New Category Name..."
+                                value={newCategory}
+                                onChange={(e) => setNewCategory(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleAddNewCategory()}
+                            />
+                            <Button onClick={handleAddNewCategory}>Add</Button>
+                        </div>
+                    </div>
                 </SheetContent>
             </Sheet>
             <SidebarSeparator />
@@ -171,6 +214,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             {children}
         </div>
       </SidebarInset>
+      <BibleEditor 
+        entry={editingEntry?.entry ?? null}
+        category={editingEntry?.category ?? ''}
+        onClose={() => setEditingEntry(null)}
+        onSave={handleSaveEntry}
+      />
     </SidebarProvider>
   );
 }
