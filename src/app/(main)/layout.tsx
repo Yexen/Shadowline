@@ -141,21 +141,19 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => setVolumesOpen(true)} tooltip={{ children: "Volumes", side: "right", align: "center" }} className="text-base group-data-[state=collapsed]:justify-center">
-                        <span className="flex items-center gap-2">
-                            <BookOpenCheck />
-                            <span className="group-data-[state=collapsed]:hidden font-headline">Volumes</span>
-                        </span>
+                    <SidebarMenuButton onClick={() => setVolumesOpen(true)} tooltip={{ children: "Volumes", side: "right", align: "center" }}>
+                        <BookOpenCheck />
+                        <span>Volumes</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem asChild>
                     <Sheet>
-                        <SidebarMenuButton tooltip={{ children: "Bible", side: "right", align: "center" }} className="text-base group-data-[state=collapsed]:justify-center">
+                        <SidebarMenuButton tooltip={{ children: "Bible", side: "right", align: "center" }}>
                             <SheetTrigger asChild>
-                                <span className="flex items-center gap-2">
+                                 <span className="flex items-center gap-2">
                                     <BookCopy />
-                                    <span className="group-data-[state=collapsed]:hidden font-headline">Bible</span>
-                                </span>
+                                    <span>Bible</span>
+                                 </span>
                              </SheetTrigger>
                         </SidebarMenuButton>
                         <SheetContent className="flex flex-col">
