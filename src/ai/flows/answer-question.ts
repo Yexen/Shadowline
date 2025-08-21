@@ -49,6 +49,7 @@ USER'S QUESTION:
 
 Based on the rules above, what is the answer? Your response must be ONLY a valid JSON object with a single key "answer", and nothing else.`,
       model: 'googleai/gemini-1.5-flash-latest',
+      input,
     });
     // The model is instructed to return JSON, so we parse it.
     try {
