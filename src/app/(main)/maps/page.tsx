@@ -42,22 +42,18 @@ export default function MapsPage() {
             </CardContent>
           </Card>
           <Card className="bg-card hover:border-primary/50 transition-colors cursor-pointer" onClick={() => setIsMapOpen(true)}>
-            <CardHeader>
-              <CardTitle className="font-headline flex items-center gap-2">
-                <MapIcon />
-                Gotham City
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="aspect-video relative w-full rounded-md overflow-hidden border pointer-events-none">
-                <iframe
+            <CardContent className="p-0 relative aspect-video">
+                 <iframe
                   srcDoc={mapHtml}
-                  className="w-full h-full border-0 scale-[0.4] origin-top-left"
+                  className="w-full h-full border-0 pointer-events-none"
                   title="Interactive Gotham City Map Preview"
                   sandbox=""
                 />
-              </div>
-              <p className="mt-4 text-muted-foreground">A detailed street-level map of Gotham City, marking important districts and landmarks.</p>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+                <div className="absolute bottom-4 left-4 pointer-events-none">
+                    <h3 className="font-headline text-xl text-white drop-shadow-lg">Gotham City</h3>
+                    <p className="text-sm text-white/80 drop-shadow-md">Interactive Map</p>
+                </div>
             </CardContent>
           </Card>
         </div>
