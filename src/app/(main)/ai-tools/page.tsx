@@ -66,9 +66,9 @@ export default function AiToolsPage() {
       if (result && typeof result === 'object' && 'answer' in result) {
         setAnswer(result.answer);
       } else {
-         // Fallback for safety, though the flow should always return the object.
-        const parsedAnswer = typeof result === 'string' ? JSON.parse(result).answer : 'Could not parse the answer.';
-        setAnswer(parsedAnswer);
+        // Fallback for safety, though the flow should always return the object.
+        // This case handles if the AI accidentally returns a raw string.
+        setAnswer(String(result) || 'Could not get a valid answer.');
       }
     } catch (error) {
       console.error(error);
