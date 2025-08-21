@@ -98,26 +98,26 @@ export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
             <Accordion type="multiple" className="w-full mt-4 flex-grow overflow-y-auto pr-2">
               {volumes.map(volume => (
                 <AccordionItem value={volume.id} key={volume.id}>
-                  <AccordionTrigger className="font-headline text-base hover:no-underline">
-                    <div className="flex items-center gap-2 w-full">
-                      {editingVolumeId === volume.id ? (
-                        <Input
-                          value={newVolumeTitle}
-                          onChange={(e) => setNewVolumeTitle(e.target.value)}
-                          onBlur={handleSaveVolumeTitle}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSaveVolumeTitle()}
-                          className="flex-grow"
-                          autoFocus
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      ) : (
-                        <span className="flex-grow text-left">{volume.title}</span>
-                      )}
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleStartEditVolume(volume); }}>
+                  <div className="flex items-center w-full">
+                    <AccordionTrigger className="font-headline text-base hover:no-underline flex-grow">
+                        {editingVolumeId === volume.id ? (
+                          <Input
+                            value={newVolumeTitle}
+                            onChange={(e) => setNewVolumeTitle(e.target.value)}
+                            onBlur={handleSaveVolumeTitle}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSaveVolumeTitle()}
+                            className="flex-grow"
+                            autoFocus
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        ) : (
+                          <span className="flex-grow text-left">{volume.title}</span>
+                        )}
+                    </AccordionTrigger>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleStartEditVolume(volume); }}>
                         <Edit className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </AccordionTrigger>
+                    </Button>
+                  </div>
                   <AccordionContent>
                     <ul className="space-y-2">
                       {volume.chapters.map(chapter => (
