@@ -5,7 +5,7 @@
  *
  * - generateContent - A function that generates content based on a prompt.
  * - GenerateContentInput - The input type for the generateContent function.
- * - GenerateContentOutput - The return type for the generateContent function.
+ * - GenerateContent- The return type for the generateContent function.
  */
 
 import {ai} from '@/ai/genkit';
@@ -52,8 +52,7 @@ Write the content as requested, ensuring it is consistent with the provided bibl
         format: 'json',
         schema: GenerateContentOutputSchema,
       },
-    }, {
-        input,
+      input,
     });
 
     return output!;

@@ -52,8 +52,7 @@ Based on the rules above, what is the answer?`,
         format: 'json',
         schema: AnswerQuestionOutputSchema,
       },
-    }, {
-        input,
+      input,
     });
     return output!;
   }

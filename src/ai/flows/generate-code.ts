@@ -55,8 +55,7 @@ Make sure that the output is valid, runnable code.`,
         format: 'json',
         schema: GenerateCodeOutputSchema,
       },
-    }, {
-        input,
+      input,
     });
     return output!;
   }
