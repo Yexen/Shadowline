@@ -10,6 +10,11 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 const GenerateContentInputSchema = z.object({
   prompt: z.string().describe('The writing prompt to generate content for.'),
@@ -32,28 +37,37 @@ const generateContentFlow = ai.defineFlow(
     inputSchema: GenerateContentInputSchema,
     outputSchema: GenerateContentOutputSchema,
   },
-  async (input) => {
-    const { output } = await ai.generate({
-      prompt: `You are a creative writing assistant for a user writing stories set in a Gotham City-like universe.
+  async ({ prompt, bibleData }) => {
+    const systemPrompt = `You are a creative writing assistant for a user writing stories set in a Gotham City-like universe.
 Your task is to write a compelling piece of content based on the user's prompt. This could be a scene, a character description, or a plot point.
-
-{{#if bibleData}}
+${bibleData ? `
 You have been provided with the user's "Gotham Bible" which contains their custom worldbuilding details. This is your primary source of truth. The bible is structured into categories, with each entry having key-value 'fields' and detailed 'pages' for deeper lore. You MUST consider content from both 'fields' and 'pages'.
 
 GOTHAM BIBLE CONTEXT:
-{{{bibleData}}}
-{{/if}}
+${bibleData}` : ''}
+`;
 
-USER PROMPT:
-"{{{prompt}}}"
+    try {
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: prompt },
+            ],
+        });
+        const content = response.choices[0].message.content || "I'm sorry, I couldn't generate any content for that prompt.";
+        return { content };
 
-Write the content as requested, ensuring it is consistent with the provided bible if it exists.`,
-      model: 'googleai/gemini-1.5-flash-latest',
-      output: {
-        schema: GenerateContentOutputSchema,
-      },
-      input,
-    });
-    return output!;
+    } catch (error: any) {
+         console.error("OpenAI API error in generateContent flow:", error);
+         if (error.status === 429) {
+             return {
+                 content: "The connection to the AI is overloaded. Please try again in a moment."
+             };
+         }
+         return {
+             content: "An error occurred while communicating with the AI. Please check your connection and API key."
+         };
+    }
   }
 );
