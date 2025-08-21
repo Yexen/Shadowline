@@ -148,7 +148,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
              <SidebarMenuItem>
                 <SidebarMenuButton onClick={() => setVolumesOpen(true)} tooltip={{ children: "Volumes", side: "right", align: "center" }} className="font-headline text-base">
                     <BookOpenCheck />
-                    <span>Volumes</span>
+                    <span className="group-data-[state=collapsed]:hidden">Volumes</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <Sheet>
@@ -156,7 +156,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                      <SidebarMenuItem>
                         <SidebarMenuButton tooltip={{ children: "Bible", side: "right", align: "center" }} className="font-headline text-base">
                             <BookCopy />
-                            <span>Bible</span>
+                            <span className="group-data-[state=collapsed]:hidden">Bible</span>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SheetTrigger>
