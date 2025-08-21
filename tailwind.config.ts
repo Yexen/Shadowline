@@ -10,9 +10,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
-        headline: ['Inter', 'sans-serif'],
-        code: ['monospace'],
+        body: ['Rajdhani', 'sans-serif'],
+        headline: ['Orbitron', 'sans-serif'],
+        code: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', 'monospace'],
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -88,10 +88,42 @@ export default {
             height: '0',
           },
         },
+        'flash': {
+          '0%': { color: 'hsl(var(--primary))' },
+          '100%': { color: 'hsl(var(--muted-foreground))' },
+        },
+        'bat-signal-fade-in': {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
+        'bat-signal-fade-out': {
+          from: { opacity: '1' },
+          to: { opacity: '0' },
+        },
+        'bat-signal-light-anim': {
+          '0%': { opacity: '0', transform: 'scale(0.5)' },
+          '20%': { opacity: '0.3', transform: 'scale(1)' },
+          '80%': { opacity: '0.3', transform: 'scale(1)' },
+          '100%': { opacity: '0', transform: 'scale(0.5)' },
+        },
+        'bat-logo-appear': {
+          from: { transform: 'scale(0) rotate(10deg)' },
+          to: { transform: 'scale(1) rotate(0deg)' },
+        },
+        'bat-logo-disappear': {
+          from: { transform: 'scale(1) rotate(0deg)' },
+          to: { transform: 'scale(0) rotate(-10deg)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'flash': 'flash 1s ease-out',
+        'bat-signal-fade-in': 'bat-signal-fade-in 1s forwards',
+        'bat-signal-fade-out': 'bat-signal-fade-out 1s 4s forwards',
+        'bat-signal-light': 'bat-signal-light-anim 5s forwards',
+        'bat-logo-appear': 'bat-logo-appear 1s 0.5s forwards',
+        'bat-logo-disappear': 'bat-logo-disappear 1s 4s forwards',
       },
     },
   },
