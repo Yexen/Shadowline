@@ -227,11 +227,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       </Sidebar>
       <SidebarInset>
         <div className="p-4 md:p-6">
-            <div className="flex items-center gap-2 mb-4 md:hidden">
-                <SidebarTrigger />
-                <h2 className="font-headline text-lg uppercase">{pathname.split('/').pop() || 'Home'}</h2>
-            </div>
-             <AppHeader />
+            <AppHeader />
             {children}
         </div>
       </SidebarInset>
