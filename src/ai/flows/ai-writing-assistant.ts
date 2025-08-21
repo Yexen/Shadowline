@@ -51,7 +51,6 @@ Write the content as requested, ensuring it is consistent with the provided bibl
       model: 'googleai/gemini-1.5-flash-latest',
       output: {
         schema: GenerateContentOutputSchema,
-        format: 'json',
       },
       input,
     });

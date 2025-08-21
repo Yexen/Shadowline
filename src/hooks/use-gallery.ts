@@ -28,11 +28,6 @@ const defaultGalleryData: GalleryFolder[] = [
             { id: 'img-3', url: 'https://placehold.co/600x400.png', caption: 'Character sketch: Penguin', dataAiHint: 'villain character design'},
         ]
     },
-    {
-        id: 'folder-2',
-        name: 'In-Game Screenshots',
-        images: []
-    }
 ];
 
 export function useGallery() {
@@ -66,6 +61,7 @@ export function useGallery() {
   }, []);
 
   const addFolder = (name: string) => {
+    if (folders.find(f => f.name === name)) return;
     const newFolder: GalleryFolder = {
       id: `folder-${Date.now()}`,
       name,

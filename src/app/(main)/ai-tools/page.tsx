@@ -112,70 +112,68 @@ export default function AiToolsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        <div className="space-y-8">
-            <Card className="bg-card">
-              <CardHeader>
-                <CardTitle className="font-headline flex items-center gap-2"><PenLine/> Scene Generator</CardTitle>
-                <CardDescription>Describe a scene and Oracle will write it for you.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="writing-prompt">Scene Prompt</Label>
-                  <Textarea
-                    id="writing-prompt"
-                    placeholder="e.g., Batman corners a criminal on a rain-slicked rooftop. The criminal is surprisingly not afraid."
-                    value={writingPrompt}
-                    onChange={(e) => setWritingPrompt(e.target.value)}
-                    rows={4}
-                  />
+        <Card className="bg-card">
+          <CardHeader>
+            <CardTitle className="font-headline flex items-center gap-2"><PenLine/> Scene Generator</CardTitle>
+            <CardDescription>Describe a scene and Oracle will write it for you.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="writing-prompt">Scene Prompt</Label>
+              <Textarea
+                id="writing-prompt"
+                placeholder="e.g., Batman corners a criminal on a rain-slicked rooftop. The criminal is surprisingly not afraid."
+                value={writingPrompt}
+                onChange={(e) => setWritingPrompt(e.target.value)}
+                rows={4}
+              />
+            </div>
+            <Button onClick={handleGenerateScene} disabled={isGeneratingScene || !writingPrompt}>
+              {isGeneratingScene ? 'Generating...' : <><Sparkles className="mr-2 h-4 w-4" /> Generate Scene</>}
+            </Button>
+            {generatedScene && (
+              <div className="space-y-2 pt-4">
+                <h4 className="font-bold font-headline">Generated Scene:</h4>
+                <div className="relative bg-accent/50 p-4 rounded-md space-y-2 prose prose-sm prose-invert max-h-60 overflow-auto">
+                  <p>{generatedScene}</p>
                 </div>
-                <Button onClick={handleGenerateScene} disabled={isGeneratingScene || !writingPrompt}>
-                  {isGeneratingScene ? 'Generating...' : <><Sparkles className="mr-2 h-4 w-4" /> Generate Scene</>}
+                <Button variant="outline" size="sm" onClick={() => handleCopy(generatedScene, "Scene copied! You can now paste it in the editor.")}>
+                    <Copy className="mr-2 h-4 w-4" /> Copy Scene
                 </Button>
-                {generatedScene && (
-                  <div className="space-y-2 pt-4">
-                    <h4 className="font-bold font-headline">Generated Scene:</h4>
-                    <div className="relative bg-accent/50 p-4 rounded-md space-y-2 prose prose-sm prose-invert max-h-60 overflow-auto">
-                      <p>{generatedScene}</p>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={() => handleCopy(generatedScene, "Scene copied! You can now paste it in the editor.")}>
-                        <Copy className="mr-2 h-4 w-4" /> Copy Scene
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-card">
-              <CardHeader>
-                <CardTitle className="font-headline flex items-center gap-2"><MessageSquareQuote/> Ask Oracle</CardTitle>
-                <CardDescription>Ask a question about your world and get an answer from the bible.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="question-prompt">Your Question</Label>
-                  <Input
-                    id="question-prompt"
-                    placeholder="e.g., What is the history of Arkham Asylum?"
-                    value={question}
-                    onChange={(e) => setQuestion(e.target.value)}
-                  />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-card">
+          <CardHeader>
+            <CardTitle className="font-headline flex items-center gap-2"><MessageSquareQuote/> Ask Oracle</CardTitle>
+            <CardDescription>Ask a question about your world and get an answer from the bible.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="question-prompt">Your Question</Label>
+              <Input
+                id="question-prompt"
+                placeholder="e.g., What is the history of Arkham Asylum?"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+              />
+            </div>
+            <Button onClick={handleAskQuestion} disabled={isAsking || !question}>
+              {isAsking ? 'Thinking...' : 'Ask Question'}
+            </Button>
+            {answer && (
+              <div className="space-y-2 pt-4">
+                <h4 className="font-bold font-headline">Oracle's Answer:</h4>
+                <div className="bg-accent/50 p-4 rounded-md space-y-2 prose prose-sm prose-invert">
+                    <p>{answer}</p>
                 </div>
-                <Button onClick={handleAskQuestion} disabled={isAsking || !question}>
-                  {isAsking ? 'Thinking...' : 'Ask Question'}
-                </Button>
-                {answer && (
-                  <div className="space-y-2 pt-4">
-                    <h4 className="font-bold font-headline">Oracle's Answer:</h4>
-                    <div className="bg-accent/50 p-4 rounded-md space-y-2 prose prose-sm prose-invert">
-                        <p>{answer}</p>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-        </div>
-
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
         <Card className="bg-card">
           <CardHeader>
             <CardTitle className="font-headline flex items-center gap-2"><Wand2 /> AI Code Generator</CardTitle>
