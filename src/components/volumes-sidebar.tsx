@@ -12,7 +12,7 @@ import { Skeleton } from './ui/skeleton';
 import { ChapterEditor } from './chapter-editor';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { ScrollArea } from './ui/scroll-area';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle as DialogTitleVol } from './ui/dialog';
+import { VolumeEditor } from './volume-editor';
 
 
 interface VolumesSidebarProps {
@@ -23,7 +23,7 @@ interface VolumesSidebarProps {
 type VolumesView = 'by-volume' | 'all';
 
 export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
-  const { isLoaded, volumes, addVolume, updateVolumeTitle, addChapter, deleteChapter, updateChapter } = useVolumes();
+  const { isLoaded, volumes, addVolume, updateVolume, deleteVolume, addChapter, deleteChapter, updateChapter } = useVolumes();
   const [editingVolumeId, setEditingVolumeId] = useState<string | null>(null);
   const [newVolumeTitle, setNewVolumeTitle] = useState('');
   const [newVolumeName, setNewVolumeName] = useState('');
@@ -40,7 +40,7 @@ export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
 
   const handleSaveVolumeTitle = () => {
     if (editingVolumeId && newVolumeTitle.trim()) {
-      updateVolumeTitle(editingVolumeId, newVolumeTitle.trim());
+      updateVolume(editingVolumeId, { title: newVolumeTitle.trim() });
       setEditingVolumeId(null);
       setNewVolumeTitle('');
     }
@@ -95,7 +95,8 @@ export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
               <Skeleton className="h-12 w-full" />
             </div>
           ) : view === 'by-volume' ? (
-            <Accordion type="multiple" className="w-full mt-4 flex-grow overflow-y-auto pr-2">
+            <ScrollArea className="flex-grow mt-4 pr-2">
+            <Accordion type="multiple" className="w-full">
               {volumes.map(volume => (
                 <AccordionItem value={volume.id} key={volume.id}>
                   <div className="flex items-center w-full">
@@ -114,9 +115,30 @@ export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
                           <span className="flex-grow text-left">{volume.title}</span>
                         )}
                     </AccordionTrigger>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleStartEditVolume(volume); }}>
-                        <Edit className="h-4 w-4" />
-                    </Button>
+                    <div className='flex'>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleStartEditVolume(volume); }}>
+                            <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => e.stopPropagation()} disabled={volumes.length <= 1}>
+                                 <Trash2 className="h-4 w-4" />
+                             </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Volume?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently delete the volume "{volume.title}" and all its chapters. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteVolume(volume.id)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                   </div>
                   <AccordionContent>
                     <ul className="space-y-2">
@@ -171,6 +193,7 @@ export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
                 </AccordionItem>
               ))}
             </Accordion>
+            </ScrollArea>
           ) : (
              <ScrollArea className="flex-grow mt-4 pr-2">
                 <div className="space-y-4">
@@ -240,20 +263,11 @@ export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
       )}
 
       {selectedVolume && (
-        <Dialog open={!!selectedVolume} onOpenChange={() => setSelectedVolume(null)}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitleVol className="font-headline">{selectedVolume.title}</DialogTitleVol>
-                </DialogHeader>
-                <div className="py-4 grid grid-cols-2 gap-4">
-                   <Button variant="outline" onClick={() => setSelectedVolume(null)}>Overview</Button>
-                   <Button variant="outline" onClick={() => setSelectedVolume(null)}>Resources</Button>
-                </div>
-                 <DialogFooter>
-                    <Button onClick={() => setSelectedVolume(null)}>Close</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <VolumeEditor
+          volume={selectedVolume}
+          onClose={() => setSelectedVolume(null)}
+          onSave={updateVolume}
+        />
       )}
     </>
   );

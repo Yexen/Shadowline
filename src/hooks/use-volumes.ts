@@ -9,10 +9,18 @@ export interface Chapter {
   content: string;
 }
 
+export interface ResourcePage {
+  id: string;
+  title: string;
+  content: string;
+}
+
 export interface Volume {
   id: string;
   title: string;
   chapters: Chapter[];
+  overview?: string;
+  resources?: ResourcePage[];
 }
 
 const VOLUMES_STORAGE_KEY = 'gotham-volumes-data';
@@ -21,6 +29,8 @@ const defaultVolumes: Volume[] = [{
     id: `volume-1`,
     title: `Volume 1`,
     chapters: [],
+    overview: 'This is the first volume of the story.',
+    resources: [],
 }];
 
 export function useVolumes() {
@@ -32,7 +42,6 @@ export function useVolumes() {
       const storedData = localStorage.getItem(VOLUMES_STORAGE_KEY);
       if (storedData) {
         const parsedData = JSON.parse(storedData);
-        // Ensure there's at least one volume, if not, set default
         if (Array.isArray(parsedData) && parsedData.length > 0) {
             setVolumes(parsedData);
         } else {
@@ -65,14 +74,22 @@ export function useVolumes() {
       id: `volume-${Date.now()}`,
       title: title,
       chapters: [],
+      overview: '',
+      resources: [],
     };
     saveData([...volumes, newVolume]);
   };
 
-  const updateVolumeTitle = (volumeId: string, newTitle: string) => {
-    const newVolumes = volumes.map(v => v.id === volumeId ? { ...v, title: newTitle } : v);
+  const updateVolume = (volumeId: string, updatedVolume: Partial<Volume>) => {
+    const newVolumes = volumes.map(v => v.id === volumeId ? { ...v, ...updatedVolume } : v);
     saveData(newVolumes);
-  };
+  }
+
+  const deleteVolume = (volumeId: string) => {
+    if (volumes.length <= 1) return; // Can't delete the last volume
+    const newVolumes = volumes.filter(v => v.id !== volumeId);
+    saveData(newVolumes);
+  }
   
   const addChapter = (volumeId: string, chapterTitle: string) => {
     const newChapter: Chapter = {
@@ -112,5 +129,5 @@ export function useVolumes() {
       saveData(newVolumes);
   };
 
-  return { isLoaded, volumes, addVolume, updateVolumeTitle, addChapter, updateChapter, deleteChapter };
+  return { isLoaded, volumes, addVolume, updateVolume, deleteVolume, addChapter, updateChapter, deleteChapter };
 }
