@@ -47,7 +47,7 @@ USER PROMPT:
 "{{{prompt}}}"
 
 Write the content as requested, ensuring it is consistent with the provided bible if it exists.`,
-      model: 'googleai/gemini-1.5-pro-latest',
+      model: 'googleai/gemini-1.5-flash-latest',
       output: {
         schema: GenerateContentOutputSchema,
         format: 'json',
