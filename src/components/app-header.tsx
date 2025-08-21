@@ -14,6 +14,7 @@ import { ImagePlus } from "lucide-react";
 const pathToTitle: { [key: string]: string } = {
     '/home': "Welcome, Writer",
     '/editor': "The Editor",
+    '/drafts': "Unfinished Business",
     '/ai-tools': "Oracle AI Tools",
     '/gallery': "Visual Archives",
     '/about': "Project Intel"
