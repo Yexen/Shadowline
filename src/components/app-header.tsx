@@ -18,8 +18,10 @@ const pathToTitle: { [key: string]: string } = {
     '/drafts': "Unfinished Business",
     '/ai-tools': "Oracle AI Tools",
     '/gallery': "Visual Archives",
+    '/maps': "Cartography",
     '/organization': "Mission Control",
-    '/about': "Project Intel"
+    '/about': "Project Intel",
+    '/nyxen': "Nyxen Chat"
 };
 
 export function AppHeader() {

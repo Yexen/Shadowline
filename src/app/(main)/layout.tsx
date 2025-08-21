@@ -17,7 +17,7 @@ import {
 import { BatLogo } from '@/components/bat-logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Home, PenSquare, BrainCircuit, Info, LogOut, FileText, Images, Settings, BookCopy, BookOpenCheck, ClipboardList, Bot } from 'lucide-react';
+import { Home, PenSquare, BrainCircuit, Info, LogOut, FileText, Images, Settings, BookCopy, BookOpenCheck, ClipboardList, Bot, Map as MapIcon } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -75,6 +75,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { href: '/ai-tools', label: 'AI Tools', icon: BrainCircuit },
     { href: '/nyxen', label: 'Nyxen', icon: Bot },
     { href: '/gallery', label: 'Gallery', icon: Images },
+    { href: '/maps', label: 'Maps', icon: MapIcon },
     { href: '/organization', label: 'Organization', icon: ClipboardList },
     { href: '/about', label: 'About', icon: Info },
   ];
