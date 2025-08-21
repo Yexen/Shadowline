@@ -69,13 +69,25 @@ ${bibleData ? `GOTHAM BIBLE CONTEXT:\n${bibleData}` : ''}
       }))
     ];
     
-    const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: messages,
-    });
+    try {
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: messages,
+        });
 
-    const reply = response.choices[0].message.content || "I'm sorry, I don't have a response for that.";
-
-    return { reply };
+        const reply = response.choices[0].message.content || "I'm sorry, I don't have a response for that.";
+        return { reply };
+    } catch (error: any) {
+        console.error("OpenAI API error in Nyxen flow:", error);
+        if (error.status === 429) {
+            return {
+                reply: "I'm currently receiving a high volume of requests and have exceeded my processing capacity. Please try again in a moment. If this persists, please check your OpenAI plan and billing details."
+            };
+        }
+        // For other errors, return a generic message
+        return {
+            reply: "I seem to be having trouble connecting to my core processors. Please try again later."
+        };
+    }
   }
 );
