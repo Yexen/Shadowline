@@ -23,13 +23,14 @@ const GenerateContentOutputSchema = z.object({
 export type GenerateContentOutput = z.infer<typeof GenerateContentOutputSchema>;
 
 export async function generateContent(input: GenerateContentInput): Promise<GenerateContentOutput> {
-  return generateContentFlow(input);
+  const {output} = await generateContentFlow(input);
+  return output!;
 }
 
 const prompt = ai.definePrompt({
   name: 'generateContentPrompt',
   input: {schema: GenerateContentInputSchema},
-  output: {schema: GenerateContentOutputSchema},
+  output: {schema: GenerateContentOutputSchema, format: 'json'},
   prompt: `You are a creative writing assistant for a user writing stories set in a Gotham City-like universe.
 Your task is to write a compelling piece of content based on the user's prompt. This could be a scene, a character description, or a plot point.
 
@@ -51,8 +52,5 @@ const generateContentFlow = ai.defineFlow(
     inputSchema: GenerateContentInputSchema,
     outputSchema: GenerateContentOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
+  prompt
 );

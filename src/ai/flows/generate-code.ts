@@ -24,13 +24,14 @@ const GenerateCodeOutputSchema = z.object({
 export type GenerateCodeOutput = z.infer<typeof GenerateCodeOutputSchema>;
 
 export async function generateCode(input: GenerateCodeInput): Promise<GenerateCodeOutput> {
-  return generateCodeFlow(input);
+  const {output} = await generateCodeFlow(input);
+  return output!;
 }
 
 const prompt = ai.definePrompt({
   name: 'generateCodePrompt',
   input: {schema: GenerateCodeInputSchema},
-  output: {schema: GenerateCodeOutputSchema},
+  output: {schema: GenerateCodeOutputSchema, format: 'json'},
   prompt: `You are a helpful assistant that generates code snippets based on user descriptions.
 
 The user will provide a description of the desired code and the programming language.
@@ -54,8 +55,5 @@ const generateCodeFlow = ai.defineFlow(
     inputSchema: GenerateCodeInputSchema,
     outputSchema: GenerateCodeOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
+  prompt
 );
