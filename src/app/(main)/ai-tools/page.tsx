@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { BrainCircuit, PenLine, Sparkles, Wand2 } from 'lucide-react';
+import { BrainCircuit, PenLine, Sparkles, Wand2, Copy } from 'lucide-react';
 import { generateContentSuggestions, GenerateContentSuggestionsInput } from '@/ai/flows/ai-writing-assistant';
 import { generateCode, GenerateCodeInput } from '@/ai/flows/generate-code';
 import { useToast } from '@/hooks/use-toast';
@@ -59,21 +59,18 @@ export default function AiToolsPage() {
     }
   };
 
-  const handleApplyCode = () => {
-    if (codeLanguage === 'CSS') {
+  const handleCopyCode = () => {
+    if (generatedCode) {
         navigator.clipboard.writeText(generatedCode);
         toast({
           title: 'Code Copied!',
           description: (
             <div>
-              <p>To make your changes permanent, paste the copied CSS at the end of the following file:</p>
-              <pre className="mt-2 w-full rounded-md bg-muted p-2 font-code text-xs">src/app/globals.css</pre>
+              <p>Great! Now, just ask me to "apply this CSS" in the chat, and I'll add it to your project permanently.</p>
             </div>
           ),
           duration: 10000,
         });
-    } else {
-        toast({ variant: 'destructive', title: 'Not Supported', description: 'Applying JavaScript is not currently supported.' });
     }
   }
 
@@ -156,8 +153,16 @@ export default function AiToolsPage() {
                   <code className="font-code text-sm">{generatedCode}</code>
                 </pre>
                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={handleApplyCode} disabled={codeLanguage !== 'CSS'}>Apply Code</Button>
+                    <Button variant="outline" size="sm" onClick={handleCopyCode} disabled={codeLanguage !== 'CSS'}>
+                      <Copy className="mr-2 h-4 w-4" />
+                      Copy Code
+                    </Button>
                  </div>
+                  {codeLanguage === 'CSS' && 
+                    <p className="text-xs text-muted-foreground pt-2">
+                      After copying, ask me to "apply this CSS" in the chat to make it permanent.
+                    </p>
+                  }
               </div>
             )}
           </CardContent>
@@ -165,4 +170,3 @@ export default function AiToolsPage() {
       </div>
     </div>
   );
-}
