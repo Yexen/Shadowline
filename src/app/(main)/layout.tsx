@@ -23,7 +23,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Home, PenSquare, BrainCircuit, Info, LogOut, FilePlus, BookCopy, PlusCircle, Images, Settings } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useBible, type BibleEntry } from '@/hooks/use-bible';
@@ -31,9 +31,9 @@ import { BibleEditor } from '@/components/bible-editor';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AppHeader } from '@/components/app-header';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { useLogo } from '@/hooks/use-logo';
+import { useWriters } from '@/hooks/use-writers';
+import { WriterProfile } from '@/components/writer-profile';
+import { SettingsDialog } from '@/components/settings-dialog';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -41,13 +41,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [isClient, setIsClient] = useState(false);
 
   const { isLoaded, bibleData, addCategory, addOrUpdateEntry } = useBible();
+  const { writers, activeWriter, setActiveWriter, addWriter, updateWriter, isLoaded: writersLoaded } = useWriters();
+
   const [editingEntry, setEditingEntry] = useState<{ category: string; entry: BibleEntry } | null>(null);
   const [newCategory, setNewCategory] = useState('');
-
-  // Settings and Logo state
-  const { setLogoUrl } = useLogo();
+  const [writerProfileOpen, setWriterProfileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const logoFileInputRef = useRef<HTMLInputElement>(null);
+
 
   useEffect(() => {
     setIsClient(true);
@@ -93,21 +93,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     }
   }
 
-  const handleLogoFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = (loadEvent) => {
-            setLogoUrl(loadEvent.target?.result as string);
-            // Close the settings dialog after successful selection for a smoother UX
-            // setSettingsOpen(false); 
-        };
-        reader.readAsDataURL(file);
-    }
-  }
 
-
-  if (!isClient) {
+  if (!isClient || !writersLoaded) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -144,6 +131,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 ))}
+                 <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => setSettingsOpen(true)}>
+                        <Settings />
+                        <span>Settings</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
             </SidebarMenu>
             <SidebarSeparator />
             <SidebarGroup>
@@ -215,47 +208,19 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 </SheetContent>
             </Sheet>
 
-             <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-                <DialogTrigger asChild>
-                    <Button variant="ghost" className="w-full justify-start gap-2">
-                        <Settings className="size-4" />
-                        <span className="font-headline">SETTINGS</span>
-                    </Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle className="font-headline">Settings</DialogTitle>
-                        <DialogDescription>
-                            Customize your application settings. Changes are saved automatically.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-4">
-                        <h3 className="font-bold">Change Logo</h3>
-                        <p className="text-sm text-muted-foreground">
-                            Upload a new logo for the application. SVG, PNG, or JPG are recommended.
-                        </p>
-                        <Input type="file" accept="image/*" className="hidden" ref={logoFileInputRef} onChange={handleLogoFileSelect} />
-                        <Button variant="outline" className="w-full" onClick={() => logoFileInputRef.current?.click()}>Browse Device</Button>
-                    </div>
-                    <DialogFooter>
-                        <Button onClick={() => setSettingsOpen(false)}>Done</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
             <SidebarSeparator />
-            <div className="flex items-center justify-between p-2">
+            <button className="flex items-center justify-between p-2 rounded-md hover:bg-accent w-full group" onClick={() => setWriterProfileOpen(true)}>
                 <div className="flex items-center gap-2">
                     <Avatar className="h-8 w-8">
-                        <AvatarImage src="https://placehold.co/40x40" alt="Writer" data-ai-hint="batman avatar" />
-                        <AvatarFallback>W</AvatarFallback>
+                        <AvatarImage src={activeWriter?.avatarUrl} alt={activeWriter?.name} data-ai-hint="writer avatar" />
+                        <AvatarFallback>{activeWriter?.name.charAt(0) || 'W'}</AvatarFallback>
                     </Avatar>
-                    <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">The Writer</span>
+                    <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">{activeWriter?.name || 'The Writer'}</span>
                 </div>
-                <Button variant="ghost" size="icon" onClick={handleLogout} className="group-data-[collapsible=icon]:hidden">
-                    <LogOut />
-                </Button>
-            </div>
+                <div className="opacity-0 group-hover:opacity-100 group-data-[collapsible=icon]:hidden">
+                    <LogOut onClick={(e) => { e.stopPropagation(); handleLogout(); }}/>
+                </div>
+            </button>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
@@ -268,12 +233,26 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             {children}
         </div>
       </SidebarInset>
+
       <BibleEditor 
         entry={editingEntry?.entry ?? null}
         category={editingEntry?.category ?? ''}
         onClose={() => setEditingEntry(null)}
         onSave={handleSaveEntry}
       />
+
+      <WriterProfile 
+        isOpen={writerProfileOpen}
+        onClose={() => setWriterProfileOpen(false)}
+      />
+
+      <SettingsDialog
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
+
     </SidebarProvider>
   );
 }
+
+    
