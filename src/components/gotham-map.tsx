@@ -1,8 +1,12 @@
 
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogHeader, VisuallyHidden } from '@/components/ui/dialog';
+
+interface GothamMapProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
 
 const mapHtml = `
 <!DOCTYPE html>
@@ -321,183 +325,158 @@ const mapHtml = `
             </div>
         </div>
     </div>
+
+    <script>
+        let currentZoom = 1;
+        let isMouseDown = false;
+        let lastMousePos = { x: 0, y: 0 };
+        let currentOffset = { x: 0, y: 0 };
+        let streetsVisible = true;
+
+        const mapContainer = document.getElementById('mapContainer');
+        const gothamMap = document.getElementById('gothamMap');
+        const infoPanel = document.getElementById('infoPanel');
+        const infoContent = document.getElementById('infoContent');
+        const streetsBtn = document.getElementById('streetsBtn');
+        const themeBtn = document.getElementById('themeBtn');
+        const charactersBtn = document.getElementById('charactersBtn');
+        const charactersLayer = document.getElementById('charactersLayer');
+
+        /* ===== Pan (mouse) ===== */
+        mapContainer.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.landmark, .district, .island, .bridge, .character')) return;
+            isMouseDown = true;
+            lastMousePos = { x: e.clientX, y: e.clientY };
+            mapContainer.style.cursor = 'grabbing';
+        });
+        mapContainer.addEventListener('mousemove', (e) => {
+            if (!isMouseDown) return;
+            const deltaX = e.clientX - lastMousePos.x;
+            const deltaY = e.clientY - lastMousePos.y;
+            currentOffset.x += deltaX; currentOffset.y += deltaY;
+            updateMapTransform();
+            lastMousePos = { x: e.clientX, y: e.clientY };
+        });
+        ['mouseup','mouseleave'].forEach(type => mapContainer.addEventListener(type, () => { isMouseDown = false; mapContainer.style.cursor = 'grab'; }));
+
+        /* ===== Pan (touch) ===== */
+        mapContainer.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.landmark, .district, .island, .bridge, .character')) return;
+            const t = e.touches[0];
+            isMouseDown = true;
+            lastMousePos = { x: t.clientX, y: t.clientY };
+        }, { passive: false });
+        mapContainer.addEventListener('touchmove', (e) => {
+            if (!isMouseDown) return;
+            const t = e.touches[0];
+            const deltaX = t.clientX - lastMousePos.x;
+            const deltaY = t.clientY - lastMousePos.y;
+            currentOffset.x += deltaX; currentOffset.y += deltaY;
+            updateMapTransform();
+            lastMousePos = { x: t.clientX, y: t.clientY };
+            e.preventDefault();
+        }, { passive: false });
+        mapContainer.addEventListener('touchend', () => { isMouseDown = false; }, { passive: true });
+
+        function updateMapTransform() {
+            gothamMap.style.transform = 'scale(' + currentZoom + ') translate(' + (currentOffset.x / currentZoom) + 'px, ' + (currentOffset.y / currentZoom) + 'px)';
+        }
+        function zoomIn() { currentZoom = Math.min(currentZoom * 1.4, 4); updateMapTransform(); }
+        function zoomOut() { currentZoom = Math.max(currentZoom / 1.4, 0.4); updateMapTransform(); }
+        function resetView() { currentZoom = 1; currentOffset = { x: 0, y: 0 }; updateMapTransform(); }
+
+        function toggleStreets() {
+            streetsVisible = !streetsVisible;
+            const streets = document.querySelectorAll('.street, .street-label');
+            streets.forEach(street => { street.style.display = streetsVisible ? 'block' : 'none'; });
+            streetsBtn.classList.toggle('active', streetsVisible);
+            streetsBtn.setAttribute('aria-pressed', String(streetsVisible));
+        }
+
+        /* ===== NEW: Day/Night Theme Toggle ===== */
+        function toggleTheme() {
+            const isDay = document.body.classList.toggle('theme-day');
+            document.body.classList.toggle('theme-night', !isDay);
+            themeBtn.classList.toggle('active', isDay);
+            themeBtn.setAttribute('aria-pressed', String(isDay));
+        }
+
+        /* ===== NEW: Characters Layer Toggle ===== */
+        function toggleCharacters() {
+            const hidden = charactersLayer.classList.toggle('hidden');
+            charactersLayer.setAttribute('aria-hidden', String(hidden));
+            charactersBtn.classList.toggle('active', !hidden);
+            charactersBtn.setAttribute('aria-pressed', String(!hidden));
+        }
+
+        // Clicking characters opens the same info as their landmark/district when available
+        charactersLayer.addEventListener('click', (e) => {
+            const btn = e.target.closest('.character');
+            if (!btn) return;
+            const infoKey = btn.getAttribute('data-info');
+            showInfo(infoKey);
+        });
+
+        // Click handlers for all data-info elements
+        document.querySelectorAll('[data-info]').forEach(element => {
+            element.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const infoKey = element.getAttribute('data-info');
+                showInfo(infoKey);
+                document.querySelectorAll('.clicked').forEach(el => el.classList.remove('clicked'));
+                element.classList.add('clicked');
+            });
+        });
+
+        function showInfo(key) {
+            const info = locationInfo[key];
+            if (info) {
+                infoContent.innerHTML = '<h2>' + info.title + '</h2>' + info.content;
+                infoPanel.classList.add('show');
+            }
+        }
+        function closePanel() { infoPanel.classList.remove('show'); document.querySelectorAll('.clicked').forEach(el => el.classList.remove('clicked')); }
+
+        // Random landmark pulsing
+        setInterval(() => {
+            const landmarks = document.querySelectorAll('.landmark');
+            landmarks.forEach(landmark => landmark.classList.remove('pulse'));
+            const randomLandmark = landmarks[Math.floor(Math.random() * landmarks.length)];
+            if (randomLandmark) randomLandmark.classList.add('pulse');
+        }, 4000);
+
+        // Prevent text selection while dragging
+        mapContainer.addEventListener('selectstart', (e) => e.preventDefault());
+
+        // Keyboard: ESC closes panel
+        window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel(); });
+
+        // Initial view positioning
+        setTimeout(() => { currentZoom = 0.7; updateMapTransform(); }, 100);
+
+        // ===== Extended location info (unchanged + a few added) =====
+        const locationInfo = {
+            'uptown': { title: 'Uptown Island', content: '<h3>Geographic Overview</h3><p>The northernmost of Gotham\'s three main islands, separated from Midtown by the Sprang River. This is one of Gotham\'s roughest areas, containing some of the city\'s most dangerous neighborhoods.</p><h3>Key Districts</h3><p><strong>Crime Alley:</strong> Formerly Park Row, where the Wayne family was murdered. Now one of Gotham\'s most dangerous streets.<br><strong>Burnley:</strong> Home to the Burnley Town Massive gang, a working-class district north of Sprang River.<br><strong>Amusement Mile:</strong> Entertainment district with abandoned carnival rides, often used by villains as hideouts.</p>' },
+            'midtown': { title: 'Midtown Island', content: '<h3>Central Hub</h3><p>The middle island of Gotham\'s three-island system, dominated by Robinson Park and containing Gotham University. A mix of residential, academic, and recreational areas.</p><h3>Key Districts</h3><p><strong>Robinson Park:</strong> Gotham\'s equivalent to Central Park, named after Joker co-creator Jerry Robinson. Often controlled by Poison Ivy.<br><strong>Coventry:</strong> Residential neighborhood with mix of housing types.<br><strong>Upper East Side:</strong> More affluent residential area with upscale apartments.</p>' },
+            'downtown': { title: 'Downtown Island', content: '<h3>Commercial Heart</h3><p>The largest and southernmost island, containing Gotham\'s main business districts, government buildings, and financial centers. The true heart of Gotham\'s economy and politics.</p><h3>Major Districts</h3><p><strong>Financial District:</strong> Wall Street equivalent with Wayne Tower as centerpiece.<br><strong>Diamond District:</strong> Luxury shopping and jewelry stores.<br><strong>Fashion District:</strong> Garment and clothing industry center.<br><strong>Old Gotham:</strong> Historic district with gothic architecture.<br><strong>Chinatown:</strong> Asian cultural district with traditional architecture.</p>' },
+            'arkham-island': { title: 'Arkham Island', content: '<h3>Arkham Asylum</h3><p>Small island in the Sprang River housing Gotham\'s infamous psychiatric hospital for the criminally insane. Connected to the mainland by the Trigate Bridge.</p><h3>Security</h3><p>Isolated, drawbridge lockdown, tunnels, multiple security tiers.</p>' },
+            'blackgate-island': { title: 'Blackgate Island', content: '<h3>Blackgate Penitentiary</h3><p>Maximum security prison for non-insane criminals. Located on its own island to prevent escapes, housing regular criminals who don\'t qualify for Arkham Asylum.</p>' },
+            'paris-island': { title: 'Paris Island', content: '<h3>Entertainment District</h3><p>Named in homage to creators; home to an abandoned funfair frequently used by the Joker.</p>' },
+            'tricorner': { title: 'Tricorner Island', content: '<h3>Industrial & Residential</h3><p>Shipyards and working-class residences. Commissioner Gordon\'s home area.</p>' },
+            'crime-alley': { title: 'Crime Alley (Park Row)', content: '<h3>Batman\'s Origin Point</h3><p>Where young Bruce Wayne witnessed his parents\' murder. Leslie Thompkins\' clinic operates here.</p>' },
+            'burnley': { title: 'Burnley District', content: '<h3>Working Class Stronghold</h3><p>Home to Burnley Town Massive. Industrial + residential mix.</p>' },
+            'robinson-park': { title: 'Robinson Park', content: '<h3>Gotham\'s Central Park</h3><p>Often under Poison Ivy\'s protection. Major green space.</p>' },
+            'financial-district': { title: 'Financial District', content: '<h3>Economic Center</h3><p>Wayne Tower, exchanges, banks, law firms. Deco + modern skyline.</p>' },
+            'wayne-tower': { title: 'Wayne Tower', content: '<h3>Wayne Enterprises HQ</h3><p>Corner of Finger & Broome Streets. Public face of Bruce Wayne\'s empire.</p>' },
+            'gcpd': { title: 'GCPD Headquarters', content: '<h3>Gotham City Police Department</h3><p>Led by Commissioner Gordon. Major Crimes Unit, chronic resource strain.</p>' },
+            'robert-kane-bridge': { title: 'Robert Kane Memorial Bridge', content: '<h3>Mainland Connection</h3><p>Primary bridge to the mainland (Wayne Manor side). Critical infrastructure.</p>' },
+            'trigate-bridge': { title: 'Trigate Bridge', content: '<h3>Arkham Access</h3><p>Can be raised for lockdown. GCPD checkpoint + monitoring.</p>' },
+            'ace-chemical': { title: 'Ace Chemical', content: '<h3>Ace Chemical Processing Plant</h3><p>Site of multiple Joker origin tellings. Industrial hazard zone.</p>' },
+            'blackgate': { title: 'Blackgate Penitentiary', content: '<h3>Maximum Security Prison</h3><p>Houses mob bosses and high-risk offenders not committed to Arkham.</p>' },
+            'iceberg': { title: 'The Iceberg Lounge', content: '<h3>Penguin\'s Club</h3><p>Front for arms deals and information brokerage. Neutral ground (sometimes).</p>' },
+            'clocktower': { title: 'The Clock Tower', content: '<h3>Oracle\'s Former Base</h3><p>Barbara Gordon\'s iconic intel hub.</p>' },
+            'city-hall': { title: 'Gotham City Hall', content: '<h3>Seat of Government</h3><p>Political power center, frequent target during crises.</p>' }
+        };
+    </script>
 </body>
 </html>
-`;
-
-export function GothamMap({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-
-  useEffect(() => {
-    if (isOpen && iframeRef.current) {
-        const doc = iframeRef.current.contentWindow?.document;
-        if (doc) {
-            doc.open();
-            doc.write(mapHtml);
-            doc.close();
-            
-            // The script needs to be injected after the document is written
-            const script = doc.createElement('script');
-            script.textContent = `
-                let currentZoom = 1;
-                let isMouseDown = false;
-                let lastMousePos = { x: 0, y: 0 };
-                let currentOffset = { x: 0, y: 0 };
-                let streetsVisible = true;
-
-                const mapContainer = document.getElementById('mapContainer');
-                const gothamMap = document.getElementById('gothamMap');
-                const infoPanel = document.getElementById('infoPanel');
-                const infoContent = document.getElementById('infoContent');
-                const streetsBtn = document.getElementById('streetsBtn');
-                const themeBtn = document.getElementById('themeBtn');
-                const charactersBtn = document.getElementById('charactersBtn');
-                const charactersLayer = document.getElementById('charactersLayer');
-
-                /* ===== Pan (mouse) ===== */
-                mapContainer.addEventListener('mousedown', (e) => {
-                    if (e.target.closest('.landmark, .district, .island, .bridge, .character')) return;
-                    isMouseDown = true;
-                    lastMousePos = { x: e.clientX, y: e.clientY };
-                    mapContainer.style.cursor = 'grabbing';
-                });
-                mapContainer.addEventListener('mousemove', (e) => {
-                    if (!isMouseDown) return;
-                    const deltaX = e.clientX - lastMousePos.x;
-                    const deltaY = e.clientY - lastMousePos.y;
-                    currentOffset.x += deltaX; currentOffset.y += deltaY;
-                    updateMapTransform();
-                    lastMousePos = { x: e.clientX, y: e.clientY };
-                });
-                ['mouseup','mouseleave'].forEach(type => mapContainer.addEventListener(type, () => { isMouseDown = false; mapContainer.style.cursor = 'grab'; }));
-
-                /* ===== Pan (touch) ===== */
-                mapContainer.addEventListener('touchstart', (e) => {
-                    if (e.target.closest('.landmark, .district, .island, .bridge, .character')) return;
-                    const t = e.touches[0];
-                    isMouseDown = true;
-                    lastMousePos = { x: t.clientX, y: t.clientY };
-                }, { passive: false });
-                mapContainer.addEventListener('touchmove', (e) => {
-                    if (!isMouseDown) return;
-                    const t = e.touches[0];
-                    const deltaX = t.clientX - lastMousePos.x;
-                    const deltaY = t.clientY - lastMousePos.y;
-                    currentOffset.x += deltaX; currentOffset.y += deltaY;
-                    updateMapTransform();
-                    lastMousePos = { x: t.clientX, y: t.clientY };
-                    e.preventDefault();
-                }, { passive: false });
-                mapContainer.addEventListener('touchend', () => { isMouseDown = false; }, { passive: true });
-
-                function updateMapTransform() {
-                    gothamMap.style.transform = \`scale(\${currentZoom}) translate(\${currentOffset.x / currentZoom}px, \${currentOffset.y / currentZoom}px)\`;
-                }
-                window.zoomIn = () => { currentZoom = Math.min(currentZoom * 1.4, 4); updateMapTransform(); }
-                window.zoomOut = () => { currentZoom = Math.max(currentZoom / 1.4, 0.4); updateMapTransform(); }
-                window.resetView = () => { currentZoom = 1; currentOffset = { x: 0, y: 0 }; updateMapTransform(); }
-
-                window.toggleStreets = () => {
-                    streetsVisible = !streetsVisible;
-                    const streets = document.querySelectorAll('.street, .street-label');
-                    streets.forEach(street => { street.style.display = streetsVisible ? 'block' : 'none'; });
-                    streetsBtn.classList.toggle('active', streetsVisible);
-                    streetsBtn.setAttribute('aria-pressed', String(streetsVisible));
-                }
-
-                /* ===== NEW: Day/Night Theme Toggle ===== */
-                window.toggleTheme = () => {
-                    const isDay = document.body.classList.toggle('theme-day');
-                    document.body.classList.toggle('theme-night', !isDay);
-                    themeBtn.classList.toggle('active', isDay);
-                    themeBtn.setAttribute('aria-pressed', String(isDay));
-                }
-
-                /* ===== NEW: Characters Layer Toggle ===== */
-                window.toggleCharacters = () => {
-                    const hidden = charactersLayer.classList.toggle('hidden');
-                    charactersLayer.setAttribute('aria-hidden', String(hidden));
-                    charactersBtn.classList.toggle('active', !hidden);
-                    charactersBtn.setAttribute('aria-pressed', String(!hidden));
-                }
-
-                // Clicking characters opens the same info as their landmark/district when available
-                charactersLayer.addEventListener('click', (e) => {
-                    const btn = e.target.closest('.character');
-                    if (!btn) return;
-                    const infoKey = btn.getAttribute('data-info');
-                    showInfo(infoKey);
-                });
-
-                // Click handlers for all data-info elements
-                document.querySelectorAll('[data-info]').forEach(element => {
-                    element.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const infoKey = element.getAttribute('data-info');
-                        showInfo(infoKey);
-                        document.querySelectorAll('.clicked').forEach(el => el.classList.remove('clicked'));
-                        element.classList.add('clicked');
-                    });
-                });
-
-                const locationInfo = {
-                    'uptown': { title: 'Uptown Island', content: \`<h3>Geographic Overview</h3><p>The northernmost of Gotham's three main islands, separated from Midtown by the Sprang River. This is one of Gotham's roughest areas, containing some of the city's most dangerous neighborhoods.</p><h3>Key Districts</h3><p><strong>Crime Alley:</strong> Formerly Park Row, where the Wayne family was murdered. Now one of Gotham's most dangerous streets.<br><strong>Burnley:</strong> Home to the Burnley Town Massive gang, a working-class district north of Sprang River.<br><strong>Amusement Mile:</strong> Entertainment district with abandoned carnival rides, often used by villains as hideouts.</p>\` },
-                    'midtown': { title: 'Midtown Island', content: \`<h3>Central Hub</h3><p>The middle island of Gotham's three-island system, dominated by Robinson Park and containing Gotham University. A mix of residential, academic, and recreational areas.</p><h3>Key Districts</h3><p><strong>Robinson Park:</strong> Gotham's equivalent to Central Park, named after Joker co-creator Jerry Robinson. Often controlled by Poison Ivy.<br><strong>Coventry:</strong> Residential neighborhood with mix of housing types.<br><strong>Upper East Side:</strong> More affluent residential area with upscale apartments.</p>\` },
-                    'downtown': { title: 'Downtown Island', content: \`<h3>Commercial Heart</h3><p>The largest and southernmost island, containing Gotham's main business districts, government buildings, and financial centers. The true heart of Gotham's economy and politics.</p><h3>Major Districts</h3><p><strong>Financial District:</strong> Wall Street equivalent with Wayne Tower as centerpiece.<br><strong>Diamond District:</strong> Luxury shopping and jewelry stores.<br><strong>Fashion District:</strong> Garment and clothing industry center.<br><strong>Old Gotham:</strong> Historic district with gothic architecture.<br><strong>Chinatown:</strong> Asian cultural district with traditional architecture.</p>\` },
-                    'arkham-island': { title: 'Arkham Island', content: \`<h3>Arkham Asylum</h3><p>Small island in the Sprang River housing Gotham's infamous psychiatric hospital for the criminally insane. Connected to the mainland by the Trigate Bridge.</p><h3>Security</h3><p>Isolated, drawbridge lockdown, tunnels, multiple security tiers.</p>\` },
-                    'blackgate-island': { title: 'Blackgate Island', content: \`<h3>Blackgate Penitentiary</h3><p>Maximum security prison for non-insane criminals. Located on its own island to prevent escapes, housing regular criminals who don't qualify for Arkham Asylum.</p>\` },
-                    'paris-island': { title: 'Paris Island', content: \`<h3>Entertainment District</h3><p>Named in homage to creators; home to an abandoned funfair frequently used by the Joker.</p>\` },
-                    'tricorner': { title: 'Tricorner Island', content: \`<h3>Industrial & Residential</h3><p>Shipyards and working-class residences. Commissioner Gordon's home area.</p>\` },
-                    'crime-alley': { title: 'Crime Alley (Park Row)', content: \`<h3>Batman's Origin Point</h3><p>Where young Bruce Wayne witnessed his parents' murder. Leslie Thompkins' clinic operates here.</p>\` },
-                    'burnley': { title: 'Burnley District', content: \`<h3>Working Class Stronghold</h3><p>Home to Burnley Town Massive. Industrial + residential mix.</p>\` },
-                    'robinson-park': { title: 'Robinson Park', content: \`<h3>Gotham's Central Park</h3><p>Often under Poison Ivy's protection. Major green space.</p>\` },
-                    'financial-district': { title: 'Financial District', content: \`<h3>Economic Center</h3><p>Wayne Tower, exchanges, banks, law firms. Deco + modern skyline.</p>\` },
-                    'wayne-tower': { title: 'Wayne Tower', content: \`<h3>Wayne Enterprises HQ</h3><p>Corner of Finger & Broome Streets. Public face of Bruce Wayne's empire.</p>\` },
-                    'gcpd': { title: 'GCPD Headquarters', content: \`<h3>Gotham City Police Department</h3><p>Led by Commissioner Gordon. Major Crimes Unit, chronic resource strain.</p>\` },
-                    'robert-kane-bridge': { title: 'Robert Kane Memorial Bridge', content: \`<h3>Mainland Connection</h3><p>Primary bridge to the mainland (Wayne Manor side). Critical infrastructure.</p>\` },
-                    'trigate-bridge': { title: 'Trigate Bridge', content: \`<h3>Arkham Access</h3><p>Can be raised for lockdown. GCPD checkpoint + monitoring.</p>\` },
-                    'ace-chemical': { title: 'Ace Chemical', content: \`<h3>Ace Chemical Processing Plant</h3><p>Site of multiple Joker origin tellings. Industrial hazard zone.</p>\` },
-                    'blackgate': { title: 'Blackgate Penitentiary', content: \`<h3>Maximum Security Prison</h3><p>Houses mob bosses and high-risk offenders not committed to Arkham.</p>\` },
-                    'iceberg': { title: 'The Iceberg Lounge', content: \`<h3>Penguin's Club</h3><p>Front for arms deals and information brokerage. Neutral ground (sometimes).</p>\` },
-                    'clocktower': { title: 'The Clock Tower', content: \`<h3>Oracle's Former Base</h3><p>Barbara Gordon's iconic intel hub.</p>\` },
-                    'city-hall': { title: 'Gotham City Hall', content: \`<h3>Seat of Government</h3><p>Political power center, frequent target during crises.</p>\` }
-                };
-
-                function showInfo(key) {
-                    const info = locationInfo[key];
-                    if (info) {
-                        infoContent.innerHTML = \`<h2>\${info.title}</h2>\${info.content}\`;
-                        infoPanel.classList.add('show');
-                    }
-                }
-                window.closePanel = () => { infoPanel.classList.remove('show'); document.querySelectorAll('.clicked').forEach(el => el.classList.remove('clicked')); }
-
-                // Random landmark pulsing
-                setInterval(() => {
-                    const landmarks = document.querySelectorAll('.landmark');
-                    landmarks.forEach(landmark => landmark.classList.remove('pulse'));
-                    const randomLandmark = landmarks[Math.floor(Math.random() * landmarks.length)];
-                    if (randomLandmark) randomLandmark.classList.add('pulse');
-                }, 4000);
-
-                mapContainer.addEventListener('selectstart', (e) => e.preventDefault());
-                window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel(); });
-                setTimeout(() => { currentZoom = 0.7; updateMapTransform(); }, 100);
-            `;
-            doc.body.appendChild(script);
-        }
-    }
-  }, [isOpen]);
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-none w-[95vw] h-[95vh] p-0 border-0 bg-transparent">
-        <iframe
-          ref={iframeRef}
-          className="w-full h-full"
-          title="Gotham City Interactive Map"
-        />
-      </DialogContent>
-    </Dialog>
-  );
-}
