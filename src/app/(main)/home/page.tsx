@@ -10,6 +10,8 @@ import { generateYoutubeFeed, type YoutubeFeedOutput } from "@/ai/flows/generate
 import { generateLatestIntel, type LatestIntelOutput } from "@/ai/flows/generate-latest-intel";
 import { Skeleton } from "@/components/ui/skeleton";
 
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
+
 export default function HomePage() {
     const [surveillanceFootage, setSurveillanceFootage] = useState<YoutubeFeedOutput['videos']>([]);
     const [latestIntel, setLatestIntel] = useState<LatestIntelOutput['articles']>([]);
@@ -20,15 +22,63 @@ export default function HomePage() {
         const fetchFeeds = async () => {
             setIsFootageLoading(true);
             setIsIntelLoading(true);
+
             try {
-                const [feed, intel] = await Promise.all([
-                    generateYoutubeFeed(),
-                    generateLatestIntel()
-                ]);
-                setSurveillanceFootage(feed.videos);
-                setLatestIntel(intel.articles);
+                 const cachedFootage = localStorage.getItem('youtube-feed-cache');
+                 const cachedIntel = localStorage.getItem('latest-intel-cache');
+                 const now = new Date().getTime();
+
+                 let feed: YoutubeFeedOutput;
+                 let intel: LatestIntelOutput;
+
+                 if (cachedFootage) {
+                    const { timestamp, data } = JSON.parse(cachedFootage);
+                    if (now - timestamp < CACHE_DURATION) {
+                        feed = data;
+                    }
+                 }
+
+                 if (cachedIntel) {
+                     const { timestamp, data } = JSON.parse(cachedIntel);
+                     if (now - timestamp < CACHE_DURATION) {
+                         intel = data;
+                     }
+                 }
+
+                 const promisesToAwait = [];
+                 if (!feed!) {
+                     promisesToAwait.push(generateYoutubeFeed());
+                 } else {
+                     promisesToAwait.push(Promise.resolve(feed));
+                 }
+
+                 if (!intel!) {
+                     promisesToAwait.push(generateLatestIntel());
+                 } else {
+                     promisesToAwait.push(Promise.resolve(intel));
+                 }
+                
+                const [feedResult, intelResult] = await Promise.all(promisesToAwait);
+
+                if (feedResult) {
+                    setSurveillanceFootage(feedResult.videos);
+                     if (!cachedFootage || (now - JSON.parse(cachedFootage).timestamp >= CACHE_DURATION)) {
+                        localStorage.setItem('youtube-feed-cache', JSON.stringify({ timestamp: now, data: feedResult }));
+                    }
+                }
+
+                if (intelResult) {
+                    setLatestIntel(intelResult.articles);
+                     if (!cachedIntel || (now - JSON.parse(cachedIntel).timestamp >= CACHE_DURATION)) {
+                        localStorage.setItem('latest-intel-cache', JSON.stringify({ timestamp: now, data: intelResult }));
+                    }
+                }
+
             } catch (error) {
                 console.error("Failed to fetch dynamic feeds:", error);
+                 // Fallback to empty arrays on error to avoid crash
+                setSurveillanceFootage([]);
+                setLatestIntel([]);
             } finally {
                 setIsFootageLoading(false);
                 setIsIntelLoading(false);
