@@ -3,9 +3,14 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
+export interface BibleField {
+  label: string;
+  value: string;
+}
+
 export interface BibleEntry {
   title: string;
-  snippet: string;
+  fields: BibleField[];
 }
 
 export interface BibleCategory {
@@ -16,9 +21,70 @@ export interface BibleCategory {
 const BIBLE_STORAGE_KEY = 'gotham-bible-entries';
 
 const defaultBibleEntries: BibleCategory[] = [
-    { category: "Characters", items: [{ title: "The Joker", snippet: "An agent of chaos..." }, { title: "Catwoman", snippet: "Selina Kyle, a cat burglar..." }] },
-    { category: "Locations", items: [{ title: "Arkham Asylum", snippet: "A psychiatric hospital for the criminally insane..." }, { title: "The Batcave", snippet: "Batman's secret headquarters..." }] },
-    { category: "Gadgets", items: [{ title: "Batarang", snippet: "A bat-shaped throwing weapon..." }, { title: "Grapple Gun", snippet: "A device to fire a grappling hook..." }] },
+    { 
+        category: "Characters", 
+        items: [
+            { 
+                title: "The Joker", 
+                fields: [
+                    { label: "Real Name", value: "Unknown" },
+                    { label: "Occupation", value: "Super-villain, Agent of Chaos" },
+                    { label: "Abilities", value: "Genius-level intellect, Expertise in chemistry and engineering, Unpredictability" },
+                    { label: "Biography", value: "An agent of chaos with a twisted sense of humor, the Joker is Batman's archenemy, seeking to disrupt order in Gotham City through elaborate and deadly schemes." }
+                ] 
+            }, 
+            { 
+                title: "Catwoman", 
+                fields: [
+                    { label: "Real Name", value: "Selina Kyle" },
+                    { label: "Occupation", value: "Professional thief, occasional vigilante" },
+                    { label: "Abilities", value: "Expert burglar, gymnast, and martial artist. Wields a bullwhip with high proficiency." },
+                    { label: "Biography", value: "A complex figure in Gotham's underworld, Selina Kyle operates as Catwoman, a master thief with a moral code that sometimes aligns her with Batman. Their relationship is a constant dance between law and crime." }
+                ] 
+            }
+        ] 
+    },
+    { 
+        category: "Locations", 
+        items: [
+            { 
+                title: "Arkham Asylum", 
+                fields: [
+                    { label: "Full Name", value: "The Elizabeth Arkham Asylum for the Criminally Insane" },
+                    { label: "Location", value: "Mercey Island, on the outskirts of Gotham" },
+                    { label: "Purpose", value: "A psychiatric hospital that houses many of Batman's most dangerous foes." },
+                ] 
+            }, 
+            { 
+                title: "The Batcave", 
+                fields: [
+                    { label: "Location", value: "Subterranean level beneath Wayne Manor" },
+                    { label: "Purpose", value: "Batman's secret headquarters and command center." },
+                    { label: "Key Features", value: "Batcomputer, crime lab, armory, vehicle storage (Batmobile), and memorabilia from past cases." },
+                ] 
+            }
+        ] 
+    },
+    { 
+        category: "Gadgets", 
+        items: [
+            { 
+                title: "Batarang", 
+                fields: [
+                    { label: "Type", value: "Non-lethal throwing weapon" },
+                    { label: "Variations", value: "Standard, explosive, electric, remote-controlled." },
+                    { label: "Purpose", value: "Used for disarming opponents, cutting lines, or as a distraction. A key part of Batman's arsenal to avoid lethal force." }
+                ] 
+            }, 
+            { 
+                title: "Grapple Gun", 
+                fields: [
+                    { label: "Type", value: "Traversal and positioning tool" },
+                    { label: "Function", value: "Fires a high-tensile wire with a grappling hook, allowing for rapid ascent and movement across Gotham's rooftops." }
+                ] 
+            }
+        ] 
+    },
 ];
 
 

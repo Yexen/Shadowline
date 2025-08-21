@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -73,7 +74,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   }
 
   const handleAddNewEntry = (category: string) => {
-    setEditingEntry({ category, entry: { title: 'New Entry', snippet: '' } });
+    setEditingEntry({ category, entry: { title: 'New Entry', fields: [{label: "Description", value: ""}] } });
   }
 
   const handleAddNewCategory = () => {
@@ -163,7 +164,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                                         {entry.items.map(item => (
                                             <li key={item.title} className="p-2 rounded-md hover:bg-accent cursor-pointer" onClick={() => setEditingEntry({ category: entry.category, entry: item })}>
                                                 <h4 className="font-bold">{item.title}</h4>
-                                                <p className="text-sm text-muted-foreground">{item.snippet}</p>
+                                                <p className="text-sm text-muted-foreground truncate">{item.fields[0]?.value || 'No description'}</p>
                                             </li>
                                         ))}
                                         <li>
