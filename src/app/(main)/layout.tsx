@@ -21,7 +21,7 @@ import { BatLogo } from '@/components/bat-logo';
 import { BatSignal } from '@/components/bat-signal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Home, PenSquare, BrainCircuit, Info, LogOut, FilePlus, BookCopy, PlusCircle, Images, ImagePlus, Shield } from 'lucide-react';
+import { Home, PenSquare, BrainCircuit, Info, LogOut, FilePlus, BookCopy, PlusCircle, Images, Settings } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -44,9 +44,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [editingEntry, setEditingEntry] = useState<{ category: string; entry: BibleEntry } | null>(null);
   const [newCategory, setNewCategory] = useState('');
 
-  // Logo upload state
+  // Settings and Logo state
   const { setLogoUrl } = useLogo();
-  const [logoDialogOpen, setLogoDialogOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -99,7 +99,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         const reader = new FileReader();
         reader.onload = (loadEvent) => {
             setLogoUrl(loadEvent.target?.result as string);
-            setLogoDialogOpen(false);
+            // Close the settings dialog after successful selection for a smoother UX
+            // setSettingsOpen(false); 
         };
         reader.readAsDataURL(file);
     }
@@ -214,27 +215,30 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 </SheetContent>
             </Sheet>
 
-             <Dialog open={logoDialogOpen} onOpenChange={setLogoDialogOpen}>
+             <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
                 <DialogTrigger asChild>
                     <Button variant="ghost" className="w-full justify-start gap-2">
-                        <Shield className="size-4" />
-                        <span className="font-headline">CHANGE LOGO</span>
+                        <Settings className="size-4" />
+                        <span className="font-headline">SETTINGS</span>
                     </Button>
                 </DialogTrigger>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Change App Logo</DialogTitle>
+                        <DialogTitle className="font-headline">Settings</DialogTitle>
                         <DialogDescription>
-                            Upload a new logo for the application. SVG, PNG, or JPG are recommended.
+                            Customize your application settings. Changes are saved automatically.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="py-4">
-                         <Label>Upload from device</Label>
+                    <div className="py-4 space-y-4">
+                        <h3 className="font-bold">Change Logo</h3>
+                        <p className="text-sm text-muted-foreground">
+                            Upload a new logo for the application. SVG, PNG, or JPG are recommended.
+                        </p>
                         <Input type="file" accept="image/*" className="hidden" ref={logoFileInputRef} onChange={handleLogoFileSelect} />
-                        <Button variant="outline" className="w-full mt-2" onClick={() => logoFileInputRef.current?.click()}>Browse Device</Button>
+                        <Button variant="outline" className="w-full" onClick={() => logoFileInputRef.current?.click()}>Browse Device</Button>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setLogoDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={() => setSettingsOpen(false)}>Done</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
