@@ -399,60 +399,76 @@ export const mapHtml = `
             charactersBtn.setAttribute('aria-pressed', String(!hidden));
         }
 
-        const handleMapClick = async (key) => {
-            if (!key) return;
+        async function handleMapClick(key) {
+          if (!key) return;
 
+          // Visually update clicked element and panel
+          document.querySelectorAll('.clicked').forEach(el => el.classList.remove('clicked'));
+          const element = document.querySelector(\`[data-info="\${key}"]\`);
+          if (element) {
+              element.classList.add('clicked');
+          }
+          infoContent.innerHTML = '<h2>Loading...</h2>';
+          infoPanel.classList.add('show');
+          
+          try {
             const response = await fetch('/api/map-chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    messages: [{ role: 'user', content: { query: \`show \${key}\` } }]
+                    messages: [{ role: 'user', content: `show \${key}` }]
                 })
             });
 
-            if (!response.body) return;
+            if (!response.ok || !response.body) {
+                throw new Error(\`API error: \${response.statusText}\`);
+            }
             
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let fullContent = '';
 
-            document.querySelectorAll('.clicked').forEach(el => el.classList.remove('clicked'));
-            document.querySelector(\`[data-info="\${key}"]\`)?.classList.add('clicked');
-            
-            infoContent.innerHTML = '<h2>Loading...</h2>';
-            infoPanel.classList.add('show');
-
+            // Vercel AI SDK streams chunks with a prefix, like "0:\"...\"\\n". We need to parse this.
+            let buffer = '';
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
-                const chunk = decoder.decode(value, { stream: true });
-                // This is a simplified stream handling. A robust implementation would parse JSON chunks.
-                // For now, we accumulate and display.
-                // Assuming the final output from the AI is HTML content.
-                try {
-                    // This is a naive way to handle streaming AI responses.
-                    // It assumes the tool call happens first and the final response is text/html.
-                    const jsonChunks = chunk.split('\\n').filter(c => c.startsWith('0:')).map(c => c.substring(2));
-                    jsonChunks.forEach(jsonString => {
-                        const parsed = JSON.parse(jsonString);
-                        if (parsed.content) {
-                            fullContent += parsed.content;
-                        }
-                    });
-                    
-                    // A very rough check if the content is HTML from the tool.
-                    if (fullContent.includes('<h3>')) {
-                         infoContent.innerHTML = fullContent;
-                    } else {
-                        infoContent.innerHTML = \`<h2>Information</h2><p>\${fullContent}</p>\`;
-                    }
 
-                } catch (e) {
-                     // ignore parsing errors and just append raw text
-                    fullContent += chunk;
-                    infoContent.innerHTML = \`<h2>Information</h2><p>\${fullContent}</p>\`;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\\n');
+                
+                // Keep the last partial line in the buffer
+                buffer = lines.pop() || ''; 
+                
+                for (const line of lines) {
+                    if (line.startsWith('0:')) {
+                        try {
+                           const jsonContent = JSON.parse(line.substring(2));
+                           if (typeof jsonContent === 'string') {
+                              fullContent += jsonContent;
+                           }
+                        } catch(e) { /* ignore parse errors for now */ }
+                    } else if (line.startsWith('2:')) { // Tool call object
+                         try {
+                            const toolData = JSON.parse(line.substring(2));
+                            if(toolData.tool_calls[0].function.name === 'get_location_info'){
+                                const args = JSON.parse(toolData.tool_calls[0].function.arguments);
+                                // The actual tool call happens on the server.
+                                // The front-end just gets the final text stream.
+                            }
+                         } catch(e) { /* ignore */ }
+                    }
                 }
+                
+                // This is a simple way to render progressively.
+                // A better way would be to use a markdown parser.
+                infoContent.innerHTML = fullContent;
             }
+
+          } catch (error) {
+              console.error('Failed to fetch map data:', error);
+              infoContent.innerHTML = '<h2>Error</h2><p>Could not load information for this location.</p>';
+          }
         };
 
         // Add event listeners to all clickable map elements
@@ -485,4 +501,4 @@ export const mapHtml = `
     </script>
 </body>
 </html>
-`
+`;

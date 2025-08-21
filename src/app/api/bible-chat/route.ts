@@ -4,6 +4,7 @@ import { ai } from '@/lib/openai';
 import { bibleTools, search_bible, semantic_passages, cross_reference } from '@/lib/tools.bible';
 import { route } from '@/lib/router';
 import { OpenAIStream, StreamingTextResponse, ToolCallPayload } from 'ai';
+import OpenAI from 'openai';
 
 export const runtime = 'edge';
 
@@ -44,7 +45,6 @@ export async function POST(req: NextRequest) {
         toolCallPayload: ToolCallPayload,
         appendToolCallMessage,
       ) => {
-        const toolResults: any[] = [];
         for (const tool of toolCallPayload.tools) {
           let result;
           if (tool.func.name === "search_bible") {

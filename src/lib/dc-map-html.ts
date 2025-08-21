@@ -316,7 +316,7 @@ export const dcMapHtml = `
         </div>
     </div>
 
-     <script>
+    <script>
         let currentZoom = 1;
         let isMouseDown = false;
         let lastMousePos = { x: 0, y: 0 };
@@ -399,53 +399,63 @@ export const dcMapHtml = `
             charactersBtn.setAttribute('aria-pressed', String(!hidden));
         }
 
-        const handleMapClick = async (key) => {
-            if (!key) return;
+       async function handleMapClick(key) {
+          if (!key) return;
 
+          // Visually update clicked element and panel
+          document.querySelectorAll('.clicked').forEach(el => el.classList.remove('clicked'));
+          const element = document.querySelector(\`[data-info="\${key}"]\`);
+          if (element) {
+              element.classList.add('clicked');
+          }
+          infoContent.innerHTML = '<h2>Loading...</h2>';
+          infoPanel.classList.add('show');
+          
+          try {
             const response = await fetch('/api/map-chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    messages: [{ role: 'user', content: { query: \`show \${key}\` } }]
+                    messages: [{ role: 'user', content: `show \${key}` }]
                 })
             });
 
-            if (!response.body) return;
+            if (!response.ok || !response.body) {
+                throw new Error(\`API error: \${response.statusText}\`);
+            }
             
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let fullContent = '';
 
-            document.querySelectorAll('.clicked').forEach(el => el.classList.remove('clicked'));
-            document.querySelector(\`[data-info="\${key}"]\`)?.classList.add('clicked');
-            
-            infoContent.innerHTML = '<h2>Loading...</h2>';
-            infoPanel.classList.add('show');
-
+            // Vercel AI SDK streams chunks with a prefix, like "0:\"...\"\\n". We need to parse this.
+            let buffer = '';
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
-                const chunk = decoder.decode(value, { stream: true });
-                try {
-                    const jsonChunks = chunk.split('\\n').filter(c => c.startsWith('0:')).map(c => c.substring(2));
-                    jsonChunks.forEach(jsonString => {
-                        const parsed = JSON.parse(jsonString);
-                        if (parsed.content) {
-                            fullContent += parsed.content;
-                        }
-                    });
-                    
-                    if (fullContent.includes('<h3>')) {
-                         infoContent.innerHTML = fullContent;
-                    } else {
-                        infoContent.innerHTML = \`<h2>Information</h2><p>\${fullContent}</p>\`;
-                    }
 
-                } catch (e) {
-                    fullContent += chunk;
-                    infoContent.innerHTML = \`<h2>Information</h2><p>\${fullContent}</p>\`;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\\n');
+                
+                buffer = lines.pop() || ''; 
+                
+                for (const line of lines) {
+                    if (line.startsWith('0:')) {
+                        try {
+                           const jsonContent = JSON.parse(line.substring(2));
+                           if (typeof jsonContent === 'string') {
+                              fullContent += jsonContent;
+                           }
+                        } catch(e) { /* ignore */ }
+                    }
                 }
+                infoContent.innerHTML = fullContent;
             }
+
+          } catch (error) {
+              console.error('Failed to fetch map data:', error);
+              infoContent.innerHTML = '<h2>Error</h2><p>Could not load information for this location.</p>';
+          }
         };
 
         // Add event listeners to all clickable map elements

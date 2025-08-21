@@ -9,7 +9,7 @@ export const runtime = 'edge';
 
 export async function POST(req: NextRequest) {
   const { messages: userMessages } = await req.json();
-  const { query } = userMessages[userMessages.length - 1].content;
+  const query = userMessages[userMessages.length - 1].content;
 
   const r = route(query);
   const systemPrompt = {
