@@ -112,11 +112,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-            <div className="flex items-center group-data-[state=expanded]:justify-between group-data-[state=collapsed]:justify-center w-full p-2">
-                 <BatLogo className="w-24 h-12 text-primary group-data-[state=collapsed]:hidden" />
-                 <SidebarTrigger>
-                    <BatLogo className="w-6 h-3 text-primary" />
-                 </SidebarTrigger>
+            <div className="flex items-center group-data-[state=expanded]:justify-center group-data-[state=collapsed]:justify-center w-full p-2">
+                <SidebarTrigger>
+                    <BatLogo className="w-24 h-12 text-primary group-data-[state=collapsed]:w-6 group-data-[state=collapsed]:h-3" />
+                </SidebarTrigger>
             </div>
         </SidebarHeader>
         <SidebarContent>
@@ -139,11 +138,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         <span>Settings</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
-            </SidebarMenu>
-        </SidebarContent>
-        <SidebarFooter>
-             <SidebarMenu>
-                <SidebarMenuItem>
+                 <SidebarMenuItem>
                     <SidebarMenuButton onClick={() => setVolumesOpen(true)} tooltip={{ children: "Volumes", side: "right", align: "center" }} className="font-headline text-base group-data-[state=collapsed]:justify-center">
                         <BookOpenCheck />
                         <span className="group-data-[state=collapsed]:hidden">Volumes</span>
@@ -206,6 +201,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </SheetContent>
                 </Sheet>
             </SidebarMenu>
+        </SidebarContent>
+        <SidebarFooter>
             <div className="p-2 border-t border-sidebar-border">
                 <button className="flex items-center p-2 rounded-md hover:bg-accent w-full group" onClick={() => setWriterProfileOpen(true)}>
                     <div className="flex items-center gap-2">
