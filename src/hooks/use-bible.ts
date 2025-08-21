@@ -8,9 +8,16 @@ export interface BibleField {
   value: string;
 }
 
+export interface BiblePage {
+    id: string;
+    title: string;
+    content: string;
+}
+
 export interface BibleEntry {
   title: string;
   fields: BibleField[];
+  pages?: BiblePage[];
 }
 
 export interface BibleCategory {
@@ -31,7 +38,11 @@ const defaultBibleEntries: BibleCategory[] = [
                     { label: "Occupation", value: "Super-villain, Agent of Chaos" },
                     { label: "Abilities", value: "Genius-level intellect, Expertise in chemistry and engineering, Unpredictability" },
                     { label: "Biography", value: "An agent of chaos with a twisted sense of humor, the Joker is Batman's archenemy, seeking to disrupt order in Gotham City through elaborate and deadly schemes." }
-                ] 
+                ],
+                pages: [
+                    { id: 'joker-1', title: "Philosophical Rantings", content: "Detailed notes on his anarchist views..." },
+                    { id: 'joker-2', title: "Chemical Formulas", content: "Recipes for Joker Venom and other toxins." },
+                ]
             }, 
             { 
                 title: "Catwoman", 
@@ -40,7 +51,8 @@ const defaultBibleEntries: BibleCategory[] = [
                     { label: "Occupation", value: "Professional thief, occasional vigilante" },
                     { label: "Abilities", value: "Expert burglar, gymnast, and martial artist. Wields a bullwhip with high proficiency." },
                     { label: "Biography", value: "A complex figure in Gotham's underworld, Selina Kyle operates as Catwoman, a master thief with a moral code that sometimes aligns her with Batman. Their relationship is a constant dance between law and crime." }
-                ] 
+                ],
+                pages: []
             }
         ] 
     },
