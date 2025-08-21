@@ -71,7 +71,7 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                 <DialogHeader>
                     <DialogTitle className="font-headline">Settings</DialogTitle>
                     <DialogDescription>
-                        Customize your application settings. Changes are saved automatically.
+                        Customize your application settings.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
@@ -98,11 +98,10 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
 
                 </div>
                 <DialogFooter>
-                    <Button onClick={onClose}>Done</Button>
+                    <Button variant="outline" onClick={onClose}>Cancel</Button>
+                    <Button onClick={onClose}>Save</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     )
 }
-
-    
