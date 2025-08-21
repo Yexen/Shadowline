@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { BrainCircuit, PenLine, Sparkles, Wand2, Copy, MessageSquareQuote } from 'lucide-react';
 import { generateContent, GenerateContentInput } from '@/ai/flows/ai-writing-assistant';
 import { generateCode, GenerateCodeInput } from '@/ai/flows/generate-code';
+import { answerQuestion, AnswerQuestionInput } from '@/ai/flows/answer-question';
 import { useToast } from '@/hooks/use-toast';
 import { useBible } from '@/hooks/use-bible';
 
@@ -54,12 +55,12 @@ export default function AiToolsPage() {
     setIsAsking(true);
     setAnswer('');
     try {
-      const input: GenerateContentInput = { 
-        prompt: `Answer the following question: ${question}`,
+      const input: AnswerQuestionInput = {
+        question: question,
         bibleData: JSON.stringify(bibleData) 
       };
-      const result = await generateContent(input);
-      setAnswer(result.content);
+      const result = await answerQuestion(input);
+      setAnswer(result.answer);
     } catch (error) {
       console.error(error);
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to get an answer.' });
