@@ -13,11 +13,11 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-export const NyxenMessageSchema = z.object({
+const NyxenMessageSchema = z.object({
     role: z.enum(['user', 'model']),
     content: z.string(),
 });
-export type NyxenMessage = z.infer<typeof NyxenMessageSchema>;
+type NyxenMessage = z.infer<typeof NyxenMessageSchema>;
 
 const NyxenChatInputSchema = z.object({
   history: z.array(NyxenMessageSchema).describe("The history of the conversation so far."),

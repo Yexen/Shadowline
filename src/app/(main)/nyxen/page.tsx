@@ -10,7 +10,13 @@ import { Send, Bot, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBible } from '@/hooks/use-bible';
 import { useWriters } from '@/hooks/use-writers';
-import { continueConversation, NyxenMessage } from '@/ai/flows/nyxen-chat';
+import { continueConversation } from '@/ai/flows/nyxen-chat';
+
+// Define the type directly in the client component
+export interface NyxenMessage {
+    role: 'user' | 'model';
+    content: string;
+}
 
 export default function NyxenChatPage() {
   const [messages, setMessages] = useState<NyxenMessage[]>([]);
