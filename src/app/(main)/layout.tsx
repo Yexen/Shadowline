@@ -114,7 +114,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <SidebarHeader>
             <div className="flex items-center group-data-[state=expanded]:justify-center group-data-[state=collapsed]:justify-center w-full p-2">
                 <SidebarTrigger>
-                    <BatLogo className="w-24 h-12 text-primary group-data-[state=collapsed]:w-6 group-data-[state=collapsed]:h-3" />
+                    <BatLogo className="w-24 h-16 text-primary group-data-[state=collapsed]:w-6 group-data-[state=collapsed]:h-3" />
                 </SidebarTrigger>
             </div>
         </SidebarHeader>
@@ -145,14 +145,16 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <Sheet>
-                    <SheetTrigger asChild>
-                        <SidebarMenuItem>
-                            <SidebarMenuButton tooltip={{ children: "Bible", side: "right", align: "center" }} className="font-headline text-base group-data-[state=collapsed]:justify-center">
-                                <BookCopy />
-                                <span className="group-data-[state=collapsed]:hidden">Bible</span>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                    </SheetTrigger>
+                    <SidebarMenuItem asChild>
+                         <SidebarMenuButton tooltip={{ children: "Bible", side: "right", align: "center" }} className="font-headline text-base group-data-[state=collapsed]:justify-center">
+                            <SheetTrigger asChild>
+                                <button className="w-full h-full flex items-center gap-2 group-data-[state=collapsed]:justify-center">
+                                    <BookCopy />
+                                    <span className="group-data-[state=collapsed]:hidden">Bible</span>
+                                </button>
+                             </SheetTrigger>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
                     <SheetContent className="flex flex-col">
                         <SheetHeader>
                             <SheetTitle className="font-headline">GOTHAM BIBLE</SheetTitle>
@@ -212,7 +214,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         </Avatar>
                         <span className="text-sm font-semibold group-data-[state=collapsed]:hidden">{activeWriter?.name || 'The Writer'}</span>
                     </div>
-                     <div className="opacity-0 group-hover:opacity-100 group-data-[state=collapsed]:hidden">
+                     <div className="opacity-0 group-hover:opacity-100 group-data-[state=collapsed]:hidden ml-auto">
                         <LogOut onClick={(e) => { e.stopPropagation(); handleLogout(); }}/>
                     </div>
                 </button>
