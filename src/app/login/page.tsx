@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -6,12 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BatLogo } from '@/components/bat-logo';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Terminal } from 'lucide-react';
+import { Terminal, Mail } from 'lucide-react';
 
 // In a real app, this would be handled by a proper auth system.
 const CORRECT_PASSWORD = 'Livfreya';
 
 export default function LoginPage() {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -50,7 +52,17 @@ export default function LoginPage() {
         </p>
         
         <form onSubmit={handleLogin} className="space-y-6">
-          <div className="space-y-2">
+          <div className="space-y-4">
+             <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="ENTER EMAIL"
+              required
+              className="text-center font-code tracking-widest h-12 text-lg"
+              aria-label="Email"
+            />
             <Input
               id="password"
               type="password"
