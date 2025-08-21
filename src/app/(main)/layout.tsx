@@ -113,9 +113,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <Sidebar>
         <SidebarHeader>
             <div className="flex items-center group-data-[state=expanded]:justify-center group-data-[state=collapsed]:justify-center w-full p-2">
-                <SidebarTrigger>
-                    <BatLogo className="w-32 h-20 text-primary group-data-[state=collapsed]:w-6 group-data-[state=collapsed]:h-3" />
-                </SidebarTrigger>
+                 <SidebarTrigger asChild>
+                    <div className="group-data-[state=expanded]:w-32 group-data-[state=expanded]:h-20 group-data-[state=collapsed]:w-6 group-data-[state=collapsed]:h-3 cursor-pointer">
+                        <BatLogo />
+                    </div>
+                 </SidebarTrigger>
             </div>
         </SidebarHeader>
         <SidebarContent>
@@ -140,7 +142,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                     <SidebarMenuButton onClick={() => setVolumesOpen(true)} tooltip={{ children: "Volumes", side: "right", align: "center" }} className="font-headline text-base group-data-[state=collapsed]:justify-center">
-                        <span className="flex items-center gap-2">
+                         <span className="flex items-center gap-2">
                             <BookOpenCheck />
                             <span className="group-data-[state=collapsed]:hidden">Volumes</span>
                         </span>
