@@ -9,37 +9,13 @@ import { Youtube, Newspaper } from "lucide-react";
 import { generateHomeFeed, type HomeFeedOutput } from "@/ai/flows/generate-home-feed";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const CACHE_KEY = 'home-feed-cache';
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
-const getCachedData = <T,>(key: string): T | null => {
-  if (typeof window === 'undefined') return null;
-  try {
-    const item = localStorage.getItem(key);
-    if (!item) return null;
-
-    const { timestamp, data } = JSON.parse(item);
-    const now = new Date().getTime();
-
-    if (now - timestamp < CACHE_DURATION) {
-      return data;
-    }
-  } catch (error) {
-    console.error(`Failed to read cache for ${key}:`, error);
-  }
-  return null;
-};
-
-const setCachedData = (key: string, data: any) => {
-  if (typeof window === 'undefined') return;
-  try {
-    const now = new Date().getTime();
-    const item = { timestamp: now, data };
-    localStorage.setItem(key, JSON.stringify(item));
-  } catch (error) {
-    console.error(`Failed to write cache for ${key}:`, error);
-  }
-};
-
+type CachedData = {
+  timestamp: number;
+  data: HomeFeedOutput;
+}
 
 export default function HomePage() {
     const [surveillanceFootage, setSurveillanceFootage] = useState<HomeFeedOutput['videos']>([]);
@@ -48,24 +24,43 @@ export default function HomePage() {
 
     const fetchFeeds = useCallback(async () => {
         setIsLoading(true);
-        const cachedFeed = getCachedData<HomeFeedOutput>('home-feed-cache');
 
-        if (cachedFeed) {
-            setSurveillanceFootage(cachedFeed.videos);
-            setLatestIntel(cachedFeed.articles);
-            setIsLoading(false);
-        } else {
-            try {
-                console.log("Fetching new home page feed...");
-                const feed = await generateHomeFeed();
-                setSurveillanceFootage(feed.videos);
-                setLatestIntel(feed.articles);
-                setCachedData('home-feed-cache', feed);
-            } catch (error) {
-                console.error("Failed to fetch home page feed:", error);
-            } finally {
-                setIsLoading(false);
+        // Try to load from cache first
+        try {
+            const cachedItem = localStorage.getItem(CACHE_KEY);
+            if (cachedItem) {
+                const { timestamp, data } = JSON.parse(cachedItem) as CachedData;
+                const now = new Date().getTime();
+                if (now - timestamp < CACHE_DURATION) {
+                    setSurveillanceFootage(data.videos);
+                    setLatestIntel(data.articles);
+                    setIsLoading(false);
+                    console.log("Loaded home page feed from cache.");
+                    return;
+                }
             }
+        } catch (error) {
+            console.error("Failed to read cache, fetching new data.", error);
+        }
+
+        // If cache is invalid or missing, fetch new data
+        try {
+            console.log("Fetching new home page feed...");
+            const feed = await generateHomeFeed();
+            setSurveillanceFootage(feed.videos);
+            setLatestIntel(feed.articles);
+
+            // Save new data to cache
+            const cacheData: CachedData = {
+                timestamp: new Date().getTime(),
+                data: feed
+            };
+            localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+        } catch (error) {
+            console.error("Failed to fetch home page feed:", error);
+            // Optionally, set some error state here to show in the UI
+        } finally {
+            setIsLoading(false);
         }
     }, []);
 
