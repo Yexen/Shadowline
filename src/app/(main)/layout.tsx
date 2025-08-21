@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -142,15 +141,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                     <SidebarMenuButton onClick={() => setVolumesOpen(true)} tooltip={{ children: "Volumes", side: "right", align: "center" }}>
-                        <span className="flex items-center gap-2">
-                            <BookOpenCheck />
-                            <span>Volumes</span>
-                        </span>
+                        <BookOpenCheck />
+                        <span>Volumes</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
-                <SidebarMenuItem asChild>
+                <SidebarMenuItem>
                     <Sheet>
-                        <SidebarMenuButton tooltip={{ children: "Bible", side: "right", align: "center" }}>
+                        <SidebarMenuButton asChild tooltip={{ children: "Bible", side: "right", align: "center" }}>
                             <SheetTrigger asChild>
                                  <span className="flex items-center gap-2">
                                     <BookCopy />
