@@ -8,10 +8,7 @@ export default function AboutPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-headline text-3xl md:text-4xl font-bold uppercase tracking-wider text-foreground flex items-center gap-3">
-          <Info className="text-primary" />
-          About This Project
-        </h1>
+        
         <p className="mt-2 text-muted-foreground">
           The story behind the Shadows of Gotham Writer's Protocol.
         </p>

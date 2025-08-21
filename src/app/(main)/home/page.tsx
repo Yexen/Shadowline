@@ -20,9 +20,7 @@ export default function HomePage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-headline text-3xl md:text-4xl font-bold uppercase tracking-wider text-foreground">
-          Welcome, Writer
-        </h1>
+        
         <p className="mt-2 text-muted-foreground">
           Your watch has begun. Here is the latest from the shadows.
         </p>

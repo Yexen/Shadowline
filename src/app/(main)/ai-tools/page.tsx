@@ -61,11 +61,7 @@ export default function AiToolsPage() {
         bibleData: JSON.stringify(bibleData)
       };
       const result = await answerQuestion(input);
-      if (result && result.answer) {
-        setAnswer(result.answer);
-      } else {
-         throw new Error("Received an invalid response from the Oracle.");
-      }
+      setAnswer(result.answer);
     } catch (error) {
       console.error(error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to get an answer from the Oracle.';
@@ -109,10 +105,7 @@ export default function AiToolsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-headline text-3xl md:text-4xl font-bold uppercase tracking-wider text-foreground flex items-center gap-3">
-          <BrainCircuit className="text-primary" />
-          Oracle AI Tools
-        </h1>
+        
         <p className="mt-2 text-muted-foreground">
           Harness the power of the Batcomputer's AI to augment your creative process.
         </p>
@@ -156,7 +149,7 @@ export default function AiToolsPage() {
             <Card className="bg-card">
               <CardHeader>
                 <CardTitle className="font-headline flex items-center gap-2"><MessageSquareQuote/> Ask Oracle</CardTitle>
-                <CardDescription>Ask a question and get a direct answer from the Oracle.</CardDescription>
+                <CardDescription>Ask a question about your world and get an answer from the bible.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">

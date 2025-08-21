@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -191,7 +192,7 @@ export default function EditorPage() {
 
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
+    <div className="flex flex-col h-[calc(100vh-14rem)]">
       <header className="flex items-center justify-between mb-4 flex-wrap gap-4">
         <input
           type="text"

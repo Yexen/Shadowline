@@ -30,6 +30,7 @@ import { useBible, type BibleEntry } from '@/hooks/use-bible';
 import { BibleEditor } from '@/components/bible-editor';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AppHeader } from '@/components/app-header';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -213,6 +214,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <SidebarTrigger />
                 <h2 className="font-headline text-lg uppercase">{pathname.split('/').pop() || 'Home'}</h2>
             </div>
+             <AppHeader />
             {children}
         </div>
       </SidebarInset>

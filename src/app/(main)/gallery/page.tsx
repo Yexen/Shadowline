@@ -15,10 +15,7 @@ export default function GalleryPage() {
     return (
         <div className="space-y-8">
             <div>
-                <h1 className="font-headline text-3xl md:text-4xl font-bold uppercase tracking-wider text-foreground flex items-center gap-3">
-                  <Images className="text-primary" />
-                  Gallery
-                </h1>
+                
                 <p className="mt-2 text-muted-foreground">
                   Loading visual archives...
                 </p>
@@ -39,10 +36,7 @@ export default function GalleryPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-headline text-3xl md:text-4xl font-bold uppercase tracking-wider text-foreground flex items-center gap-3">
-          <Images className="text-primary" />
-          Gallery
-        </h1>
+        
         <p className="mt-2 text-muted-foreground">
           A visual archive of your world. Add folders and images to build your reference library.
         </p>
