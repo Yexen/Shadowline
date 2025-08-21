@@ -12,7 +12,8 @@ import { generateContentSuggestions, GenerateContentSuggestionsInput } from '@/a
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 export default function EditorPage() {
-  const params = useParams<{ draftId: string }>();
+  const params = useParams();
+  const draftId = params.draftId as string;
   const [content, setContent] = useState('');
   const [title, setTitle] = useState('New Draft');
   const [showPreview, setShowPreview] = useState(true);
@@ -29,14 +30,14 @@ export default function EditorPage() {
   const [popoverOpen, setPopoverOpen] = useState(false);
 
   useEffect(() => {
-    if (params.draftId === 'new-draft') {
+    if (draftId === 'new-draft') {
       setContent('');
       setTitle('Untitled Draft');
     } else {
-      setTitle(`Draft: ${params.draftId}`);
-      setContent(`This is the content for draft ${params.draftId}. Start writing your story here.`);
+      setTitle(`Draft: ${draftId}`);
+      setContent(`This is the content for draft ${draftId}. Start writing your story here.`);
     }
-  }, [params.draftId]);
+  }, [draftId]);
 
   const wordCount = useMemo(() => {
     return content.trim().split(/\s+/).filter(Boolean).length;
