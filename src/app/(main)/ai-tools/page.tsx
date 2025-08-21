@@ -30,6 +30,12 @@ export default function AiToolsPage() {
   const [codeLanguage, setCodeLanguage] = useState<'CSS' | 'JavaScript'>('CSS');
   const [generatedCode, setGeneratedCode] = useState('');
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
+  
+  const [imagePrompt, setImagePrompt] = useState('');
+  const [generatedImageUrl, setGeneratedImageUrl] = useState('');
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [selectedGalleryFolder, setSelectedGalleryFolder] = useState<string | null>(null);
+
 
   const { toast } = useToast();
   const { bibleData } = useBible();
@@ -93,6 +99,68 @@ export default function AiToolsPage() {
       setIsGeneratingCode(false);
     }
   };
+
+  const handleGenerateImage = async () => {
+      if (!imagePrompt) return;
+      
+      setIsGeneratingImage(true);
+      setGeneratedImageUrl('');
+      
+      try {
+        const response = await fetch('/api/generate-image', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ prompt: imagePrompt }),
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to generate image');
+        }
+        
+        setGeneratedImageUrl(data.imageUrl);
+        
+        // Auto-select AI Generated folder
+        const aiFolder = folders.find(f => f.name === "AI Generated");
+        if (aiFolder) {
+          setSelectedGalleryFolder(aiFolder.id);
+        }
+        
+        toast({
+          title: "Image Generated!",
+          description: "Your DALL-E 3 image is ready.",
+        });
+        
+      } catch (error: any) {
+        console.error("Image generation error:", error);
+        toast({
+          variant: "destructive",
+          title: "Image Generation Failed",
+          description: error.message || "An unknown error occurred.",
+        });
+      } finally {
+        setIsGeneratingImage(false);
+      }
+    };
+    
+   const handleSaveImageToGallery = () => {
+    if (!generatedImageUrl || !selectedGalleryFolder) return;
+
+    addImageToFolder(
+        selectedGalleryFolder,
+        generatedImageUrl,
+        imagePrompt,
+        imagePrompt.split(" ").slice(0,2).join(" ")
+    );
+
+    toast({
+        title: "Image Saved!",
+        description: "The generated image has been saved to your gallery.",
+    });
+   };
 
   const handleCopy = (textToCopy: string, toastMessage: string) => {
     if (textToCopy) {
@@ -224,6 +292,51 @@ export default function AiToolsPage() {
                       After copying, ask me to "apply this CSS" in the chat to make it permanent.
                     </p>
                   }
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+         <Card className="bg-card">
+          <CardHeader>
+            <CardTitle className="font-headline flex items-center gap-2"><ImageIcon/> AI Image Generator</CardTitle>
+            <CardDescription>Generate an image from a text prompt using DALL-E 3.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="image-prompt">Image Prompt</Label>
+              <Textarea
+                id="image-prompt"
+                placeholder="e.g., A cinematic shot of a futuristic batmobile racing through a neon-lit Gotham city in the rain."
+                value={imagePrompt}
+                onChange={(e) => setImagePrompt(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <Button onClick={handleGenerateImage} disabled={isGeneratingImage || !imagePrompt}>
+              {isGeneratingImage ? 'Generating...' : <><Sparkles className="mr-2 h-4 w-4" /> Generate Image</>}
+            </Button>
+            {generatedImageUrl && (
+              <div className="space-y-4 pt-4">
+                <h4 className="font-bold font-headline">Generated Image:</h4>
+                <div className="relative aspect-square w-full rounded-md overflow-hidden border">
+                    <Image src={generatedImageUrl} alt={imagePrompt} fill className="object-cover" />
+                </div>
+                 <div className="flex flex-col sm:flex-row gap-2">
+                    <Select onValueChange={setSelectedGalleryFolder} value={selectedGalleryFolder ?? undefined}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select folder to save..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {folders.map(folder => (
+                                <SelectItem key={folder.id} value={folder.id}>{folder.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Button onClick={handleSaveImageToGallery} disabled={!generatedImageUrl || !selectedGalleryFolder} className="w-full sm:w-auto">
+                        <Save className="mr-2 h-4 w-4"/> Save to Gallery
+                    </Button>
+                 </div>
               </div>
             )}
           </CardContent>
