@@ -50,16 +50,12 @@ USER'S QUESTION:
 Based on the rules above, what is the answer? Your response must be ONLY a valid JSON object with a single key "answer", and nothing else.`,
       model: 'googleai/gemini-1.5-flash-latest',
       input,
+      output: {
+        format: 'json',
+        schema: AnswerQuestionOutputSchema
+      }
     });
-    // The model is instructed to return a JSON string, so we parse it.
-    try {
-        const result = JSON.parse(output as string);
-        return result;
-    } catch (e) {
-        // If parsing fails, it might be because the model returned a raw string.
-        // We'll wrap it in the expected object structure.
-        console.error("Failed to parse AI response as JSON, returning as raw string:", output);
-        return { answer: output as string };
-    }
+    // The `output` from `ai.generate` with a specified output schema is already a correctly typed JavaScript object.
+    return output!;
   }
 );
