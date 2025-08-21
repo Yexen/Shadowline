@@ -357,13 +357,11 @@ export const mapHtml = `
         mapContainer.addEventListener('touchmove', (e) => {
             if (!isMouseDown) return;
             const t = e.touches[0];
-.
             const deltaX = t.clientX - lastMousePos.x;
             const deltaY = t.clientY - lastMousePos.y;
             currentOffset.x += deltaX; currentOffset.y += deltaY;
             updateMapTransform();
             lastMousePos = { x: t.clientX, y: t.clientY };
-            e.preventDefault();
         }, { passive: false });
         mapContainer.addEventListener('touchend', () => { isMouseDown = false; }, { passive: true });
 
