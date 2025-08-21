@@ -90,30 +90,9 @@ export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
             <Accordion type="multiple" value={openAccordions} onValueChange={setOpenAccordions} className="w-full">
               {volumes.map(volume => (
                 <AccordionItem value={volume.id} key={volume.id}>
-                  <div className="flex items-center w-full">
-                    <AccordionTrigger className="font-headline text-base hover:no-underline flex-grow" onClick={() => setSelectedVolume(volume)}>
-                        <span className="flex-grow text-left">{volume.title}</span>
-                    </AccordionTrigger>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => e.stopPropagation()} disabled={volumes.length <= 1}>
-                             <Trash2 className="h-4 w-4" />
-                         </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Volume?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently delete the volume "{volume.title}" and all its chapters. This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => deleteVolume(volume.id)}>Delete</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
+                  <AccordionTrigger className="font-headline text-base hover:no-underline flex-grow" onClick={() => setSelectedVolume(volume)}>
+                      <span className="flex-grow text-left">{volume.title}</span>
+                  </AccordionTrigger>
                   <AccordionContent>
                     <ul className="space-y-2">
                       {volume.chapters.map(chapter => (
@@ -223,6 +202,7 @@ export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
           volume={currentSelectedVolume}
           onClose={() => setSelectedVolume(null)}
           onSave={updateVolume}
+          onDelete={deleteVolume}
           onAddChapter={addChapter}
           onDeleteChapter={deleteChapter}
           onEditChapter={(chapter) => handleEditChapter(selectedVolume.id, chapter)}

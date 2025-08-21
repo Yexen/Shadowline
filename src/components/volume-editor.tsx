@@ -31,11 +31,12 @@ interface VolumeEditorProps {
     onAddChapter: (volumeId: string, chapterTitle: string) => void;
     onDeleteChapter: (volumeId: string, chapterId: string) => void;
     onEditChapter: (chapter: Chapter) => void;
+    onDelete: (volumeId: string) => void;
 }
 
 type EditorView = 'overview' | 'resources' | 'chapters';
 
-export function VolumeEditor({ volume, onSave, onClose, onAddChapter, onDeleteChapter, onEditChapter }: VolumeEditorProps) {
+export function VolumeEditor({ volume, onSave, onClose, onAddChapter, onDeleteChapter, onEditChapter, onDelete }: VolumeEditorProps) {
     const [currentVolume, setCurrentVolume] = useState<Volume | null>(null);
     const [view, setView] = useState<EditorView>('overview');
     const [editingResource, setEditingResource] = useState<ResourcePage | null>(null);
@@ -112,6 +113,13 @@ export function VolumeEditor({ volume, onSave, onClose, onAddChapter, onDeleteCh
         if (!currentVolume) return;
         onDeleteChapter(currentVolume.id, chapterId);
     };
+
+    const handleDeleteVolume = () => {
+        if (currentVolume) {
+            onDelete(currentVolume.id);
+            onClose();
+        }
+    }
 
 
     if (!currentVolume) return null;
@@ -232,11 +240,32 @@ export function VolumeEditor({ volume, onSave, onClose, onAddChapter, onDeleteCh
                 )}
 
 
-                <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>
-                        Cancel
-                    </Button>
-                    <Button onClick={handleSave}>Save Changes</Button>
+                <DialogFooter className="justify-between">
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" disabled={volume ? !volume.id : true}>
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete Volume
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the volume "{currentVolume.title}" and all its content.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteVolume}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={onClose}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleSave}>Save Changes</Button>
+                    </div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
