@@ -19,7 +19,7 @@ const HomeFeedOutputSchema = z.object({
     views: z.string().describe("The view count, formatted as a string (e.g., '1.2M', '450K')."),
     thumbnail: z.string().describe("A placeholder image URL for the video thumbnail. Use 'https://placehold.co/600x400.png'."),
     dataAiHint: z.string().describe("A 1-2 word hint for a relevant image (e.g., 'dark knight movie', 'batmobile retro').")
-  })).describe("An array of 4 trending Batman-related YouTube videos."),
+  })).describe("An array of 3 trending Batman-related YouTube videos."),
   articles: z.array(z.object({
     id: z.number(),
     title: z.string().describe("The headline of the news article. Should be plausible and engaging."),
@@ -46,7 +46,7 @@ const generateHomeFeedFlow = ai.defineFlow(
   async () => {
     const { output } = await ai.generate({
       prompt: `You are a content aggregator for a private intelligence dashboard about the Batman universe.
-Your task is to generate a plausible list of trending content: 4 YouTube videos and 3 news articles.
+Your task is to generate a plausible list of trending content: 3 YouTube videos and 3 news articles.
 
 For YouTube videos, think about what's currently popular: new movie theories, video game analyses, retrospective essays, or fan-made content. Create realistic titles, channel names, and view counts.
 For news articles, think about what would be trending in that world: new villain activities, Wayne Enterprises announcements, movie or game news from our world, etc. Create realistic headlines, sources, and snippets.
