@@ -24,7 +24,7 @@ const GenerateCodeOutputSchema = z.object({
 export type GenerateCodeOutput = z.infer<typeof GenerateCodeOutputSchema>;
 
 export async function generateCode(input: GenerateCodeInput): Promise<GenerateCodeOutput> {
-  return await generateCodeFlow(input);
+  return generateCodeFlow(input);
 }
 
 const prompt = ai.definePrompt({

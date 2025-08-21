@@ -23,7 +23,7 @@ const GenerateContentOutputSchema = z.object({
 export type GenerateContentOutput = z.infer<typeof GenerateContentOutputSchema>;
 
 export async function generateContent(input: GenerateContentInput): Promise<GenerateContentOutput> {
-  return await generateContentFlow(input);
+  return generateContentFlow(input);
 }
 
 const prompt = ai.definePrompt({
