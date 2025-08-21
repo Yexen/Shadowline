@@ -14,6 +14,7 @@ import {
   SidebarInset,
   SidebarTrigger,
   SidebarSeparator,
+  SidebarGroupContent,
 } from '@/components/ui/sidebar';
 import { BatLogo } from '@/components/bat-logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -146,7 +147,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </SidebarContent>
         <SidebarFooter>
              <SidebarMenuItem>
-                <SidebarMenuButton onClick={() => setVolumesOpen(true)} tooltip={{ children: "Volumes", side: "right", align: "center" }} className="font-headline text-base">
+                <SidebarMenuButton onClick={() => setVolumesOpen(true)} tooltip={{ children: "Volumes", side: "right", align: "center" }} className="font-headline text-base group-data-[state=collapsed]:justify-center">
                     <BookOpenCheck />
                     <span className="group-data-[state=collapsed]:hidden">Volumes</span>
                 </SidebarMenuButton>
@@ -154,7 +155,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <Sheet>
                 <SheetTrigger asChild>
                      <SidebarMenuItem>
-                        <SidebarMenuButton tooltip={{ children: "Bible", side: "right", align: "center" }} className="font-headline text-base">
+                        <SidebarMenuButton tooltip={{ children: "Bible", side: "right", align: "center" }} className="font-headline text-base group-data-[state=collapsed]:justify-center">
                             <BookCopy />
                             <span className="group-data-[state=collapsed]:hidden">Bible</span>
                         </SidebarMenuButton>
