@@ -6,13 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Youtube, Newspaper } from "lucide-react";
-import { generateYoutubeFeed, type YoutubeFeedOutput } from "@/ai/flows/generate-youtube-feed";
-import { generateLatestIntel, type LatestIntelOutput } from "@/ai/flows/generate-latest-intel";
+import { generateHomeFeed, type HomeFeedOutput } from "@/ai/flows/generate-home-feed";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 const getCachedData = <T,>(key: string): T | null => {
+  if (typeof window === 'undefined') return null;
   try {
     const item = localStorage.getItem(key);
     if (!item) return null;
@@ -30,6 +30,7 @@ const getCachedData = <T,>(key: string): T | null => {
 };
 
 const setCachedData = (key: string, data: any) => {
+  if (typeof window === 'undefined') return;
   try {
     const now = new Date().getTime();
     const item = { timestamp: now, data };
@@ -39,46 +40,31 @@ const setCachedData = (key: string, data: any) => {
   }
 };
 
+
 export default function HomePage() {
-    const [surveillanceFootage, setSurveillanceFootage] = useState<YoutubeFeedOutput['videos']>([]);
-    const [latestIntel, setLatestIntel] = useState<LatestIntelOutput['articles']>([]);
-    const [isFootageLoading, setIsFootageLoading] = useState(true);
-    const [isIntelLoading, setIsIntelLoading] = useState(true);
+    const [surveillanceFootage, setSurveillanceFootage] = useState<HomeFeedOutput['videos']>([]);
+    const [latestIntel, setLatestIntel] = useState<HomeFeedOutput['articles']>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     const fetchFeeds = useCallback(async () => {
-        // Load from cache first
-        const cachedFootage = getCachedData<YoutubeFeedOutput>('youtube-feed-cache');
-        const cachedIntel = getCachedData<LatestIntelOutput>('latest-intel-cache');
+        setIsLoading(true);
+        const cachedFeed = getCachedData<HomeFeedOutput>('home-feed-cache');
 
-        if (cachedFootage) {
-            setSurveillanceFootage(cachedFootage.videos);
-            setIsFootageLoading(false);
+        if (cachedFeed) {
+            setSurveillanceFootage(cachedFeed.videos);
+            setLatestIntel(cachedFeed.articles);
+            setIsLoading(false);
         } else {
             try {
-                console.log("Fetching new YouTube feed...");
-                const feed = await generateYoutubeFeed();
+                console.log("Fetching new home page feed...");
+                const feed = await generateHomeFeed();
                 setSurveillanceFootage(feed.videos);
-                setCachedData('youtube-feed-cache', feed);
+                setLatestIntel(feed.articles);
+                setCachedData('home-feed-cache', feed);
             } catch (error) {
-                console.error("Failed to fetch YouTube feed:", error);
+                console.error("Failed to fetch home page feed:", error);
             } finally {
-                setIsFootageLoading(false);
-            }
-        }
-
-        if (cachedIntel) {
-            setLatestIntel(cachedIntel.articles);
-            setIsIntelLoading(false);
-        } else {
-            try {
-                console.log("Fetching new latest intel...");
-                const intel = await generateLatestIntel();
-                setLatestIntel(intel.articles);
-                setCachedData('latest-intel-cache', intel);
-            } catch (error) {
-                console.error("Failed to fetch latest intel:", error);
-            } finally {
-                setIsIntelLoading(false);
+                setIsLoading(false);
             }
         }
     }, []);
@@ -102,7 +88,7 @@ export default function HomePage() {
             Surveillance Footage
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {isFootageLoading ? (
+          {isLoading ? (
             Array.from({ length: 4 }).map((_, index) => (
                 <Card key={index} className="overflow-hidden bg-card">
                     <CardContent className="p-0">
@@ -138,7 +124,7 @@ export default function HomePage() {
             Latest Intel
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {isIntelLoading ? (
+            {isLoading ? (
                 Array.from({ length: 3 }).map((_, index) => (
                     <Card key={index} className="flex flex-col bg-card">
                         <CardHeader>
