@@ -13,7 +13,7 @@ import {z} from 'genkit';
 
 const AnswerQuestionInputSchema = z.object({
   question: z.string().describe('The user\'s question.'),
-  bibleData: z.string().optional().describe("A JSON string representing the user's world bible for context."),
+  bibleData: z.any().optional().describe("A JSON string representing the user's world bible for context."),
 });
 export type AnswerQuestionInput = z.infer<typeof AnswerQuestionInputSchema>;
 
