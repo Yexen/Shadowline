@@ -62,14 +62,17 @@ export default function AiToolsPage() {
       };
       const result = await answerQuestion(input);
       
-      if (result && result.answer) {
+      // The result from a flow with an output schema is the object itself.
+      if (result && typeof result === 'object' && 'answer' in result) {
         setAnswer(result.answer);
       } else {
-        toast({ variant: 'destructive', title: 'Error', description: 'Received an unexpected response format from the Oracle.' });
+         // Fallback for safety, though the flow should always return the object.
+        const parsedAnswer = typeof result === 'string' ? JSON.parse(result).answer : 'Could not parse the answer.';
+        setAnswer(parsedAnswer);
       }
     } catch (error) {
       console.error(error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to get an answer.' });
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to get an answer from the Oracle.' });
     } finally {
       setIsAsking(false);
     }

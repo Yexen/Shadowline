@@ -53,7 +53,6 @@ Based on the rules above, what is the answer? Your response must be ONLY a valid
         schema: AnswerQuestionOutputSchema,
         format: 'json',
       },
-      input,
     });
     return output!;
   }
