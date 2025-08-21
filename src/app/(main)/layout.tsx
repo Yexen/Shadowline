@@ -132,13 +132,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 ))}
-                 <SidebarMenuItem>
+                <SidebarMenuItem>
                     <SidebarMenuButton onClick={() => setSettingsOpen(true)} tooltip={{ children: "Settings", side: "right", align: "center" }}>
                         <Settings />
                         <span>Settings</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
-                 <SidebarMenuItem>
+            </SidebarMenu>
+        </SidebarContent>
+        <SidebarFooter>
+            <SidebarMenu>
+                <SidebarMenuItem>
                     <SidebarMenuButton onClick={() => setVolumesOpen(true)} tooltip={{ children: "Volumes", side: "right", align: "center" }} className="font-headline text-base group-data-[state=collapsed]:justify-center">
                         <BookOpenCheck />
                         <span className="group-data-[state=collapsed]:hidden">Volumes</span>
@@ -203,8 +207,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </SheetContent>
                 </Sheet>
             </SidebarMenu>
-        </SidebarContent>
-        <SidebarFooter>
             <div className="p-2 border-t border-sidebar-border">
                 <button className="flex items-center p-2 rounded-md hover:bg-accent w-full group" onClick={() => setWriterProfileOpen(true)}>
                     <div className="flex items-center gap-2">
