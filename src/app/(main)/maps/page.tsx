@@ -104,25 +104,26 @@ export default function MapsPage() {
           <Card 
             className="bg-card hover:border-primary/50 transition-colors group flex flex-col"
           >
-            <CardHeader>
+             <CardHeader>
                 <CardTitle className="font-headline flex items-center gap-2">
                     <MapIcon />
                     Gotham City
                 </CardTitle>
             </CardHeader>
             <CardContent className="flex-grow flex flex-col p-0 relative">
-                 <div className="w-full flex-grow relative">
-                    <iframe
-                      srcDoc={mapHtml}
-                      className="w-full h-full border-0 absolute inset-0"
-                      title="Interactive Gotham City Map Preview"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex items-center justify-center">
-                        <Button onClick={() => setIsMapOpen(true)} variant="secondary">
-                            Click to Explore Map
-                        </Button>
+                 <iframe
+                    srcDoc={mapHtml}
+                    className="w-full h-full border-0 absolute inset-0"
+                    title="Interactive Gotham City Map Preview"
+                  />
+                  <button onClick={() => setIsMapOpen(true)} className="absolute inset-0 bg-transparent cursor-pointer z-10">
+                      <span className="sr-only">Explore Gotham City Map</span>
+                  </button>
+                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex items-center justify-center pointer-events-none">
+                    <div className="bg-background/80 text-foreground py-2 px-4 rounded-md border border-border backdrop-blur-sm">
+                      <h3 className="font-headline">Click to Explore</h3>
                     </div>
-                 </div>
+                </div>
             </CardContent>
           </Card>
 
