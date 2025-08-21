@@ -11,6 +11,7 @@ import { BrainCircuit, PenLine, Sparkles, Wand2, Copy, MessageSquareQuote } from
 import { generateContent, GenerateContentInput } from '@/ai/flows/ai-writing-assistant';
 import { generateCode, GenerateCodeInput } from '@/ai/flows/generate-code';
 import { useToast } from '@/hooks/use-toast';
+import { useBible } from '@/hooks/use-bible';
 
 export default function AiToolsPage() {
   const [writingPrompt, setWritingPrompt] = useState('');
@@ -27,13 +28,17 @@ export default function AiToolsPage() {
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
 
   const { toast } = useToast();
+  const { bibleData } = useBible();
 
   const handleGenerateScene = async () => {
     if (!writingPrompt) return;
     setIsGeneratingScene(true);
     setGeneratedScene('');
     try {
-      const input: GenerateContentInput = { prompt: writingPrompt };
+      const input: GenerateContentInput = { 
+        prompt: writingPrompt,
+        bibleData: JSON.stringify(bibleData) 
+      };
       const result = await generateContent(input);
       setGeneratedScene(result.content);
     } catch (error) {
@@ -49,7 +54,10 @@ export default function AiToolsPage() {
     setIsAsking(true);
     setAnswer('');
     try {
-      const input: GenerateContentInput = { prompt: question };
+      const input: GenerateContentInput = { 
+        prompt: `Answer the following question: ${question}`,
+        bibleData: JSON.stringify(bibleData) 
+      };
       const result = await generateContent(input);
       setAnswer(result.content);
     } catch (error) {
@@ -65,7 +73,11 @@ export default function AiToolsPage() {
     setIsGeneratingCode(true);
     setGeneratedCode('');
     try {
-      const input: GenerateCodeInput = { description: codeDescription, language: codeLanguage };
+      const input: GenerateCodeInput = { 
+        description: codeDescription, 
+        language: codeLanguage,
+        bibleData: JSON.stringify(bibleData) 
+      };
       const result = await generateCode(input);
       setGeneratedCode(result.code);
     } catch (error) {

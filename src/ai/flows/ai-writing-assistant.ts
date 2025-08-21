@@ -13,6 +13,7 @@ import {z} from 'genkit';
 
 const GenerateContentInputSchema = z.object({
   prompt: z.string().describe('The writing prompt to generate content for.'),
+  bibleData: z.string().optional().describe('A JSON string representing the user\'s world bible for context.'),
 });
 export type GenerateContentInput = z.infer<typeof GenerateContentInputSchema>;
 
@@ -29,11 +30,20 @@ const prompt = ai.definePrompt({
   name: 'generateContentPrompt',
   input: {schema: GenerateContentInputSchema},
   output: {schema: GenerateContentOutputSchema},
-  prompt: `You are a creative writing assistant. Your task is to write a compelling piece of content based on the user's prompt. This could be a scene, a character description, or a plot point.
+  prompt: `You are a creative writing assistant for a user writing stories set in a Gotham City-like universe.
+Your task is to write a compelling piece of content based on the user's prompt. This could be a scene, a character description, or a plot point.
 
-Prompt: {{{prompt}}}
+You have been provided with the user's "Gotham Bible" which contains their custom worldbuilding details. You MUST adhere to this bible as the primary source of truth.
 
-Write the content as requested.`,
+{{#if bibleData}}
+GOTHAM BIBLE CONTEXT:
+{{{bibleData}}}
+{{/if}}
+
+USER PROMPT:
+"{{{prompt}}}"
+
+Write the content as requested, ensuring it is consistent with the provided bible.`,
 });
 
 const generateContentFlow = ai.defineFlow(

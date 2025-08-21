@@ -20,6 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Label } from '@/components/ui/label';
+import { useBible } from '@/hooks/use-bible';
 
 export default function EditorPage() {
   const params = useParams();
@@ -32,6 +33,7 @@ export default function EditorPage() {
   const statusRef = useRef<HTMLParagraphElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
+  const { bibleData } = useBible();
 
   // AI Assistant State
   const [isGenerating, setIsGenerating] = useState(false);
@@ -110,7 +112,10 @@ export default function EditorPage() {
     setPopoverOpen(true);
 
     try {
-        const input: GenerateContentInput = { prompt: `Based on the following text, give me a few short, creative suggestions to continue or improve it: "${selection}"` };
+        const input: GenerateContentInput = { 
+          prompt: `Based on the following text, give me a few short, creative suggestions to continue or improve it: "${selection}"`,
+          bibleData: JSON.stringify(bibleData) 
+        };
         const result = await generateContent(input);
         // We'll split the result into a few suggestions. This is a simple heuristic.
         setSuggestions(result.content.split('\n').filter(s => s.trim().length > 0));
@@ -150,7 +155,10 @@ export default function EditorPage() {
     setIsGeneratingScene(true);
     setGeneratedScene('');
     try {
-      const input: GenerateContentInput = { prompt: scenePrompt };
+      const input: GenerateContentInput = { 
+        prompt: scenePrompt,
+        bibleData: JSON.stringify(bibleData)
+      };
       const result = await generateContent(input);
       setGeneratedScene(result.content);
     } catch (error) {
