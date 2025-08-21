@@ -15,7 +15,8 @@ import {
   SidebarTrigger,
   SidebarGroup,
   SidebarGroupLabel,
-  SidebarSeparator
+  SidebarSeparator,
+  SidebarGroupContent
 } from '@/components/ui/sidebar';
 import { BatLogo } from '@/components/bat-logo';
 import { BatSignal } from '@/components/bat-signal';
