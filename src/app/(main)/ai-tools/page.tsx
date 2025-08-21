@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -59,15 +60,11 @@ export default function AiToolsPage() {
         question: question,
         bibleData: JSON.stringify(bibleData)
       };
-      // The flow returns an object { answer: '...' }
       const result = await answerQuestion(input);
       
-      // Check if the result and the answer property exist.
-      if (result && typeof result.answer === 'string') {
+      if (result && result.answer) {
         setAnswer(result.answer);
       } else {
-        // Handle cases where the format is not as expected.
-        console.error("Received an unexpected response format:", result);
         toast({ variant: 'destructive', title: 'Error', description: 'Received an unexpected response format from the Oracle.' });
       }
     } catch (error) {

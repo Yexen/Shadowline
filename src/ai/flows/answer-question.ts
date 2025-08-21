@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -46,12 +47,13 @@ BIBLE CONTEXT:
 USER'S QUESTION:
 "{{{question}}}"
 
-Based on the rules above, what is the answer? Your output must be a JSON object with a single key "answer".`,
+Based on the rules above, what is the answer? Your response must be ONLY a valid JSON object with a single key "answer", and nothing else.`,
       model: 'googleai/gemini-1.5-flash-latest',
       output: {
         schema: AnswerQuestionOutputSchema,
         format: 'json',
       },
+      input,
     });
     return output!;
   }
