@@ -3,7 +3,7 @@
 
 import type { GalleryFolder, GalleryImage } from '@/hooks/use-gallery';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -27,6 +27,7 @@ export function GalleryFolder({ folder, onAddImage, onUpdateImage, onDeleteImage
   const [editingFolder, setEditingFolder] = useState<GalleryFolder | null>(null);
   const [editingImage, setEditingImage] = useState<GalleryImage | null>(null);
   const [addDialog, setAddDialog] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [newImageUrl, setNewImageUrl] = useState('');
   const [newImageCaption, setNewImageCaption] = useState('');
@@ -71,6 +72,17 @@ export function GalleryFolder({ folder, onAddImage, onUpdateImage, onDeleteImage
     }
   }
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (loadEvent) => {
+            setNewImageUrl(loadEvent.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+    }
+  }
+
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
@@ -86,20 +98,26 @@ export function GalleryFolder({ folder, onAddImage, onUpdateImage, onDeleteImage
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle className="font-headline">Add New Image</DialogTitle>
-                        <DialogDescription>Enter the URL and a caption for your new image.</DialogDescription>
+                        <DialogDescription>Enter the URL and a caption for your new image, or upload from your device.</DialogDescription>
                     </DialogHeader>
                      <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                            <Label htmlFor="image-url">Image URL</Label>
-                            <Input id="image-url" value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)} placeholder="https://placehold.co/600x400" />
-                        </div>
-                         <div className="space-y-2">
                             <Label htmlFor="image-caption">Image Caption</Label>
                             <Input id="image-caption" value={newImageCaption} onChange={e => setNewImageCaption(e.target.value)} placeholder="e.g., Gotham City Docks" />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="image-hint">AI Image Hint</Label>
                             <Input id="image-hint" value={newImageDataAiHint} onChange={e => setNewImageDataAiHint(e.target.value)} placeholder="e.g., dark city" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="image-url">Image URL</Label>
+                            <Input id="image-url" value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)} placeholder="https://placehold.co/600x400" />
+                        </div>
+                        <div className="text-center text-sm text-muted-foreground">OR</div>
+                         <div className="space-y-2">
+                            <Label>Upload from device</Label>
+                            <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileSelect} />
+                            <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>Browse Device</Button>
                         </div>
                     </div>
                     <DialogFooter>
@@ -207,12 +225,18 @@ export function GalleryFolder({ folder, onAddImage, onUpdateImage, onDeleteImage
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
+                        <Label htmlFor="edit-image-caption">Image Caption</Label>
+                        <Input id="edit-image-caption" value={newImageCaption} onChange={e => setNewImageCaption(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
                         <Label htmlFor="edit-image-url">Image URL</Label>
                         <Input id="edit-image-url" value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)} />
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="edit-image-caption">Image Caption</Label>
-                        <Input id="edit-image-caption" value={newImageCaption} onChange={e => setNewImageCaption(e.target.value)} />
+                     <div className="text-center text-sm text-muted-foreground">OR</div>
+                     <div className="space-y-2">
+                        <Label>Upload from device</Label>
+                        <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileSelect} />
+                        <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>Browse Device</Button>
                     </div>
                 </div>
                 <DialogFooter>

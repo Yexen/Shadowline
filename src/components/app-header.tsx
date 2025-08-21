@@ -8,7 +8,7 @@ import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ImagePlus } from "lucide-react";
 
 const pathToTitle: { [key: string]: string } = {
@@ -24,6 +24,7 @@ export function AppHeader() {
     const { coverImage, setCoverImage } = useCoverImage();
     const [dialogOpen, setDialogOpen] = useState(false);
     const [newImageUrl, setNewImageUrl] = useState(coverImage);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const pageKey = Object.keys(pathToTitle).find(key => pathname.startsWith(key)) || '/home';
     const title = pathname.startsWith('/editor/') ? "The Editor" : pathToTitle[pageKey];
@@ -31,6 +32,17 @@ export function AppHeader() {
     const handleSave = () => {
         setCoverImage(newImageUrl);
         setDialogOpen(false);
+    }
+    
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (loadEvent) => {
+                setNewImageUrl(loadEvent.target?.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
     }
 
     return (
@@ -56,14 +68,22 @@ export function AppHeader() {
                         <DialogHeader>
                             <DialogTitle>Change Header Image</DialogTitle>
                         </DialogHeader>
-                        <div className="space-y-2">
-                            <Label htmlFor="cover-url">Image URL</Label>
-                            <Input 
-                                id="cover-url" 
-                                value={newImageUrl} 
-                                onChange={(e) => setNewImageUrl(e.target.value)} 
-                                placeholder="Paste image URL here"
-                            />
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="cover-url">Image URL</Label>
+                                <Input 
+                                    id="cover-url" 
+                                    value={newImageUrl} 
+                                    onChange={(e) => setNewImageUrl(e.target.value)} 
+                                    placeholder="Paste image URL here"
+                                />
+                            </div>
+                            <div className="text-center text-sm text-muted-foreground">OR</div>
+                             <div className="space-y-2">
+                                <Label>Upload from device</Label>
+                                <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileSelect} />
+                                <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>Browse Device</Button>
+                            </div>
                         </div>
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
