@@ -21,7 +21,7 @@ import { BatLogo } from '@/components/bat-logo';
 import { BatSignal } from '@/components/bat-signal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Home, PenSquare, BrainCircuit, Info, LogOut, FilePlus, BookCopy, PlusCircle, Images, Settings } from 'lucide-react';
+import { Home, PenSquare, BrainCircuit, Info, LogOut, FilePlus, BookCopy, PlusCircle, Images, Settings, BookOpenCheck } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -34,6 +34,7 @@ import { AppHeader } from '@/components/app-header';
 import { useWriters } from '@/hooks/use-writers';
 import { WriterProfile } from '@/components/writer-profile';
 import { SettingsDialog } from '@/components/settings-dialog';
+import { VolumesSidebar } from '@/components/volumes-sidebar';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -47,6 +48,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [newCategory, setNewCategory] = useState('');
   const [writerProfileOpen, setWriterProfileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [volumesOpen, setVolumesOpen] = useState(false);
 
 
   useEffect(() => {
@@ -153,6 +155,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
+            <Button variant="ghost" className="w-full justify-start gap-2" onClick={() => setVolumesOpen(true)}>
+                <BookOpenCheck className="size-4" />
+                <span className="font-headline">VOLUMES</span>
+            </Button>
             <Sheet>
                 <SheetTrigger asChild>
                     <Button variant="ghost" className="w-full justify-start gap-2">
@@ -251,8 +257,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         onClose={() => setSettingsOpen(false)}
       />
 
+      <VolumesSidebar
+        isOpen={volumesOpen}
+        onClose={() => setVolumesOpen(false)}
+      />
+
     </SidebarProvider>
   );
 }
-
-    
