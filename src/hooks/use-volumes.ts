@@ -27,7 +27,7 @@ const VOLUMES_STORAGE_KEY = 'gotham-volumes-data';
 
 const defaultVolumes: Volume[] = [{
     id: `volume-1`,
-    title: `Volume 1`,
+    title: `My First Volume`,
     chapters: [],
     overview: 'This is the first volume of the story.',
     resources: [],
@@ -69,9 +69,9 @@ export function useVolumes() {
     }
   }, []);
 
-  const addVolume = (title: string) => {
+  const addVolume = (title: string, newId: string) => {
     const newVolume: Volume = {
-      id: `volume-${Date.now()}`,
+      id: newId,
       title: title,
       chapters: [],
       overview: '',

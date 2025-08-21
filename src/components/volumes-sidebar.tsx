@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
@@ -24,54 +24,45 @@ type VolumesView = 'by-volume' | 'all';
 
 export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
   const { isLoaded, volumes, addVolume, updateVolume, deleteVolume, addChapter, deleteChapter, updateChapter } = useVolumes();
-  const [editingVolumeId, setEditingVolumeId] = useState<string | null>(null);
-  const [newVolumeTitle, setNewVolumeTitle] = useState('');
   const [newVolumeName, setNewVolumeName] = useState('');
-  const [newChapterTitle, setNewChapterTitle] = useState('');
-  const [addingToVolumeId, setAddingToVolumeId] = useState<string | null>(null);
-  const [editingChapter, setEditingChapter] = useState<{volumeId: string, chapter: Chapter} | null>(null);
+  const [editingChapter, setEditingChapter] = useState<Chapter | null>(null);
+  const [activeVolumeIdForChapter, setActiveVolumeIdForChapter] = useState<string>('');
+  
   const [view, setView] = useState<VolumesView>('by-volume');
   const [selectedVolume, setSelectedVolume] = useState<Volume | null>(null);
 
-  const handleStartEditVolume = (volume: Volume) => {
-    setEditingVolumeId(volume.id);
-    setNewVolumeTitle(volume.title);
-  };
+  const [openAccordions, setOpenAccordions] = useState<string[]>([]);
 
-  const handleSaveVolumeTitle = () => {
-    if (editingVolumeId && newVolumeTitle.trim()) {
-      updateVolume(editingVolumeId, { title: newVolumeTitle.trim() });
-      setEditingVolumeId(null);
-      setNewVolumeTitle('');
+  // When volumes data is loaded, open the first volume by default
+  useEffect(() => {
+    if (isLoaded && volumes.length > 0) {
+      setOpenAccordions([volumes[0].id]);
     }
-  };
+  }, [isLoaded, volumes]);
 
-  const handleStartAddChapter = (volumeId: string) => {
-    setAddingToVolumeId(volumeId);
-  }
-
-  const handleConfirmAddChapter = () => {
-    if (addingToVolumeId && newChapterTitle.trim()) {
-      addChapter(addingToVolumeId, newChapterTitle.trim());
-      setAddingToVolumeId(null);
-      setNewChapterTitle('');
-    }
-  }
-  
   const handleSaveChapter = (chapter: Chapter) => {
-    if (editingChapter) {
-        updateChapter(editingChapter.volumeId, chapter.id, chapter.title, chapter.content);
+    if (activeVolumeIdForChapter) {
+        updateChapter(activeVolumeIdForChapter, chapter.id, chapter.title, chapter.content);
         setEditingChapter(null);
+        setActiveVolumeIdForChapter('');
     }
-  }
+  };
 
   const handleAddNewVolume = () => {
     if (newVolumeName.trim()) {
-      addVolume(newVolumeName.trim());
+      const newId = `volume-${Date.now()}`;
+      addVolume(newVolumeName.trim(), newId);
       setNewVolumeName('');
+      setOpenAccordions(prev => [...prev, newId]); // auto-open new volume
     }
   };
 
+  const handleEditChapter = (volumeId: string, chapter: Chapter) => {
+    setActiveVolumeIdForChapter(volumeId);
+    setEditingChapter(chapter);
+  }
+  
+  const currentSelectedVolume = volumes.find(v => v.id === selectedVolume?.id) || null;
 
   return (
     <>
@@ -96,55 +87,38 @@ export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
             </div>
           ) : view === 'by-volume' ? (
             <ScrollArea className="flex-grow mt-4 pr-2">
-            <Accordion type="multiple" className="w-full">
+            <Accordion type="multiple" value={openAccordions} onValueChange={setOpenAccordions} className="w-full">
               {volumes.map(volume => (
                 <AccordionItem value={volume.id} key={volume.id}>
                   <div className="flex items-center w-full">
-                    <AccordionTrigger className="font-headline text-base hover:no-underline flex-grow">
-                        {editingVolumeId === volume.id ? (
-                          <Input
-                            value={newVolumeTitle}
-                            onChange={(e) => setNewVolumeTitle(e.target.value)}
-                            onBlur={handleSaveVolumeTitle}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSaveVolumeTitle()}
-                            className="flex-grow"
-                            autoFocus
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        ) : (
-                          <span className="flex-grow text-left">{volume.title}</span>
-                        )}
+                    <AccordionTrigger className="font-headline text-base hover:no-underline flex-grow" onClick={() => setSelectedVolume(volume)}>
+                        <span className="flex-grow text-left">{volume.title}</span>
                     </AccordionTrigger>
-                    <div className='flex'>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleStartEditVolume(volume); }}>
-                            <Edit className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => e.stopPropagation()} disabled={volumes.length <= 1}>
-                                 <Trash2 className="h-4 w-4" />
-                             </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Volume?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will permanently delete the volume "{volume.title}" and all its chapters. This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => deleteVolume(volume.id)}>Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                    </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => e.stopPropagation()} disabled={volumes.length <= 1}>
+                             <Trash2 className="h-4 w-4" />
+                         </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Volume?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete the volume "{volume.title}" and all its chapters. This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteVolume(volume.id)}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                   <AccordionContent>
                     <ul className="space-y-2">
                       {volume.chapters.map(chapter => (
                         <li key={chapter.id} className="flex items-center justify-between p-2 rounded-md hover:bg-accent group">
-                           <button className="flex items-center gap-2" onClick={() => setEditingChapter({ volumeId: volume.id, chapter })}>
+                           <button className="flex items-center gap-2" onClick={() => handleEditChapter(volume.id, chapter)}>
                             <FileText className="h-4 w-4" />
                             <h4 className="font-medium">{chapter.title}</h4>
                           </button>
@@ -169,25 +143,7 @@ export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
                             </AlertDialog>
                         </li>
                       ))}
-                      {addingToVolumeId === volume.id ? (
-                         <li className="flex items-center gap-2 p-2">
-                             <Input 
-                                placeholder="New chapter title..." 
-                                value={newChapterTitle}
-                                onChange={(e) => setNewChapterTitle(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleConfirmAddChapter()}
-                                autoFocus
-                            />
-                             <Button onClick={handleConfirmAddChapter}>Add</Button>
-                             <Button variant="ghost" onClick={() => setAddingToVolumeId(null)}>Cancel</Button>
-                         </li>
-                      ) : (
-                        <li>
-                          <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => handleStartAddChapter(volume.id)}>
-                            <PlusCircle className="mr-2" /> Add New Chapter
-                          </Button>
-                        </li>
-                      )}
+                      {volume.chapters.length === 0 && <p className="text-sm text-muted-foreground italic px-2">No chapters yet.</p>}
                     </ul>
                   </AccordionContent>
                 </AccordionItem>
@@ -205,7 +161,7 @@ export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
                             <ul className="space-y-1 pl-4 mt-1 border-l border-border ml-2">
                                 {volume.chapters.map(chapter => (
                                      <li key={chapter.id} className="flex items-center justify-between p-1 rounded-md hover:bg-accent group text-sm">
-                                        <button className="flex items-center gap-2" onClick={() => setEditingChapter({ volumeId: volume.id, chapter })}>
+                                        <button className="flex items-center gap-2" onClick={() => handleEditChapter(volume.id, chapter)}>
                                             <FileText className="h-4 w-4 text-muted-foreground" />
                                             <h4 className="font-medium">{chapter.title}</h4>
                                         </button>
@@ -256,7 +212,7 @@ export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
       
       {editingChapter && (
         <ChapterEditor 
-            chapter={editingChapter.chapter}
+            chapter={editingChapter}
             onSave={handleSaveChapter}
             onClose={() => setEditingChapter(null)}
         />
@@ -264,9 +220,12 @@ export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
 
       {selectedVolume && (
         <VolumeEditor
-          volume={selectedVolume}
+          volume={currentSelectedVolume}
           onClose={() => setSelectedVolume(null)}
           onSave={updateVolume}
+          onAddChapter={addChapter}
+          onDeleteChapter={deleteChapter}
+          onEditChapter={(chapter) => handleEditChapter(selectedVolume.id, chapter)}
         />
       )}
     </>
