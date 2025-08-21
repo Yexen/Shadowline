@@ -99,20 +99,32 @@ export default function MapsPage() {
               <p className="mt-4 text-muted-foreground">A high-level map of the entire DC Comics multiverse, showing key planets and dimensions.</p>
             </CardContent>
           </Card>
-          <Card className="bg-card hover:border-primary/50 transition-colors cursor-pointer group" onClick={() => setIsMapOpen(true)}>
-             <CardContent className="p-0 relative aspect-video">
+          
+          <Card className="bg-card hover:border-primary/50 transition-colors group flex flex-col">
+            <CardHeader>
+                <CardTitle className="font-headline flex items-center gap-2">
+                    <MapIcon />
+                    Gotham City
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-grow p-0 relative">
                  <iframe
                   srcDoc={mapHtml}
-                  className="w-full h-full border-0"
+                  className="w-full h-full border-0 pointer-events-none"
                   title="Interactive Gotham City Map Preview"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                <div className="absolute bottom-4 left-4">
-                    <h3 className="font-headline text-xl text-white drop-shadow-lg">Gotham City</h3>
-                    <p className="text-sm text-white/80 drop-shadow-md">Interactive Map</p>
+                <div 
+                    className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent cursor-pointer"
+                    onClick={() => setIsMapOpen(true)}
+                >
+                    <div className="absolute bottom-4 left-4">
+                        <h3 className="font-headline text-xl text-white drop-shadow-lg">Gotham City</h3>
+                        <p className="text-sm text-white/80 drop-shadow-md">Interactive Map</p>
+                    </div>
                 </div>
             </CardContent>
           </Card>
+
         </div>
       </div>
       <GothamMap isOpen={isMapOpen} onClose={() => setIsMapOpen(false)} />
