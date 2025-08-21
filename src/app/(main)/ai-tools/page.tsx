@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { BrainCircuit, PenLine, Sparkles, Wand2, Copy, MessageSquareQuestion } from 'lucide-react';
+import { BrainCircuit, PenLine, Sparkles, Wand2, Copy, MessageSquareQuote } from 'lucide-react';
 import { generateContent, GenerateContentInput } from '@/ai/flows/ai-writing-assistant';
 import { generateCode, GenerateCodeInput } from '@/ai/flows/generate-code';
 import { useToast } from '@/hooks/use-toast';
@@ -136,7 +136,7 @@ export default function AiToolsPage() {
             
             <Card className="bg-card">
               <CardHeader>
-                <CardTitle className="font-headline flex items-center gap-2"><MessageSquareQuestion/> Ask Oracle</CardTitle>
+                <CardTitle className="font-headline flex items-center gap-2"><MessageSquareQuote/> Ask Oracle</CardTitle>
                 <CardDescription>Ask a question and get a direct answer from the Oracle.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
