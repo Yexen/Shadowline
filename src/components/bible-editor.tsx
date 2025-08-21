@@ -18,6 +18,7 @@ import { PlusCircle, Trash2, Sparkles } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 import { generateBibleFields, GenerateBibleFieldsInput } from '@/ai/flows/generate-bible-fields';
 import { useToast } from '@/hooks/use-toast';
+import { Textarea } from './ui/textarea';
 
 interface BibleEditorProps {
   entry: BibleEntry | null;
@@ -128,7 +129,7 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
           <ScrollArea className="h-[300px] w-full pr-4">
               <div className="space-y-4">
                 {fields.map((field, index) => (
-                  <div key={index} className="flex items-end gap-2">
+                  <div key={index} className="flex items-start gap-2">
                     <div className="grid flex-1 gap-1.5">
                       <Label htmlFor={`field-label-${index}`} className="text-xs">Label</Label>
                       <Input
@@ -140,14 +141,15 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
                     </div>
                     <div className="grid flex-1 gap-1.5">
                       <Label htmlFor={`field-value-${index}`} className="text-xs">Value</Label>
-                      <Input
+                      <Textarea
                         id={`field-value-${index}`}
                         value={field.value}
                         onChange={(e) => handleFieldChange(index, 'value', e.target.value)}
                         placeholder="e.g., The Dark Knight"
+                        className="min-h-[40px]"
                       />
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => handleRemoveField(index)}>
+                    <Button variant="ghost" size="icon" onClick={() => handleRemoveField(index)} className="mt-6">
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
