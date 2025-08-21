@@ -52,7 +52,6 @@ Based on the rules above, what is the answer?`,
         schema: AnswerQuestionOutputSchema,
         format: 'json',
       },
-      input,
     });
     return output!;
   }
