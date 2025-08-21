@@ -17,11 +17,11 @@ export interface Volume {
 
 const VOLUMES_STORAGE_KEY = 'gotham-volumes-data';
 
-const defaultVolumes: Volume[] = Array.from({ length: 6 }, (_, i) => ({
-    id: `volume-${i + 1}`,
-    title: `Volume ${i + 1}`,
+const defaultVolumes: Volume[] = [{
+    id: `volume-1`,
+    title: `Volume 1`,
     chapters: [],
-}));
+}];
 
 export function useVolumes() {
   const [volumes, setVolumes] = useState<Volume[]>([]);
@@ -31,7 +31,14 @@ export function useVolumes() {
     try {
       const storedData = localStorage.getItem(VOLUMES_STORAGE_KEY);
       if (storedData) {
-        setVolumes(JSON.parse(storedData));
+        const parsedData = JSON.parse(storedData);
+        // Ensure there's at least one volume, if not, set default
+        if (Array.isArray(parsedData) && parsedData.length > 0) {
+            setVolumes(parsedData);
+        } else {
+            setVolumes(defaultVolumes);
+            localStorage.setItem(VOLUMES_STORAGE_KEY, JSON.stringify(defaultVolumes));
+        }
       } else {
         setVolumes(defaultVolumes);
         localStorage.setItem(VOLUMES_STORAGE_KEY, JSON.stringify(defaultVolumes));
@@ -52,6 +59,15 @@ export function useVolumes() {
       console.error("Failed to save volumes data to localStorage", error);
     }
   }, []);
+
+  const addVolume = (title: string) => {
+    const newVolume: Volume = {
+      id: `volume-${Date.now()}`,
+      title: title,
+      chapters: [],
+    };
+    saveData([...volumes, newVolume]);
+  };
 
   const updateVolumeTitle = (volumeId: string, newTitle: string) => {
     const newVolumes = volumes.map(v => v.id === volumeId ? { ...v, title: newTitle } : v);
@@ -96,5 +112,5 @@ export function useVolumes() {
       saveData(newVolumes);
   };
 
-  return { isLoaded, volumes, updateVolumeTitle, addChapter, updateChapter, deleteChapter };
+  return { isLoaded, volumes, addVolume, updateVolumeTitle, addChapter, updateChapter, deleteChapter };
 }

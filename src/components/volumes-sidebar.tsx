@@ -23,9 +23,10 @@ interface VolumesSidebarProps {
 type VolumesView = 'by-volume' | 'all';
 
 export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
-  const { isLoaded, volumes, updateVolumeTitle, addChapter, deleteChapter, updateChapter } = useVolumes();
+  const { isLoaded, volumes, addVolume, updateVolumeTitle, addChapter, deleteChapter, updateChapter } = useVolumes();
   const [editingVolumeId, setEditingVolumeId] = useState<string | null>(null);
   const [newVolumeTitle, setNewVolumeTitle] = useState('');
+  const [newVolumeName, setNewVolumeName] = useState('');
   const [newChapterTitle, setNewChapterTitle] = useState('');
   const [addingToVolumeId, setAddingToVolumeId] = useState<string | null>(null);
   const [editingChapter, setEditingChapter] = useState<{volumeId: string, chapter: Chapter} | null>(null);
@@ -64,6 +65,13 @@ export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
     }
   }
 
+  const handleAddNewVolume = () => {
+    if (newVolumeName.trim()) {
+      addVolume(newVolumeName.trim());
+      setNewVolumeName('');
+    }
+  };
+
 
   return (
     <>
@@ -100,6 +108,7 @@ export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
                           onKeyDown={(e) => e.key === 'Enter' && handleSaveVolumeTitle()}
                           className="flex-grow"
                           autoFocus
+                          onClick={(e) => e.stopPropagation()}
                         />
                       ) : (
                         <span className="flex-grow text-left">{volume.title}</span>
@@ -207,6 +216,18 @@ export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
                 </div>
             </ScrollArea>
           )}
+
+          <div className="mt-auto border-t pt-4">
+            <div className="flex gap-2">
+              <Input
+                placeholder="New Volume Title..."
+                value={newVolumeName}
+                onChange={(e) => setNewVolumeName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddNewVolume()}
+              />
+              <Button onClick={handleAddNewVolume}>Add Volume</Button>
+            </div>
+          </div>
         </SheetContent>
       </Sheet>
       
