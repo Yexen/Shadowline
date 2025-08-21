@@ -70,7 +70,6 @@ export default function AiToolsPage() {
       console.error(error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to get an answer from the Oracle.';
       toast({ variant: 'destructive', title: 'Error', description: errorMessage });
-      setAnswer('The Oracle is currently unavailable. Please try again later.');
     } finally {
       setIsAsking(false);
     }

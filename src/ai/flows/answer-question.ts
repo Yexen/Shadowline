@@ -27,17 +27,13 @@ export async function answerQuestion(input: AnswerQuestionInput): Promise<Answer
   return await answerQuestionFlow(input);
 }
 
-const answerQuestionFlow = ai.defineFlow(
-  {
-    name: 'answerQuestionFlow',
-    inputSchema: AnswerQuestionInputSchema,
-    outputSchema: AnswerQuestionOutputSchema,
-  },
-  async (input) => {
-    const { output } = await ai.generate({
-      prompt: `You are an AI assistant with deep knowledge of a user's custom fictional universe. Your task is to answer the user's question based on the provided context.
+const answerQuestionPrompt = ai.definePrompt({
+  name: 'answerQuestionPrompt',
+  input: { schema: AnswerQuestionInputSchema },
+  output: { schema: AnswerQuestionOutputSchema },
+  prompt: `You are an AI assistant with deep knowledge of a user's custom fictional universe. Your task is to answer the user's question based on the provided context.
 
-You MUST first consult the provided "Bible" context. If the answer is found within the bible, you MUST prioritize that information. If the bible does not contain the answer, then you should use your general knowledge.
+You MUST first consult the provided "Bible" context. If the answer is found within the bible, you MUST prioritize that information. If the bible does not contain the answer, then you should use your general knowledge, but state that the information was not in the bible.
 
 {{#if bibleData}}
 BIBLE CONTEXT:
@@ -47,16 +43,18 @@ BIBLE CONTEXT:
 USER'S QUESTION:
 "{{{question}}}"
 
-Based on the rules above, what is the answer? Your response must be ONLY a valid JSON object that adheres to the following Zod schema: { "answer": "your answer here" }.
-`,
-      model: 'googleai/gemini-1.5-flash-latest',
-      input,
-      output: {
-        format: 'json',
-        schema: AnswerQuestionOutputSchema
-      }
-    });
-    // The `output` from `ai.generate` with a specified output schema is already a correctly typed JavaScript object.
+Based on the rules above, what is the answer?`,
+});
+
+
+const answerQuestionFlow = ai.defineFlow(
+  {
+    name: 'answerQuestionFlow',
+    inputSchema: AnswerQuestionInputSchema,
+    outputSchema: AnswerQuestionOutputSchema,
+  },
+  async (input) => {
+    const { output } = await answerQuestionPrompt(input);
     return output!;
   }
 );
