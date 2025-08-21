@@ -172,9 +172,9 @@ export const dcMapHtml = `
 <body class="theme-night">
     <div class="container">
         <div class="title">
-            <h1>DC Universe</h1>
-            <p>Interactive Cosmic Map</p>
-            <p class="subtitle">Placeholder - using Gotham Map data</p>
+            <h1>DC UNIVERSE</h1>
+            <p>Complete Canonical Map with Street Layout</p>
+            <p class="subtitle">Based on Eliot R. Brown's Official No Man's Land Map</p>
         </div>
 
         <div class="map-container" id="mapContainer">
@@ -391,7 +391,7 @@ export const dcMapHtml = `
             themeBtn.setAttribute('aria-pressed', String(isDay));
         }
 
-        /* ===== NEW: Characters Layer Toggle ===== */
+        /* ===== NEW: CHARACTERS LAYER TOGGLE ===== */
         function toggleCharacters() {
             const hidden = charactersLayer.classList.toggle('hidden');
             charactersLayer.setAttribute('aria-hidden', String(hidden));
