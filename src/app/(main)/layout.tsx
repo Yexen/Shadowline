@@ -33,22 +33,19 @@ const bibleEntries = [
 ]
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
-  const [isClient, setIsClient] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
     try {
       const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
-      setIsAuthenticated(loggedIn);
       if (!loggedIn) {
         router.replace('/login');
       }
     } catch (e) {
-        // If localStorage is not available, we can't authenticate.
-        router.replace('/login');
+      router.replace('/login');
     }
   }, [router]);
 
@@ -67,7 +64,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { href: '/about', label: 'About', icon: Info },
   ];
 
-  if (!isClient || !isAuthenticated) {
+  if (!isClient) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -95,8 +92,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 {menuItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
-                        onClick={() => router.push(item.href)}
-                        isActive={pathname === item.href}
+                        onClick={() => router.push(item.href.startsWith('/editor') ? '/editor/new-draft' : item.href)}
+                        isActive={pathname === item.href || (item.href === '/editor' && pathname.startsWith('/editor'))}
                         tooltip={{ children: item.label, side: "right", align: "center" }}
                     >
                         <item.icon />
