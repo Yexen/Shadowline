@@ -140,19 +140,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
-            <SidebarSeparator />
-            <SidebarGroup>
-                <SidebarGroupLabel>Drafts</SidebarGroupLabel>
-                {/* Draft list would be populated from localStorage hook here */}
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton onClick={() => router.push('/editor/new-draft')} variant="outline">
-                            <FilePlus />
-                            <span>New Draft</span>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
             <Button variant="ghost" className="w-full justify-start gap-2" onClick={() => setVolumesOpen(true)}>
