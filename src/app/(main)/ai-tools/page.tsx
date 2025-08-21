@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,8 +12,8 @@ import { BrainCircuit, PenLine, Sparkles, Wand2 } from 'lucide-react';
 import { generateContentSuggestions, GenerateContentSuggestionsInput } from '@/ai/flows/ai-writing-assistant';
 import { generateCode, GenerateCodeInput } from '@/ai/flows/generate-code';
 import { useToast } from '@/hooks/use-toast';
-
-const APPLIED_CSS_KEY = 'applied-css';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Terminal } from 'lucide-react';
 
 export default function AiToolsPage() {
   const [writingPrompt, setWritingPrompt] = useState('');
@@ -23,26 +24,8 @@ export default function AiToolsPage() {
   const [codeLanguage, setCodeLanguage] = useState<'CSS' | 'JavaScript'>('CSS');
   const [generatedCode, setGeneratedCode] = useState('');
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
-  const [appliedCss, setAppliedCss] = useState('');
 
   const { toast } = useToast();
-
-  useEffect(() => {
-    const storedCss = localStorage.getItem(APPLIED_CSS_KEY);
-    if (storedCss) {
-      setAppliedCss(storedCss);
-    }
-  }, []);
-
-  useEffect(() => {
-    // This component will only handle CSS.
-    // For JS, a more complex implementation is needed (e.g. dynamic script loading).
-    const styleElement = document.getElementById('ai-generated-styles');
-    if (styleElement) {
-      styleElement.innerHTML = appliedCss;
-    }
-  }, [appliedCss]);
-
 
   const handleGenerateSuggestions = async () => {
     if (!writingPrompt) return;
@@ -78,9 +61,17 @@ export default function AiToolsPage() {
 
   const handleApplyCode = () => {
     if (codeLanguage === 'CSS') {
-        localStorage.setItem(APPLIED_CSS_KEY, generatedCode);
-        setAppliedCss(generatedCode);
-        toast({ title: 'CSS Applied', description: 'The generated styles have been applied.' });
+        navigator.clipboard.writeText(generatedCode);
+        toast({
+          title: 'Code Copied!',
+          description: (
+            <div>
+              <p>To make your changes permanent, paste the copied CSS at the end of the following file:</p>
+              <pre className="mt-2 w-full rounded-md bg-muted p-2 font-code text-xs">src/app/globals.css</pre>
+            </div>
+          ),
+          duration: 10000,
+        });
     } else {
         toast({ variant: 'destructive', title: 'Not Supported', description: 'Applying JavaScript is not currently supported.' });
     }
@@ -165,7 +156,6 @@ export default function AiToolsPage() {
                   <code className="font-code text-sm">{generatedCode}</code>
                 </pre>
                  <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => navigator.clipboard.writeText(generatedCode)}>Copy Code</Button>
                     <Button variant="outline" size="sm" onClick={handleApplyCode} disabled={codeLanguage !== 'CSS'}>Apply Code</Button>
                  </div>
               </div>
