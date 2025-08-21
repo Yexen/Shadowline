@@ -5,7 +5,7 @@ export const dcMapHtml = `
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Canonical Gotham City Map - Complete Street Layout (v2)</title>
+    <title>Canonical DC Universe Map - Complete Street Layout (v2)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -308,7 +308,7 @@ export const dcMapHtml = `
         <div class="info-panel" id="infoPanel">
             <button class="close-btn" onclick="closePanel()" aria-label="Close info">&times;</button>
             <div id="infoContent">
-                <h2>Canonical Gotham City</h2>
+                <h2>Canonical DC Universe</h2>
                 <p>This is the official map layout created by Eliot R. Brown for DC Comics' "No Man's Land" (1998) lineage, establishing a canonical geography used across comics for decades.</p>
                 <h3>Navigation</h3>
                 <p>• <strong>Drag</strong> to pan • <strong>Zoom</strong> for details • Click <strong>districts/landmarks</strong> for lore • Toggle <strong>Streets</strong> & <strong>Characters</strong> • Switch <strong>Day/Night</strong></p>
