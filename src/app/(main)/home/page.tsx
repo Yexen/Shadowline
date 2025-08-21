@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
@@ -12,71 +12,80 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
+const getCachedData = <T,>(key: string): T | null => {
+  try {
+    const item = localStorage.getItem(key);
+    if (!item) return null;
+
+    const { timestamp, data } = JSON.parse(item);
+    const now = new Date().getTime();
+
+    if (now - timestamp < CACHE_DURATION) {
+      return data;
+    }
+  } catch (error) {
+    console.error(`Failed to read cache for ${key}:`, error);
+  }
+  return null;
+};
+
+const setCachedData = (key: string, data: any) => {
+  try {
+    const now = new Date().getTime();
+    const item = { timestamp: now, data };
+    localStorage.setItem(key, JSON.stringify(item));
+  } catch (error) {
+    console.error(`Failed to write cache for ${key}:`, error);
+  }
+};
+
 export default function HomePage() {
     const [surveillanceFootage, setSurveillanceFootage] = useState<YoutubeFeedOutput['videos']>([]);
     const [latestIntel, setLatestIntel] = useState<LatestIntelOutput['articles']>([]);
     const [isFootageLoading, setIsFootageLoading] = useState(true);
     const [isIntelLoading, setIsIntelLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchFeeds = async () => {
-            const now = new Date().getTime();
-            
-            // Fetch YouTube Feed
+    const fetchFeeds = useCallback(async () => {
+        // Load from cache first
+        const cachedFootage = getCachedData<YoutubeFeedOutput>('youtube-feed-cache');
+        const cachedIntel = getCachedData<LatestIntelOutput>('latest-intel-cache');
+
+        if (cachedFootage) {
+            setSurveillanceFootage(cachedFootage.videos);
+            setIsFootageLoading(false);
+        } else {
             try {
-                const cachedFootageItem = localStorage.getItem('youtube-feed-cache');
-                if (cachedFootageItem) {
-                    const { timestamp, data } = JSON.parse(cachedFootageItem);
-                    if (now - timestamp < CACHE_DURATION) {
-                        setSurveillanceFootage(data.videos);
-                        setIsFootageLoading(false);
-                    } else {
-                         // Cache is old, fetch new data
-                         const feed = await generateYoutubeFeed();
-                         setSurveillanceFootage(feed.videos);
-                         localStorage.setItem('youtube-feed-cache', JSON.stringify({ timestamp: now, data: feed }));
-                         setIsFootageLoading(false);
-                    }
-                } else {
-                    // No cache, fetch new data
-                    const feed = await generateYoutubeFeed();
-                    setSurveillanceFootage(feed.videos);
-                    localStorage.setItem('youtube-feed-cache', JSON.stringify({ timestamp: now, data: feed }));
-                    setIsFootageLoading(false);
-                }
+                console.log("Fetching new YouTube feed...");
+                const feed = await generateYoutubeFeed();
+                setSurveillanceFootage(feed.videos);
+                setCachedData('youtube-feed-cache', feed);
             } catch (error) {
                 console.error("Failed to fetch YouTube feed:", error);
-                setIsFootageLoading(false); // Stop loading on error
+            } finally {
+                setIsFootageLoading(false);
             }
+        }
 
-            // Fetch Latest Intel
+        if (cachedIntel) {
+            setLatestIntel(cachedIntel.articles);
+            setIsIntelLoading(false);
+        } else {
             try {
-                const cachedIntelItem = localStorage.getItem('latest-intel-cache');
-                 if (cachedIntelItem) {
-                    const { timestamp, data } = JSON.parse(cachedIntelItem);
-                    if (now - timestamp < CACHE_DURATION) {
-                        setLatestIntel(data.articles);
-                        setIsIntelLoading(false);
-                    } else {
-                        const intel = await generateLatestIntel();
-                        setLatestIntel(intel.articles);
-                        localStorage.setItem('latest-intel-cache', JSON.stringify({ timestamp: now, data: intel }));
-                        setIsIntelLoading(false);
-                    }
-                } else {
-                    const intel = await generateLatestIntel();
-                    setLatestIntel(intel.articles);
-                    localStorage.setItem('latest-intel-cache', JSON.stringify({ timestamp: now, data: intel }));
-                    setIsIntelLoading(false);
-                }
+                console.log("Fetching new latest intel...");
+                const intel = await generateLatestIntel();
+                setLatestIntel(intel.articles);
+                setCachedData('latest-intel-cache', intel);
             } catch (error) {
-                 console.error("Failed to fetch latest intel:", error);
-                 setIsIntelLoading(false); // Stop loading on error
+                console.error("Failed to fetch latest intel:", error);
+            } finally {
+                setIsIntelLoading(false);
             }
-        };
-
-        fetchFeeds();
+        }
     }, []);
+
+    useEffect(() => {
+        fetchFeeds();
+    }, [fetchFeeds]);
 
   return (
     <div className="space-y-8">
