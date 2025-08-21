@@ -23,8 +23,7 @@ const AnswerQuestionOutputSchema = z.object({
 export type AnswerQuestionOutput = z.infer<typeof AnswerQuestionOutputSchema>;
 
 export async function answerQuestion(input: AnswerQuestionInput): Promise<AnswerQuestionOutput> {
-  const {output} = await answerQuestionFlow(input);
-  return output!;
+  return await answerQuestionFlow(input);
 }
 
 const prompt = ai.definePrompt({
@@ -52,5 +51,8 @@ const answerQuestionFlow = ai.defineFlow(
     inputSchema: AnswerQuestionInputSchema,
     outputSchema: AnswerQuestionOutputSchema,
   },
-  prompt
+  async (input) => {
+    const {output} = await prompt(input);
+    return output!;
+  }
 );
