@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { OutlinePopover } from './outline-popover';
 import { OverviewEditor } from './overview-editor';
 import { ResourceEditor } from './resource-editor';
+import { Separator } from './ui/separator';
 
 const romanNumerals = ["I", "II", "III", "IV", "V", "VI"];
 
@@ -36,34 +37,37 @@ export function VolumesSidebar() {
     };
 
     const renderVolumeList = (volumeSet: Volume[], clickHandler: (volume: Volume) => void) => (
-         <div className="w-full mt-4 flex-grow overflow-y-auto pr-2 space-y-4">
-            {volumeSet.map((volume) => (
-                <div 
-                    key={volume.id}
-                    className="cursor-pointer group"
-                    onClick={() => clickHandler(volume)}
-                >
-                    <h4 className="font-headline text-lg group-hover:text-primary transition-colors">{volume.title}</h4>
-                    <p className="text-sm text-muted-foreground">{volume.chapters.length} Chapters</p>
+         <div className="w-full mt-4 flex-grow overflow-y-auto pr-2">
+            {volumeSet.map((volume, index) => (
+                <div key={volume.id}>
+                    <div 
+                        className="cursor-pointer group py-3"
+                        onClick={() => clickHandler(volume)}
+                    >
+                        <h4 className="font-headline text-lg group-hover:text-primary transition-colors">{volume.title}</h4>
+                    </div>
+                    {index < volumeSet.length - 1 && <Separator className="bg-border/50" />}
                 </div>
             ))}
         </div>
     );
     
     const renderOutlineList = () => (
-        <div className="w-full mt-4 flex-grow overflow-y-auto pr-2 space-y-4">
-            {volumes.slice(0, 6).map((volume) => (
-                <OutlinePopover key={volume.id} volume={volume}>
-                    <div className="cursor-pointer group">
-                        <h4 className="font-headline text-lg group-hover:text-primary transition-colors">{volume.title}</h4>
-                        <p className="text-sm text-muted-foreground">High-Level Plan</p>
-                    </div>
-                </OutlinePopover>
+        <div className="w-full mt-4 flex-grow overflow-y-auto pr-2">
+            {volumes.slice(0, 6).map((volume, index) => (
+                <div key={volume.id}>
+                    <OutlinePopover volume={volume}>
+                        <div className="cursor-pointer group py-3">
+                            <h4 className="font-headline text-lg group-hover:text-primary transition-colors">{volume.title}</h4>
+                        </div>
+                    </OutlinePopover>
+                    {index < volumes.slice(0, 6).length -1 && <Separator className="bg-border/50" />}
+                </div>
             ))}
+             <Separator className="my-3 bg-border/50" />
              <OutlinePopover volume={{ id: 'all', title: 'All Volumes', chapters: [], overview: '', resources: [] }}>
-                 <div className="cursor-pointer group mt-6">
+                 <div className="cursor-pointer group py-3">
                     <h4 className="font-headline text-lg group-hover:text-primary transition-colors">All Volumes</h4>
-                    <p className="text-sm text-muted-foreground">Project-Wide View</p>
                 </div>
             </OutlinePopover>
         </div>
