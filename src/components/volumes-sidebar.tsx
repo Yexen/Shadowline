@@ -24,7 +24,7 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { useModalStore } from '@/hooks/use-modal-store';
 import { Badge } from './ui/badge';
-import { Separator } from './ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 const romanNumerals = ["I", "II", "III", "IV", "V", "VI"];
 
@@ -167,30 +167,23 @@ export function VolumesSidebar() {
                             <Skeleton className="h-12 w-full" />
                         </div>
                     ) : (
-                    <div className="flex flex-col flex-grow mt-4 min-h-0">
-                        
-                        {/* Volumes Section */}
-                        <div className="flex-1 flex flex-col min-h-0">
-                            <h3 className="font-headline text-lg flex items-center gap-2"><BookCopy/> Volumes</h3>
+                    <Tabs defaultValue="volumes" className="flex-grow flex flex-col mt-4 min-h-0">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="volumes"><BookCopy className="mr-2"/> Volumes</TabsTrigger>
+                            <TabsTrigger value="outlines"><BookOpen className="mr-2"/> Outlines</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="volumes" className="flex-grow overflow-y-auto">
+                            {renderVolumeList(volumes.slice(0, 6))}
+                        </TabsContent>
+                        <TabsContent value="outlines" className="flex-grow flex flex-col overflow-y-auto">
                              <div className="flex-grow overflow-y-auto">
                                 {renderVolumeList(volumes.slice(0, 6))}
                             </div>
-                        </div>
-
-                        <Separator className="my-4"/>
-
-                        {/* Outlines Section */}
-                        <div className="flex-1 flex flex-col min-h-0">
-                           <h3 className="font-headline text-lg flex items-center gap-2"><BookOpen/> Outlines</h3>
-                           <div className="flex-grow overflow-y-auto">
-                               {renderVolumeList(volumes.slice(0, 6))}
-                               <div className="p-2 mt-2">
-                                   <Button variant="secondary" className="w-full">All Volumes</Button>
-                               </div>
-                           </div>
-                        </div>
-
-                    </div>
+                            <div className="p-2 mt-auto">
+                                <Button variant="secondary" className="w-full">All Volumes</Button>
+                            </div>
+                        </TabsContent>
+                    </Tabs>
                     )}
                     <div className="mt-auto border-t pt-4">
                         <Button variant="outline" className="w-full" onClick={handleAddNewVolume}>
