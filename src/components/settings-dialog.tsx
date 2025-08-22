@@ -49,6 +49,7 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
             'gotham-drafts',
             'gotham-gallery-data',
             'gotham-app-logo',
+            'gotham-volumes-data',
         ];
 
         keysToExport.forEach(key => {

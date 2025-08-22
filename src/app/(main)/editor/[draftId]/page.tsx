@@ -21,6 +21,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { useBible } from '@/hooks/use-bible';
 import { useDrafts, type Draft } from '@/hooks/use-drafts';
+import { useVolumes } from '@/hooks/use-volumes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useGallery } from '@/hooks/use-gallery';
 import { useWriters } from '@/hooks/use-writers';
@@ -45,6 +46,9 @@ export default function EditorPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
   
+  const { volumes, addChapterToVolume } = useVolumes();
+  const [showVolumeDialog, setShowVolumeDialog] = useState(false);
+  const [selectedVolume, setSelectedVolume] = useState('');
 
 
   useEffect(() => {
@@ -107,6 +111,17 @@ export default function EditorPage() {
     URL.revokeObjectURL(url);
   };
 
+  const handleSaveToVolume = () => {
+    if (selectedVolume) {
+      addChapterToVolume(selectedVolume, title, content);
+      toast({
+        title: 'Chapter Saved',
+        description: `"${title}" has been added to the selected volume.`,
+      });
+      setShowVolumeDialog(false);
+      setSelectedVolume('');
+    }
+  };
 
 
   return (
@@ -129,6 +144,39 @@ export default function EditorPage() {
                 Ask Oracle
             </Button>
           
+           <Dialog open={showVolumeDialog} onOpenChange={setShowVolumeDialog}>
+            <DialogTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <Library />
+                  Save to Volume
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Save Draft to Volume</DialogTitle>
+                    <DialogDescription>
+                        Select a volume to save this draft as a new chapter.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <Label htmlFor="volume-select">Select a Volume</Label>
+                    <Select onValueChange={setSelectedVolume} value={selectedVolume}>
+                        <SelectTrigger id="volume-select">
+                            <SelectValue placeholder="Choose a volume..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {volumes.map(vol => (
+                                <SelectItem key={vol.id} value={vol.id}>{vol.title}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowVolumeDialog(false)}>Cancel</Button>
+                    <Button onClick={handleSaveToVolume} disabled={!selectedVolume}>Save Chapter</Button>
+                </DialogFooter>
+            </DialogContent>
+           </Dialog>
 
           <Button variant="ghost" size="sm" onClick={() => setShowPreview(!showPreview)}>
             {showPreview ? <EyeOff /> : <Eye />}

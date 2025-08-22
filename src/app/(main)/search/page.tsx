@@ -14,16 +14,17 @@ import { useBible, BibleEntry } from '@/hooks/use-bible';
 import { useDrafts } from '@/hooks/use-drafts';
 import { useGallery } from '@/hooks/use-gallery';
 import { useModalStore } from '@/hooks/use-modal-store';
+import { useVolumes } from '@/hooks/use-volumes';
 
 
-type SearchScope = 'all' | 'drafts' | 'bible' | 'gallery';
+type SearchScope = 'all' | 'drafts' | 'bible' | 'gallery' | 'volumes';
 
 interface SearchResult {
     id: string;
     title: string;
     snippet: string;
     source: string;
-    sourceType: 'draft' | 'bible' | 'gallery';
+    sourceType: 'draft' | 'bible' | 'gallery' | 'volume';
     url: string;
     data?: any;
 }
@@ -37,6 +38,7 @@ export default function SearchPage() {
     const { bibleData } = useBible();
     const { drafts } = useDrafts();
     const { folders } = useGallery();
+    const { volumes } = useVolumes();
     const { openModal } = useModalStore();
     
     const searchOptions = useMemo(() => {
@@ -45,6 +47,7 @@ export default function SearchPage() {
             { id: 'drafts', label: 'Drafts', icon: FileText },
             { id: 'bible', label: 'Bible', icon: BookOpen },
             { id: 'gallery', label: 'Gallery', icon: ImageIcon },
+            { id: 'volumes', label: 'Volumes', icon: Library },
         ];
     }, []);
 
@@ -111,9 +114,27 @@ export default function SearchPage() {
             })
         }
         
+        // Search Volumes
+        if (scope === 'all' || scope === 'volumes') {
+            volumes.forEach(volume => {
+                const fullText = volume.title + ' ' + volume.description + ' ' + volume.chapters.map(c => c.title).join(' ');
+                if (fullText.toLowerCase().includes(lowerCaseQuery)) {
+                    newResults.push({
+                        id: `volume-${volume.id}`,
+                        title: volume.title,
+                        snippet: volume.description.substring(0, 150) + '...',
+                        source: 'Volume',
+                        sourceType: 'volume',
+                        url: '#',
+                        data: { volume: { id: volume.id } }
+                    });
+                }
+            });
+        }
+
         setResults(newResults);
 
-    }, [query, scope, bibleData, drafts, folders]);
+    }, [query, scope, bibleData, drafts, folders, volumes]);
     
     const handleResultClick = (result: SearchResult) => {
         if (result.url !== '#') {
@@ -121,6 +142,9 @@ export default function SearchPage() {
         } else if (result.data) {
             if (result.sourceType === 'bible') {
                 openModal('bible', result.data.bible);
+            }
+            if (result.sourceType === 'volume') {
+                openModal('volume', result.data.volume);
             }
         }
     }

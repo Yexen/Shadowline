@@ -31,6 +31,9 @@ import { WriterProfile } from '@/components/writer-profile';
 import { SettingsDialog } from '@/components/settings-dialog';
 import { PlusCircle } from 'lucide-react';
 import { useModalStore } from '@/hooks/use-modal-store';
+import { VolumesSidebar } from '@/components/volumes-sidebar';
+import { useVolumes } from '@/hooks/use-volumes';
+import { ChapterEditor } from '@/components/chapter-editor';
 
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -45,12 +48,18 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [newCategory, setNewCategory] = useState('');
   const [writerProfileOpen, setWriterProfileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [volumesSidebarOpen, setVolumesSidebarOpen] = useState(false);
 
+  const { getChapter, updateChapter, isLoaded: volumesLoaded } = useVolumes();
+  const [editingChapter, setEditingChapter] = useState<{volumeId: string, chapterId: string} | null>(null);
 
 
   useEffect(() => {
     if (modalType === 'bible' && modalData?.bible) {
       setEditingEntry(modalData.bible);
+    }
+    if (modalType === 'chapter' && modalData?.chapter) {
+        setEditingChapter(modalData.chapter);
     }
   }, [modalType, modalData]);
 
@@ -90,6 +99,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     closeModal();
   }
 
+  const handleSaveChapter = (volumeId: string, chapterId: string, content: string) => {
+    updateChapter(volumeId, chapterId, { content });
+    closeModal();
+    setEditingChapter(null);
+  };
   
   return (
     <SidebarProvider>
@@ -176,6 +190,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         </SheetContent>
                     </Sheet>
                 </SidebarMenuItem>
+
+                 <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => setVolumesSidebarOpen(true)} tooltip={{ children: "Volumes", side: "right", align: "center" }}>
+                        <Library />
+                        <span>Volumes</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
                 
                 {menuItems.filter(i => !['/ai-tools', '/nyxen'].includes(i.href)).slice(7).map((item) => (
                 <SidebarMenuItem key={item.href}>
@@ -231,6 +252,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
       />
+
+      <VolumesSidebar open={volumesSidebarOpen} onOpenChange={setVolumesSidebarOpen} />
+      
+      {editingChapter && volumesLoaded && (
+        <ChapterEditor
+            chapter={getChapter(editingChapter.volumeId, editingChapter.chapterId)}
+            volumeId={editingChapter.volumeId}
+            onSave={handleSaveChapter}
+            onClose={() => { closeModal(); setEditingChapter(null); }}
+        />
+       )}
     </SidebarProvider>
   );
 }
