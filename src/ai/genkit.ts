@@ -1,4 +1,3 @@
-'use server';
 /**
  * @fileOverview This file configures and initializes the Genkit AI instance.
  * It sets up the AI provider and exports the necessary objects for use in flows.
