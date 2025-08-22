@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { BatLogo } from '@/components/bat-logo';
@@ -53,6 +53,11 @@ export default function LoginPage() {
         }
     }, 1000);
   };
+  
+  const isPasswordCorrect = useMemo(() => {
+    const user = getWriterByEmail(email);
+    return !!user && user.password === password;
+  }, [email, password, getWriterByEmail]);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-8">
@@ -85,6 +90,7 @@ export default function LoginPage() {
               required
               className="text-center font-code tracking-widest h-12 text-lg"
               aria-label="Password"
+              showTick={isPasswordCorrect}
             />
           </div>
           {error && (
