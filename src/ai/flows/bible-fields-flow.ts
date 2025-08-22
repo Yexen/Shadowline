@@ -1,9 +1,8 @@
-
 'use server';
 /**
  * @fileOverview A Genkit flow for suggesting fields for a Bible entry.
  */
-import { ai, getModel } from '@/ai/genkit';
+import { ai, GEMINI_MODEL } from '@/ai/genkit';
 import { z } from 'zod';
 
 const BibleFieldsInputSchema = z.object({
@@ -20,9 +19,8 @@ const suggestBibleFieldsFlow = ai.defineFlow(
     outputSchema: z.array(z.string()),
   },
   async ({ entryTitle, entryCategory }) => {
-    const model = await getModel();
     const { output } = await ai.generate({
-        model,
+        model: GEMINI_MODEL,
         prompt: `You are an AI assistant for a writer building a world bible for a story set in a dark, noir city like Gotham. Your task is to suggest relevant field labels for a new Bible entry. Based on the entry's title and category, provide a list of useful fields.
 
         Entry Title: "${entryTitle}"

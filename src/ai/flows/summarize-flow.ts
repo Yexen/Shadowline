@@ -1,9 +1,8 @@
-
 'use server';
 /**
  * @fileOverview A Genkit flow for summarizing content from the Bible.
  */
-import { ai, getModel } from '@/ai/genkit';
+import { ai, GEMINI_MODEL } from '@/ai/genkit';
 import { z } from 'zod';
 import { useBible } from '@/hooks/use-bible';
 
@@ -56,9 +55,8 @@ const summarizeFlow = ai.defineFlow(
         }
     }
     
-    const model = await getModel();
     const { output } = await ai.generate({
-        model,
+        model: GEMINI_MODEL,
         prompt: `Based on the following context, provide a one-paragraph summary for the user. If no context is available, say so.
 
         Context:

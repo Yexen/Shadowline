@@ -1,9 +1,8 @@
-
 'use server';
 /**
  * @fileOverview The Oracle AI flow for answering questions about a given text.
  */
-import { ai, getModel } from '@/ai/genkit';
+import { ai, GEMINI_MODEL } from '@/ai/genkit';
 import { z } from 'zod';
 
 const OracleInputSchema = z.object({
@@ -20,9 +19,8 @@ const askOracleFlow = ai.defineFlow(
     outputSchema: z.string(),
   },
   async (input) => {
-    const model = await getModel();
     const { output } = await ai.generate({
-        model,
+        model: GEMINI_MODEL,
         prompt: `You are the Oracle, an AI assistant for a writer. Your task is to answer questions about the provided text. The writer may have selected a specific portion of their draft or provided the entire document. Analyze the context and answer the user's question concisely and insightfully.
 
 Context Text:
