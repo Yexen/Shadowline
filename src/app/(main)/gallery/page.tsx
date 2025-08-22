@@ -38,21 +38,21 @@ export default function GalleryPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-start">
-        <div>
-            <p className="mt-2 text-muted-foreground">
-              A visual archive of your world. Add folders, images, and videos to build your reference library.
-            </p>
-        </div>
-         <div className="flex items-center gap-2 flex-shrink-0">
-            <Button variant={filter === 'all' ? 'secondary' : 'ghost'} onClick={() => setFilter('all')}>All</Button>
-            <Button variant={filter === 'image' ? 'secondary' : 'ghost'} onClick={() => setFilter('image')}>Images</Button>
-            <Button variant={filter === 'video' ? 'secondary' : 'ghost'} onClick={() => setFilter('video')}>Videos</Button>
+      <div>
+          <p className="mt-2 text-muted-foreground">
+            A visual archive of your world. Add folders, images, and videos to build your reference library.
+          </p>
+      </div>
+
+      <div className="flex justify-between items-center">
+        <GalleryControls addFolder={addFolder} />
+        <div className="flex items-center gap-2">
+            <Button variant={filter === 'all' ? 'default' : 'ghost'} onClick={() => setFilter('all')}>All</Button>
+            <Button variant={filter === 'image' ? 'default' : 'ghost'} onClick={() => setFilter('image')}>Images</Button>
+            <Button variant={filter === 'video' ? 'default' : 'ghost'} onClick={() => setFilter('video')}>Videos</Button>
         </div>
       </div>
 
-
-      <GalleryControls addFolder={addFolder} />
 
       <div className="space-y-12">
         {folders.map(folder => (
