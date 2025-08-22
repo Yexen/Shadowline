@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { BrainCircuit, PenLine, Sparkles, Wand2, Copy, MessageSquareQuote, ImageIcon, Save } from 'lucide-react';
+import { BrainCircuit, PenLine, Sparkles, Wand2, Copy, MessageSquareQuote, ImageIcon, Save, Bot } from 'lucide-react';
 import { generateContent, GenerateContentInput } from '@/ai/flows/ai-writing-assistant';
 import { generateCode, GenerateCodeInput } from '@/ai/flows/generate-code';
 import { answerQuestion, AnswerQuestionInput, AnswerQuestionOutput } from '@/ai/flows/answer-question';
@@ -19,6 +19,7 @@ import Image from 'next/image';
 import { useDrafts } from '@/hooks/use-drafts';
 import { useVolumes } from '@/hooks/use-volumes';
 import { useWriters } from '@/hooks/use-writers';
+import Link from 'next/link';
 
 export default function AiToolsPage() {
   const [writingPrompt, setWritingPrompt] = useState('');
@@ -168,6 +169,7 @@ export default function AiToolsPage() {
 
     addImageToFolder(
         selectedGalleryFolder,
+        'image',
         generatedImageUrl,
         imagePrompt,
         imagePrompt.split(" ").slice(0,2).join(" ")
@@ -192,8 +194,22 @@ export default function AiToolsPage() {
 
   return (
     <div className="space-y-8">
+      <Card className="bg-card/50 hover:bg-card/80 transition-colors">
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            <Bot className="h-16 w-16 text-primary" />
+            <div className="flex-grow text-center md:text-left">
+              <h2 className="font-headline text-2xl font-bold">Nyxen is Online</h2>
+              <p className="text-muted-foreground">Your dedicated AI assistant for worldbuilding, lore questions, and creative assistance.</p>
+            </div>
+            <Button asChild size="lg" className="font-bold">
+              <Link href="/nyxen">Talk to Nyxen</Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+      
       <div>
-        
         <p className="mt-2 text-muted-foreground">
           Harness the power of the Batcomputer's AI to augment your creative process.
         </p>

@@ -82,11 +82,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { href: '/editor', label: 'Editor', icon: PenSquare },
     { href: '/drafts', label: 'Drafts', icon: FileText },
     { href: '/ai-tools', label: 'AI Tools', icon: BrainCircuit },
-    { href: '/nyxen', label: 'Nyxen', icon: Bot },
     { href: '/gallery', label: 'Gallery', icon: Images },
     { href: '/maps', label: 'Maps', icon: MapIcon },
     { href: '/organization', label: 'Organization', icon: ClipboardList },
     { href: '/about', label: 'About', icon: Info },
+    { href: '/settings', label: 'Settings', icon: Settings },
   ];
   
   const handleSaveEntry = (category: string, entry: BibleEntry) => {
@@ -146,7 +146,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </SidebarHeader>
         <SidebarContent>
             <SidebarMenu>
-                {menuItems.slice(0, 9).map((item) => (
+                {menuItems.slice(0, 8).map((item) => (
                 <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                         onClick={() => router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href)}
@@ -222,7 +222,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         </SheetContent>
                     </Sheet>
                 </SidebarMenuItem>
-                {menuItems.slice(9).map((item) => (
+                {menuItems.slice(8).map((item) => (
                 <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                         onClick={() => router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href)}
@@ -234,12 +234,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 ))}
-                <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => setSettingsOpen(true)} tooltip={{ children: "Settings", side: "right", align: "center" }}>
-                        <Settings />
-                        <span>Settings</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
             </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
