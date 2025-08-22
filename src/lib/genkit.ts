@@ -1,5 +1,6 @@
 
 import {genkit} from 'genkit';
+import {googleAI} from '@genkit-ai/googleai';
 import {config} from 'dotenv';
 
 config();
@@ -9,7 +10,11 @@ config();
 // application to build without errors. From this stable state,
 // the correct plugins can be added.
 export const ai = genkit({
-  plugins: [],
+  plugins: [
+    googleAI({
+      apiVersion: ['v1beta'],
+    }),
+  ],
   logLevel: 'debug',
   enableTracingAndMetrics: true,
 });
