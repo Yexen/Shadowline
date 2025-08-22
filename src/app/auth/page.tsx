@@ -46,15 +46,15 @@ export default function AuthPage() {
     }
   };
 
-  const handleHeadWriterAccess = () => {
+  const handleGuestAccess = () => {
     if (isLoaded) {
         const headWriter = writers.find(w => w.role === 'head-writer');
         if (headWriter) {
             setActiveWriter(headWriter);
             router.push('/home');
         } else {
-            console.error("Head Writer profile not found.");
-            setError("Head writer profile not ready. Please refresh the page.");
+            console.error("Head Writer profile not found for guest access.");
+            setError("Guest preview not available. Please refresh.");
         }
     }
   };
@@ -101,7 +101,7 @@ export default function AuthPage() {
                     </span>
                 </div>
             </div>
-            <Button variant="secondary" className="w-full" onClick={handleHeadWriterAccess} disabled={!isLoaded}>
+            <Button variant="secondary" className="w-full" onClick={handleGuestAccess} disabled={!isLoaded}>
               Head Writer Access
             </Button>
           </CardContent>
@@ -110,6 +110,9 @@ export default function AuthPage() {
             <p className="text-muted-foreground">
                 Need an account? <Link href="/signup" className="text-primary hover:underline">Request Access</Link>
             </p>
+             <button onClick={handleGuestAccess} className="text-xs text-muted-foreground hover:text-primary underline mt-2" disabled={!isLoaded}>
+                Guest Preview
+            </button>
         </div>
       </div>
     </div>
