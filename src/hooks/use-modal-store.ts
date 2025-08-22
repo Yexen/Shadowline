@@ -1,23 +1,16 @@
 
 import { create } from 'zustand';
 import { BibleEntry } from './use-bible';
-import { Chapter } from './use-volumes';
 
-export type ModalType = 'bible' | 'chapter';
+export type ModalType = 'bible';
 
 interface BibleModalData {
     category: string;
     entry: BibleEntry;
 }
 
-interface ChapterModalData {
-    volumeId: string;
-    chapter: Chapter;
-}
-
 interface ModalData {
     bible?: BibleModalData;
-    chapter?: ChapterModalData;
 }
 
 interface ModalStore {

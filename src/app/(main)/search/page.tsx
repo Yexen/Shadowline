@@ -7,25 +7,24 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
-import { FileText, BookOpen, Image as ImageIcon, Library, SearchIcon, Globe } from 'lucide-react';
+import { FileText, BookOpen, Image as ImageIcon, SearchIcon, Globe } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { useBible, BibleEntry } from '@/hooks/use-bible';
 import { useDrafts } from '@/hooks/use-drafts';
-import { useVolumes, Chapter } from '@/hooks/use-volumes';
 import { useGallery } from '@/hooks/use-gallery';
 import { useModalStore } from '@/hooks/use-modal-store';
 
-type SearchScope = 'all' | 'drafts' | 'bible' | 'gallery' | string; // string for volume IDs
+type SearchScope = 'all' | 'drafts' | 'bible' | 'gallery';
 
 interface SearchResult {
     id: string;
     title: string;
     snippet: string;
     source: string;
-    sourceType: 'draft' | 'bible' | 'gallery' | 'volume';
+    sourceType: 'draft' | 'bible' | 'gallery';
     url: string;
-    data?: BibleEntry | { volumeId: string; chapter: Chapter };
+    data?: BibleEntry;
 }
 
 export default function SearchPage() {
@@ -36,30 +35,17 @@ export default function SearchPage() {
 
     const { bibleData } = useBible();
     const { drafts } = useDrafts();
-    const { volumes } = useVolumes();
     const { folders } = useGallery();
     const { openModal } = useModalStore();
     
     const searchOptions = useMemo(() => {
-        const options = [
+        return [
             { id: 'all', label: 'All Content', icon: Globe },
             { id: 'drafts', label: 'Drafts', icon: FileText },
             { id: 'bible', label: 'Bible', icon: BookOpen },
             { id: 'gallery', label: 'Gallery', icon: ImageIcon },
-            { id: 'all_volumes', label: 'All Volumes', icon: Library }
         ];
-
-        volumes.forEach(volume => {
-            options.push({
-                id: `volume_${volume.id}`,
-                label: `Volume: ${volume.title}`,
-                icon: Library,
-            });
-        });
-        
-        return options;
-
-    }, [volumes]);
+    }, []);
 
     useEffect(() => {
         if (!query.trim()) {
@@ -109,7 +95,7 @@ export default function SearchPage() {
         // Search Gallery
         if (scope === 'all' || scope === 'gallery') {
             folders.forEach(folder => {
-                folder.images.forEach(image => {
+                folder.items.forEach(image => {
                     if (image.caption.toLowerCase().includes(lowerCaseQuery)) {
                          newResults.push({
                             id: `gallery-${image.id}`,
@@ -124,32 +110,9 @@ export default function SearchPage() {
             })
         }
         
-        // Search Volumes
-        if (scope === 'all' || scope.startsWith('volume_') || scope === 'all_volumes') {
-            const targetVolumes = scope.startsWith('volume_') 
-                ? volumes.filter(v => `volume_${v.id}` === scope)
-                : volumes;
-
-            targetVolumes.forEach(volume => {
-                volume.chapters.forEach(chapter => {
-                     if (chapter.title.toLowerCase().includes(lowerCaseQuery) || chapter.content.toLowerCase().includes(lowerCaseQuery)) {
-                        newResults.push({
-                            id: `chapter-${chapter.id}`,
-                            title: chapter.title,
-                            snippet: chapter.content.replace(/<[^>]*>?/gm, '').substring(0, 150) + '...',
-                            source: `Volume: ${volume.title}`,
-                            sourceType: 'volume',
-                            url: '#',
-                            data: { volumeId: volume.id, chapter: chapter }
-                        });
-                    }
-                });
-            });
-        }
-
         setResults(newResults);
 
-    }, [query, scope, bibleData, drafts, volumes, folders]);
+    }, [query, scope, bibleData, drafts, folders]);
     
     const handleResultClick = (result: SearchResult) => {
         if (result.url !== '#') {
@@ -157,9 +120,6 @@ export default function SearchPage() {
         } else if (result.sourceType === 'bible' && result.data) {
             const { category, entry } = result.data as { category: string; entry: BibleEntry };
             openModal('bible', { category, entry });
-        } else if (result.sourceType === 'volume' && result.data) {
-            const { volumeId, chapter } = result.data as { volumeId: string; chapter: Chapter };
-            openModal('chapter', { volumeId, chapter });
         }
     }
 
@@ -168,7 +128,7 @@ export default function SearchPage() {
         <div className="flex flex-col md:flex-row gap-8 h-[calc(100vh-14rem)]">
             <aside className="w-full md:w-64 lg:w-72 flex-shrink-0">
                 <h2 className="font-headline text-lg font-bold mb-4">Search Options</h2>
-                <RadioGroup value={scope} onValueChange={(value) => setScope(value)} className="space-y-2">
+                <RadioGroup value={scope} onValueChange={(value) => setScope(value as SearchScope)} className="space-y-2">
                     {searchOptions.map(option => (
                          <div key={option.id} className="flex items-center space-x-2">
                             <RadioGroupItem value={option.id} id={option.id} />

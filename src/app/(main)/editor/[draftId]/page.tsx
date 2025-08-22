@@ -6,7 +6,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
-import { Save, Eye, EyeOff, Download, FileText, FileCode, Sparkles, PenLine, BookUp } from 'lucide-react';
+import { Save, Eye, EyeOff, Download, FileText, FileCode, Sparkles, PenLine } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -22,7 +22,6 @@ import {
 import { Label } from '@/components/ui/label';
 import { useBible } from '@/hooks/use-bible';
 import { useDrafts } from '@/hooks/use-drafts';
-import { useVolumes } from '@/hooks/use-volumes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useGallery } from '@/hooks/use-gallery';
 import { useWriters } from '@/hooks/use-writers';
@@ -33,7 +32,6 @@ export default function EditorPage() {
   const draftId = params.draftId as string;
   
   const { getDraft, addDraft, updateDraft, drafts } = useDrafts();
-  const { volumes, addChapter } = useVolumes();
   
   const [content, setContent] = useState('');
   const [title, setTitle] = useState('Untitled Draft');
@@ -48,11 +46,6 @@ export default function EditorPage() {
   const { bibleData } = useBible();
   const { folders } = useGallery();
   const { writers, activeWriter } = useWriters();
-
-  // Save to Volume State
-  const [saveToVolumeOpen, setSaveToVolumeOpen] = useState(false);
-  const [selectedVolume, setSelectedVolume] = useState<string | null>(null);
-
 
   useEffect(() => {
     if (draftId === 'new') {
@@ -113,19 +106,6 @@ export default function EditorPage() {
     URL.revokeObjectURL(url);
   };
 
-  const handleSaveToVolume = () => {
-    if (selectedVolume) {
-        addChapter(selectedVolume, title, content);
-        toast({
-            title: "Saved to Volume",
-            description: `"${title}" has been added as a new chapter.`
-        });
-        setSaveToVolumeOpen(false);
-        setSelectedVolume(null);
-    }
-  }
-
-
   return (
     <div className="flex flex-col h-[calc(100vh-14rem)]">
       <header className="flex items-center justify-between mb-4 flex-wrap gap-4">
@@ -154,38 +134,6 @@ export default function EditorPage() {
             <Save />
             Save Draft
           </Button>
-            <Dialog open={saveToVolumeOpen} onOpenChange={setSaveToVolumeOpen}>
-                <DialogTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                        <BookUp />
-                        Save to Volume
-                    </Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Save Chapter to Volume</DialogTitle>
-                        <DialogDescription>Select which volume you want to save this draft to as a new chapter.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <Label>Volume</Label>
-                         <Select onValueChange={setSelectedVolume}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a volume..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {volumes.map(vol => (
-                                    <SelectItem key={vol.id} value={vol.id}>{vol.title}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <DialogFooter>
-                         <Button variant="outline" onClick={() => setSaveToVolumeOpen(false)}>Cancel</Button>
-                         <Button onClick={handleSaveToVolume} disabled={!selectedVolume}>Save as Chapter</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
            <Button variant="ghost" size="sm" onClick={() => handleExport('md')}>
             <FileCode />
             Export .md
