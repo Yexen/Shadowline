@@ -2,8 +2,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles, PenLine, ChevronRight } from 'lucide-react';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Sparkles, PenLine, ChevronRight, Image as ImageIcon, FileText } from 'lucide-react';
+import { ImageGenTool } from '@/components/image-gen-tool';
+import { SummarizeTool } from '@/components/summarize-tool';
 
 export default function AiToolsPage() {
   const router = useRouter();
@@ -49,13 +51,41 @@ export default function AiToolsPage() {
                 <CardDescription className="mt-1">{tool.description}</CardDescription>
               </div>
             </CardHeader>
-            <CardContent className="mt-auto">
+            <div className="p-6 pt-0 mt-auto">
                 <div className="flex items-center justify-end text-primary font-bold text-sm">
                     {tool.cta} <ChevronRight className="w-4 h-4 ml-1" />
                 </div>
-            </CardContent>
+            </div>
           </Card>
         ))}
+         <Card className="bg-card">
+            <CardHeader className="flex-row items-start gap-4">
+               <div className="bg-primary/10 p-3 rounded-full border border-primary/20">
+                 <ImageIcon className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="font-headline text-xl">Image Generation</CardTitle>
+                <CardDescription className="mt-1">Generate a visual reference for a character, location, or scene.</CardDescription>
+              </div>
+            </CardHeader>
+            <div className="p-6 pt-0">
+              <ImageGenTool />
+            </div>
+        </Card>
+        <Card className="bg-card">
+            <CardHeader className="flex-row items-start gap-4">
+               <div className="bg-primary/10 p-3 rounded-full border border-primary/20">
+                 <FileText className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="font-headline text-xl">Summarize</CardTitle>
+                <CardDescription className="mt-1">Get a quick summary of a bible entry. Try "@The Joker".</CardDescription>
+              </div>
+            </CardHeader>
+            <div className="p-6 pt-0">
+              <SummarizeTool />
+            </div>
+        </Card>
       </div>
     </div>
   );
