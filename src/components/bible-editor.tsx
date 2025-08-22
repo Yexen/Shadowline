@@ -13,12 +13,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { BibleEntry, BiblePage } from '@/hooks/use-bible';
-import { PlusCircle, Trash2, Sparkles, BookUser, List } from 'lucide-react';
+import type { BibleEntry, BiblePage, BibleField } from '@/hooks/use-bible';
+import { PlusCircle, Trash2, Sparkles, BookUser, List, Loader2 } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from './ui/textarea';
 import { ProfilePageEditor } from './profile-page-editor';
+import { suggestBibleFields } from '@/ai/flows/bible-fields-flow';
 
 interface BibleEditorProps {
   entry: BibleEntry | null;
@@ -78,11 +79,29 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
   };
 
   const handleSuggestFields = async () => {
-    toast({
-      variant: 'destructive',
-      title: 'AI Offline',
-      description: 'The AI field suggestion feature is temporarily disabled.',
-    });
+    if (!currentEntry || !currentEntry.title) return;
+    setIsGenerating(true);
+    try {
+      const suggestedFields = await suggestBibleFields({
+        entryTitle: currentEntry.title,
+        entryCategory: category
+      });
+      const newFields: BibleField[] = suggestedFields.map(field => ({ label: field, value: '' }));
+      setCurrentEntry({ ...currentEntry, fields: [...(currentEntry.fields || []), ...newFields] });
+      toast({
+        title: 'Fields Suggested',
+        description: 'AI has added new fields to your entry.',
+      });
+    } catch (error) {
+      console.error("Failed to suggest fields:", error);
+      toast({
+        variant: 'destructive',
+        title: 'AI Error',
+        description: 'Could not suggest fields at this time.',
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleTitleChange = (newTitle: string) => {
@@ -160,7 +179,8 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
               <div className="flex justify-between items-center">
                 <Label className="font-bold text-base">Fields</Label>
                 <Button variant="ghost" size="sm" onClick={handleSuggestFields} disabled={isGenerating}>
-                  {isGenerating ? "Generating..." : <><Sparkles className="mr-2 h-4 w-4" /> Suggest Fields</>}
+                  {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                  Suggest Fields
                 </Button>
               </div>
               <ScrollArea className="h-[300px] w-full pr-4">

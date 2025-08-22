@@ -25,6 +25,8 @@ import { useVolumes } from '@/hooks/use-volumes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useGallery } from '@/hooks/use-gallery';
 import { useWriters } from '@/hooks/use-writers';
+import { AskOracleDialog } from '@/components/ask-oracle-dialog';
+import { SceneGenDialog } from '@/components/scene-gen-dialog';
 
 
 export default function EditorPage() {
@@ -49,6 +51,10 @@ export default function EditorPage() {
   const { volumes, addChapterToVolume } = useVolumes();
   const [showVolumeDialog, setShowVolumeDialog] = useState(false);
   const [selectedVolume, setSelectedVolume] = useState('');
+
+  const [oracleOpen, setOracleOpen] = useState(false);
+  const [sceneGenOpen, setSceneGenOpen] = useState(false);
+  const [selection, setSelection] = useState('');
 
 
   useEffect(() => {
@@ -123,8 +129,33 @@ export default function EditorPage() {
     }
   };
 
+  const handleOpenOracle = () => {
+    const text = window.getSelection()?.toString() || content;
+    setSelection(text);
+    setOracleOpen(true);
+  };
+
+  const handleInsertText = (text: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const newContent = content.substring(0, start) + text + content.substring(end);
+    
+    setContent(newContent);
+    setSceneGenOpen(false);
+
+    // Move cursor to the end of the inserted text
+    setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + text.length, start + text.length);
+    }, 0);
+};
+
 
   return (
+    <>
     <div className="flex flex-col h-[calc(100vh-14rem)]">
       <header className="flex items-center justify-between mb-4 flex-wrap gap-4">
         <input
@@ -134,12 +165,12 @@ export default function EditorPage() {
           className="font-headline text-2xl bg-transparent outline-none focus:border-b border-primary"
         />
         <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="ghost" size="sm" disabled>
+            <Button variant="ghost" size="sm" onClick={() => setSceneGenOpen(true)}>
               <PenLine />
               Generate Scene
             </Button>
 
-            <Button variant="ghost" size="sm" disabled>
+            <Button variant="ghost" size="sm" onClick={handleOpenOracle}>
                 <Sparkles />
                 Ask Oracle
             </Button>
@@ -227,5 +258,16 @@ export default function EditorPage() {
         </p>
       </footer>
     </div>
+    <AskOracleDialog 
+        isOpen={oracleOpen}
+        onClose={() => setOracleOpen(false)}
+        contextText={selection}
+    />
+    <SceneGenDialog
+        isOpen={sceneGenOpen}
+        onClose={() => setSceneGenOpen(false)}
+        onInsert={handleInsertText}
+    />
+    </>
   );
 }
