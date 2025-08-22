@@ -8,9 +8,16 @@ import { useWriters } from '@/hooks/use-writers';
 
 export default function AuthPage() {
   const router = useRouter();
-  const { writers, setActiveWriter } = useWriters();
+  const { writers, setActiveWriter, isLoaded } = useWriters();
 
   const handleHeadWriterAccess = () => {
+    // Wait for the user data to be loaded from storage
+    if (!isLoaded) {
+      console.log("Writer data not loaded yet, please wait a moment and try again.");
+      // Optionally, you could disable the button until isLoaded is true.
+      return;
+    }
+
     const headWriter = writers.find(w => w.role === 'head-writer');
     if (headWriter) {
         try {
@@ -22,7 +29,8 @@ export default function AuthPage() {
         }
     } else {
         console.error("Head Writer profile not found.");
-        // Optionally, show an error to the user
+        // This can happen if the default data hasn't been set in local storage yet.
+        // A page refresh should typically solve this after the first load.
     }
   };
 
@@ -43,8 +51,9 @@ export default function AuthPage() {
             onClick={handleHeadWriterAccess} 
             variant="destructive"
             className="w-full font-headline h-14 text-lg bg-primary/20 text-primary hover:bg-primary/30 border border-primary"
+            disabled={!isLoaded}
           >
-            Head Writer Access
+            {isLoaded ? 'Head Writer Access' : 'Loading...'}
           </Button>
           <div className="flex items-center gap-4">
              <Button 
