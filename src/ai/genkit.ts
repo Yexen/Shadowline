@@ -13,4 +13,4 @@ export const ai = genkit({
 });
 
 // Define the default model for consistency across flows.
-export const GEMINI_MODEL = 'googleai/gemini-1.5-flash';
+const GEMINI_MODEL = 'googleai/gemini-1.5-flash';

@@ -2,7 +2,7 @@
 /**
  * @fileOverview A Genkit flow for generating a story scene based on a prompt.
  */
-import { ai, GEMINI_MODEL } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 const generateSceneFlow = ai.defineFlow(
@@ -13,7 +13,7 @@ const generateSceneFlow = ai.defineFlow(
   },
   async (prompt) => {
     const { output } = await ai.generate({
-        model: GEMINI_MODEL,
+        model: 'googleai/gemini-1.5-flash',
         prompt: `You are an expert storyteller and ghostwriter for a dark, noir-themed story set in a city like Gotham. The user will provide a prompt, and you must generate a compelling, well-written scene based on it. The scene should be atmospheric and fit the gritty, mysterious tone of the world.
 
 User's Prompt: "${prompt}"

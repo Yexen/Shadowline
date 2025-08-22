@@ -2,7 +2,7 @@
 /**
  * @fileOverview The Oracle AI flow for answering questions about a given text.
  */
-import { ai, GEMINI_MODEL } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { useBible } from '@/hooks/use-bible';
 
@@ -34,7 +34,7 @@ const oracleChatFlow = ai.defineFlow(
     const bibleContext = await getFullBibleText();
 
     const { output } = await ai.generate({
-        model: GEMINI_MODEL,
+        model: 'googleai/gemini-1.5-flash',
         history: messages.slice(0, -1),
         prompt: messages[messages.length - 1].content,
         system: `You are the Oracle, an AI assistant for a writer. Your task is to answer questions based on the provided "Bible" of world-building information. The writer may ask you about characters, locations, lore, or plot points. Use ONLY the provided Bible context to answer. Be concise and insightful. If the information is not in the Bible, say so. Do not invent information.

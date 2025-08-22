@@ -2,7 +2,7 @@
 /**
  * @fileOverview A Genkit flow for suggesting fields for a Bible entry.
  */
-import { ai, GEMINI_MODEL } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 const BibleFieldsInputSchema = z.object({
@@ -20,7 +20,7 @@ const suggestBibleFieldsFlow = ai.defineFlow(
   },
   async ({ entryTitle, entryCategory }) => {
     const { output } = await ai.generate({
-        model: GEMINI_MODEL,
+        model: 'googleai/gemini-1.5-flash',
         prompt: `You are an AI assistant for a writer building a world bible for a story set in a dark, noir city like Gotham. Your task is to suggest relevant field labels for a new Bible entry. Based on the entry's title and category, provide a list of useful fields.
 
         Entry Title: "${entryTitle}"

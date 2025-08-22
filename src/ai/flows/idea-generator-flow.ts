@@ -2,7 +2,7 @@
 /**
  * @fileOverview A Genkit flow for generating story ideas.
  */
-import { ai, GEMINI_MODEL } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 const ideaGeneratorFlow = ai.defineFlow(
@@ -13,7 +13,7 @@ const ideaGeneratorFlow = ai.defineFlow(
   },
   async (prompt) => {
     const { output } = await ai.generate({
-        model: GEMINI_MODEL,
+        model: 'googleai/gemini-1.5-flash',
         prompt: `You are an AI idea generator for a writer working on a dark, noir story set in a city like Gotham. Based on the user's prompt, generate a single, compelling story concept or "what if" scenario. It should be a short paragraph.
 
 User's Prompt: "${prompt}"

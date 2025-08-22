@@ -2,7 +2,7 @@
 /**
  * @fileOverview A Genkit flow for summarizing content from the Bible.
  */
-import { ai, GEMINI_MODEL } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { useBible } from '@/hooks/use-bible';
 
@@ -56,7 +56,7 @@ const summarizeFlow = ai.defineFlow(
     }
     
     const { output } = await ai.generate({
-        model: GEMINI_MODEL,
+        model: 'googleai/gemini-1.5-flash',
         prompt: `Based on the following context, provide a one-paragraph summary for the user. If no context is available, say so.
 
         Context:
