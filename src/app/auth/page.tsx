@@ -11,12 +11,6 @@ export default function AuthPage() {
   const { writers, setActiveWriter, isLoaded } = useWriters();
 
   const handleHeadWriterAccess = () => {
-    // This check is now mostly for robustness, the button's disabled state is the primary guard.
-    if (!isLoaded) {
-      console.log("Writer data not loaded yet, please wait a moment and try again.");
-      return;
-    }
-
     const headWriter = writers.find(w => w.role === 'head-writer');
     if (headWriter) {
         try {
@@ -32,6 +26,20 @@ export default function AuthPage() {
         // A page refresh should typically solve this after the first load.
     }
   };
+
+  if (!isLoaded) {
+    return (
+        <main className="flex min-h-screen flex-col items-center justify-center bg-background p-8">
+             <div className="flex flex-col items-center gap-4">
+                <svg className="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                <p className="font-headline text-muted-foreground">INITIALIZING PROTOCOL...</p>
+            </div>
+        </main>
+    )
+  }
 
 
   return (
@@ -50,9 +58,8 @@ export default function AuthPage() {
             onClick={handleHeadWriterAccess} 
             variant="destructive"
             className="w-full font-headline h-14 text-lg bg-primary/20 text-primary hover:bg-primary/30 border border-primary"
-            disabled={!isLoaded}
           >
-            {isLoaded ? 'Head Writer Access' : 'Loading...'}
+            Head Writer Access
           </Button>
           <div className="flex items-center gap-4">
              <Button 
