@@ -34,14 +34,13 @@ import { PlusCircle } from 'lucide-react';
 import { useModalStore } from '@/hooks/use-modal-store';
 import { useVolumes, type Chapter } from '@/hooks/use-volumes';
 import { ChapterEditor } from '@/components/chapter-editor';
-import { auth } from '@/lib/firebase';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
   const { isLoaded: bibleLoaded, bibleData, addCategory, addOrUpdateEntry } = useBible();
-  const { isLoaded: writersLoaded, activeWriter, firebaseUser } = useWriters();
+  const { isLoaded: writersLoaded, activeWriter, logout } = useWriters();
   const { updateChapter } = useVolumes();
   const { modalType, modalData, closeModal } = useModalStore();
 
@@ -51,6 +50,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [writerProfileOpen, setWriterProfileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [volumesOpen, setVolumesOpen] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
+  useEffect(() => {
+    if (writersLoaded && !activeWriter) {
+      router.replace('/auth');
+    }
+  }, [writersLoaded, activeWriter, router]);
 
   useEffect(() => {
     if (modalType === 'bible' && modalData?.bible) {
@@ -61,15 +71,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   }, [modalType, modalData]);
 
 
-  const handleLogout = async () => {
-    // This will be re-enabled when auth is back
-    // try {
-    //   await auth.signOut();
-    //   router.replace('/auth');
-    // } catch (e) {
-    //   console.error("Logout failed", e);
-    // }
-    console.log("Logout clicked");
+  const handleLogout = () => {
+    logout();
+    router.replace('/auth');
   };
 
   const menuItems = [
@@ -118,6 +122,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const handleCloseChapterEditor = () => {
     setEditingChapter(null);
     closeModal();
+  }
+  
+  if (!isClient || !writersLoaded || !activeWriter) {
+     return (
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+          <BatLogo className="w-24 h-12 animate-pulse text-primary" />
+        </div>
+      );
   }
 
   return (
