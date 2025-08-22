@@ -94,7 +94,7 @@ const SidebarProvider = React.forwardRef<
     const toggleSidebar = React.useCallback(() => {
       // On mobile, we always want to toggle the Sheet component, not the main state
        if (isMobile) {
-        setOpenMobile((current) => !current)
+        setOpen((current) => !current)
       } else {
         setOpen((current) => !current)
       }
@@ -180,14 +180,16 @@ const Sidebar = React.forwardRef<
     },
     ref
   ) => {
-    const { state } = useSidebar()
+    const { state, isMobile, openMobile, setOpenMobile } = useSidebar()
     
     return (
       <div
         ref={ref}
         className={cn(
-            "group peer text-sidebar-foreground",
-             "md:data-[state=expanded]:w-[var(--sidebar-width)] md:data-[state=collapsed]:w-[var(--sidebar-width-icon)] w-[var(--sidebar-width-icon)] transition-[width] duration-200"
+            "group peer text-sidebar-foreground flex",
+             "w-[var(--sidebar-width-icon)] data-[state=expanded]:w-[var(--sidebar-width)] transition-[width] duration-200",
+             "border-r border-white/10",
+             className
         )}
         data-state={state}
         data-collapsible={collapsible}
@@ -219,7 +221,7 @@ const SidebarTrigger = React.forwardRef<
       data-sidebar="trigger"
       variant="ghost"
       size="icon"
-      className={cn("h-7 w-7", isMobile && 'hidden', className)} // Hide on mobile, header has its own trigger now.
+      className={cn("h-7 w-7", className)}
       onClick={(event) => {
         onClick?.(event)
         toggleSidebar()
