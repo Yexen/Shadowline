@@ -80,7 +80,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { href: '/search', label: 'Search', icon: Search },
     { href: '/editor', label: 'Editor', icon: PenSquare },
     { href: '/drafts', label: 'Drafts', icon: FileText },
-    { href: '/ai-tools', label: 'AI Tools', icon: Bot },
+    { href: '/ai-tools', label: 'AI Tools', icon: BrainCircuit },
     { href: '/gallery', label: 'Gallery', icon: Images },
     { href: '/maps', label: 'Maps', icon: MapIcon },
     { href: '/organization', label: 'Organization', icon: ClipboardList },
