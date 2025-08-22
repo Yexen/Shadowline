@@ -103,7 +103,7 @@ export function VolumesSidebar() {
                         <TabsContent value="volumes" className="flex-grow flex flex-col overflow-y-auto">
                             {renderVolumeList(volumes.slice(0, 6), handleEditVolume)}
                         </TabsContent>
-                        <TabsContent value="outlines" className="flex-grow flex flex-col overflow-y-auto pt-4">
+                        <TabsContent value="outlines" className="flex-grow flex flex-col overflow-y-auto">
                              {renderOutlineList()}
                         </TabsContent>
                     </Tabs>
