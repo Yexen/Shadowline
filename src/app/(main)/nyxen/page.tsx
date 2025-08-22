@@ -10,16 +10,10 @@ import { Send, Bot, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBible } from '@/hooks/use-bible';
 import { useWriters } from '@/hooks/use-writers';
-import { continueConversation } from '@/ai/flows/nyxen-chat';
+import { continueConversation, NyxenMessage } from '@/ai/flows/nyxen-chat';
 import { useDrafts } from '@/hooks/use-drafts';
 import { useVolumes } from '@/hooks/use-volumes';
 import { useGallery } from '@/hooks/use-gallery';
-
-// Define the type directly in the client component
-export interface NyxenMessage {
-    role: 'user' | 'model';
-    content: string;
-}
 
 export default function NyxenChatPage() {
   const [messages, setMessages] = useState<NyxenMessage[]>([]);
@@ -35,10 +29,13 @@ export default function NyxenChatPage() {
   
   useEffect(() => {
       if (scrollAreaRef.current) {
-          scrollAreaRef.current.scrollTo({
-              top: scrollAreaRef.current.scrollHeight,
-              behavior: 'smooth'
-          });
+          const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+          if (viewport) {
+            viewport.scrollTo({
+                top: viewport.scrollHeight,
+                behavior: 'smooth'
+            });
+          }
       }
   }, [messages]);
   
@@ -58,6 +55,7 @@ export default function NyxenChatPage() {
 
     const userMessage: NyxenMessage = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = input;
     setInput('');
     setIsLoading(true);
 

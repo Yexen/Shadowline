@@ -11,11 +11,6 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 const AnswerQuestionInputSchema = z.object({
   question: z.string().describe("The user's question."),
@@ -39,7 +34,9 @@ const answerQuestionFlow = ai.defineFlow(
     outputSchema: AnswerQuestionOutputSchema,
   },
   async ({ question, bibleData }) => {
-     const systemPrompt = `You are an AI assistant with deep knowledge of a user's custom fictional universe. Your task is to answer the user's question based on the provided context.
+    
+    const { output } = await ai.generate({
+      prompt: `You are an AI assistant with deep knowledge of a user's custom fictional universe. Your task is to answer the user's question based on the provided context.
 
 You MUST first consult the provided project context. This is your primary source of truth. It contains the "Bible", drafts, volumes, and other lore.
 
@@ -47,28 +44,33 @@ If the answer is found within the provided context, you MUST prioritize that inf
 
 ${bibleData ? `PROJECT CONTEXT:\n${bibleData}`: ''}
 
-Based on the rules above, what is the answer to this question: "${question}"?`;
+Based on the rules above, what is the answer to this question: "${question}"?`,
+      model: 'googleai/gemini-1.5-flash-latest',
+      output: {
+        schema: AnswerQuestionOutputSchema,
+      },
+       config: {
+        safetySettings: [
+            {
+                category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+                threshold: 'BLOCK_NONE',
+            },
+            {
+                category: 'HARM_CATEGORY_HARASSMENT',
+                threshold: 'BLOCK_NONE',
+            },
+            {
+                category: 'HARM_CATEGORY_HATE_SPEECH',
+                threshold: 'BLOCK_NONE',
+            },
+            {
+                category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+                threshold: 'BLOCK_NONE',
+            },
+        ],
+      }
+    });
 
-    try {
-        const response = await openai.chat.completions.create({
-            model: 'gpt-4o-mini',
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: question },
-            ],
-        });
-        const answer = response.choices[0].message.content || "I'm sorry, I couldn't find an answer to your question.";
-        return { answer };
-    } catch (error: any) {
-         console.error("OpenAI API error in answerQuestion flow:", error);
-         if (error.status === 429) {
-             return {
-                 answer: "The connection to the AI is overloaded. Please try again in a moment."
-             };
-         }
-         return {
-             answer: "An error occurred while communicating with the AI. Please check your connection and API key."
-         };
-    }
+    return output || { answer: "I'm sorry, I couldn't find an answer to your question." };
   }
 );

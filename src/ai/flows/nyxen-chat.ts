@@ -12,17 +12,14 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import OpenAI from 'openai';
-import { ChatCompletionMessageParam } from 'openai/resources/chat';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { toZod } from 'genkit/zod';
+import { Part, Role } from 'genkit/cohere';
 
 const NyxenMessageSchema = z.object({
-    role: z.enum(['user', 'model', 'system']),
+    role: z.enum(['user', 'model']),
     content: z.string(),
 });
+export type NyxenMessage = z.infer<typeof NyxenMessageSchema>;
 
 const NyxenChatInputSchema = z.object({
   history: z.array(NyxenMessageSchema).describe("The history of the conversation so far."),
@@ -60,34 +57,48 @@ When answering, prioritize information from the provided context. If the informa
 ${bibleData ? `PROJECT CONTEXT:\n${bibleData}` : ''}
 `;
     
-    // The 'model' role in our app corresponds to 'assistant' in OpenAI's API
-    const messages: ChatCompletionMessageParam[] = [
-      { role: 'system', content: systemPrompt },
-      ...history.map(msg => ({
-        role: msg.role === 'model' ? 'assistant' : 'user',
-        content: msg.content
-      }))
-    ];
-    
-    try {
-        const response = await openai.chat.completions.create({
-            model: 'gpt-4o-mini',
-            messages: messages,
-        });
+    // Map the history to the format Genkit expects
+    const genkitHistory: { role: Role; content: Part[] }[] = history.map(msg => ({
+      role: msg.role,
+      content: [{ text: msg.content }]
+    }));
 
-        const reply = response.choices[0].message.content || "I'm sorry, I don't have a response for that.";
-        return { reply };
-    } catch (error: any) {
-        console.error("OpenAI API error in Nyxen flow:", error);
-        if (error.status === 429) {
-            return {
-                reply: "I'm currently receiving a high volume of requests and have exceeded my processing capacity. Please try again in a moment. If this persists, please check your OpenAI plan and billing details."
-            };
-        }
-        // For other errors, return a generic message
-        return {
-            reply: "I seem to be having trouble connecting to my core processors. Please try again later."
-        };
+    const lastMessage = genkitHistory.pop();
+    if (!lastMessage) {
+        return { reply: "I'm sorry, there's no conversation to continue." };
     }
+
+    const { output } = await ai.generate({
+        model: 'googleai/gemini-1.5-flash-latest',
+        prompt: lastMessage.content[0].text,
+        history: genkitHistory,
+        config: {
+            // Prepend our system prompt to whatever the model's default is.
+            systemPrompt: systemPrompt,
+            safetySettings: [
+                 {
+                    category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+                    threshold: 'BLOCK_NONE',
+                },
+                {
+                    category: 'HARM_CATEGORY_HARASSMENT',
+                    threshold: 'BLOCK_NONE',
+                },
+                {
+                    category: 'HARM_CATEGORY_HATE_SPEECH',
+                    threshold: 'BLOCK_NONE',
+                },
+                {
+                    category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+                    threshold: 'BLOCK_NONE',
+                },
+            ],
+        },
+        output: {
+            format: 'text'
+        }
+    });
+
+    return { reply: output || "I'm sorry, I don't have a response for that." };
   }
 );

@@ -11,11 +11,6 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 const GenerateCodeInputSchema = z.object({
   description: z.string().describe('A text description of the desired code snippet.'),
@@ -40,7 +35,9 @@ const generateCodeFlow = ai.defineFlow(
     outputSchema: GenerateCodeOutputSchema,
   },
   async ({ description, language, bibleData }) => {
-    const prompt = `You are a helpful assistant that generates code snippets based on user descriptions.
+    
+    const { output } = await ai.generate({
+      prompt: `You are a helpful assistant that generates code snippets based on user descriptions.
 The user will provide a description of the desired code and the programming language.
 You should generate a code snippet that matches the description and language.
 The output should only be the raw code, without any markdown formatting or explanations.
@@ -54,21 +51,33 @@ ${bibleData}` : ''}
 Description: "${description}"
 Language: ${language}
 
-Generate the code now.`;
-
-    try {
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'user', content: prompt }
+Generate the code now.`,
+      model: 'googleai/gemini-1.5-flash-latest',
+      output: {
+        schema: GenerateCodeOutputSchema
+      },
+       config: {
+        safetySettings: [
+            {
+                category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+                threshold: 'BLOCK_NONE',
+            },
+            {
+                category: 'HARM_CATEGORY_HARASSMENT',
+                threshold: 'BLOCK_NONE',
+            },
+            {
+                category: 'HARM_CATEGORY_HATE_SPEECH',
+                threshold: 'BLOCK_NONE',
+            },
+            {
+                category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+                threshold: 'BLOCK_NONE',
+            },
         ],
-      });
-      const code = response.choices[0].message.content || `// Failed to generate ${language} code.`;
-      // The prompt now asks for a single JSON key, which we can parse.
-      return { code };
-    } catch (error: any) {
-      console.error("OpenAI API error in generateCode flow:", error);
-      return { code: `/* Error generating code: ${error.message} */` };
-    }
+      }
+    });
+
+    return output || { code: `// Failed to generate ${language} code.` };
   }
 );
