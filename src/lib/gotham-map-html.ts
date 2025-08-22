@@ -416,7 +416,7 @@ export const mapHtml = `
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    messages: [{ role: 'user', content: `show \${key}` }]
+                    messages: [{ role: 'user', content: \`show \${key}\` }]
                 })
             });
 
