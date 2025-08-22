@@ -6,68 +6,28 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Youtube, Newspaper } from "lucide-react";
-import { generateHomeFeed, type HomeFeedOutput } from "@/ai/flows/generate-home-feed";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 
-const CACHE_KEY = 'home-feed-cache';
-const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
-
-type CachedData = {
-  timestamp: number;
-  data: HomeFeedOutput;
-}
-
 export default function HomePage() {
-    const [surveillanceFootage, setSurveillanceFootage] = useState<HomeFeedOutput['videos']>([]);
-    const [latestIntel, setLatestIntel] = useState<HomeFeedOutput['articles']>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const fetchFeeds = useCallback(async () => {
-        setIsLoading(true);
+    const surveillanceFootage = [
+        {id: 1, title: 'Top 10 Batmobile Gadgets You Never Knew!', uploader: 'Bat-Fans United', views: '2.1M', thumbnail: 'https://placehold.co/600x400.png', dataAiHint: 'batmobile gadgets', url: 'https://youtube.com'},
+        {id: 2, title: 'Arkham Asylum: A Deep Dive into its Architecture', uploader: 'Gotham Historian', views: '870K', thumbnail: 'https://placehold.co/600x400.png', dataAiHint: 'gothic architecture asylum', url: 'https://youtube.com'},
+        {id: 3, title: 'Ranking Every Robin: From Best to Worst', uploader: 'Comic Geek', views: '1.5M', thumbnail: 'https://placehold.co/600x400.png', dataAiHint: 'superhero sidekick', url: 'https://youtube.com'},
+    ];
 
-        // Try to load from cache first
-        try {
-            const cachedItem = localStorage.getItem(CACHE_KEY);
-            if (cachedItem) {
-                const { timestamp, data } = JSON.parse(cachedItem) as CachedData;
-                const now = new Date().getTime();
-                if (now - timestamp < CACHE_DURATION) {
-                    setSurveillanceFootage(data.videos);
-                    setLatestIntel(data.articles);
-                    setIsLoading(false);
-                    console.log("Loaded home page feed from cache.");
-                    return;
-                }
-            }
-        } catch (error) {
-            console.error("Failed to read cache, fetching new data.", error);
-        }
-
-        // If cache is invalid or missing, fetch new data
-        try {
-            console.log("Fetching new home page feed...");
-            const feed = await generateHomeFeed();
-            setSurveillanceFootage(feed.videos);
-            setLatestIntel(feed.articles);
-
-            // Save new data to cache
-            const cacheData: CachedData = {
-                timestamp: new Date().getTime(),
-                data: feed
-            };
-            localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-        } catch (error) {
-            console.error("Failed to fetch home page feed:", error);
-            // Optionally, set some error state here to show in the UI
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
+    const latestIntel = [
+        {id: 1, title: 'Wayne Enterprises Announces New Tech Initiative', source: 'The Gotham Gazette', date: '4 hours ago', snippet: 'Wayne Enterprises has pledged to revitalize Burnley with a new technology center, promising jobs and innovation.', image: 'https://placehold.co/600x400.png', dataAiHint: 'modern cityscape', url: 'https://google.com/news'},
+        {id: 2, title: 'Riddler Strikes Again With City-Wide Puzzle', source: 'Channel 52 News', date: '1 day ago', snippet: 'The enigmatic Riddler has challenged Gotham\'s finest with a series of complex puzzles, threatening to release sensitive city data.', image: 'https://placehold.co/600x400.png', dataAiHint: 'question mark neon', url: 'https://google.com/news'},
+        {id: 3, title: 'The Penguin\'s Iceberg Lounge Under Investigation', source: 'Gotham PD Press', date: '3 days ago', snippet: 'Sources confirm the GCPD is building a case against Oswald Cobblepot, owner of the popular Iceberg Lounge.', image: 'https://placehold.co/600x400.png', dataAiHint: 'crime investigation board', url: 'https://google.com/news'},
+    ];
 
     useEffect(() => {
-        fetchFeeds();
-    }, [fetchFeeds]);
+        const timer = setTimeout(() => setIsLoading(false), 1000);
+        return () => clearTimeout(timer);
+    }, []);
 
   return (
     <div className="space-y-8">

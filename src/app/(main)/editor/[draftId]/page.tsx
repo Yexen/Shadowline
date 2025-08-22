@@ -9,7 +9,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Save, Eye, EyeOff, Download, FileText, FileCode, Sparkles, PenLine, BookUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { generateContent, GenerateContentInput } from '@/ai/flows/ai-writing-assistant';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Dialog,
@@ -50,18 +49,6 @@ export default function EditorPage() {
   const { folders } = useGallery();
   const { writers, activeWriter } = useWriters();
 
-  // AI Assistant State
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [selectedText, setSelectedText] = useState('');
-  const [popoverOpen, setPopoverOpen] = useState(false);
-  
-  // Scene Generator State
-  const [scenePrompt, setScenePrompt] = useState('');
-  const [generatedScene, setGeneratedScene] = useState('');
-  const [isGeneratingScene, setIsGeneratingScene] = useState(false);
-  const [sceneGeneratorOpen, setSceneGeneratorOpen] = useState(false);
-  
   // Save to Volume State
   const [saveToVolumeOpen, setSaveToVolumeOpen] = useState(false);
   const [selectedVolume, setSelectedVolume] = useState<string | null>(null);
@@ -89,17 +76,6 @@ export default function EditorPage() {
   const wordCount = useMemo(() => {
     return content.trim().split(/\s+/).filter(Boolean).length;
   }, [content]);
-
-  const getFullContext = () => {
-    return JSON.stringify({
-        bible: bibleData,
-        drafts,
-        volumes,
-        gallery: folders,
-        writers,
-        activeWriter,
-    });
-  }
 
   const handleSave = () => {
     setIsSaving(true);
@@ -137,105 +113,6 @@ export default function EditorPage() {
     URL.revokeObjectURL(url);
   };
 
-  const handleAskAI = async () => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selection = content.substring(start, end);
-
-    if (!selection) {
-      toast({
-        variant: 'destructive',
-        title: 'No Text Selected',
-        description: 'Please select some text to get suggestions.',
-      });
-      return;
-    }
-    
-    setSelectedText(selection);
-    setIsGenerating(true);
-    setSuggestions([]);
-    setPopoverOpen(true);
-
-    try {
-        const input: GenerateContentInput = { 
-          prompt: `Based on the following text, give me a few short, creative suggestions to continue or improve it: "${selection}"`,
-          bibleData: getFullContext()
-        };
-        const result = await generateContent(input);
-        setSuggestions(result.content.split('\n').filter(s => s.trim().length > 0));
-    } catch (error) {
-      console.error(error);
-      toast({ variant: 'destructive', title: 'Error', description: `Failed to get suggestions from Oracle.` });
-      setPopoverOpen(false);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleInsertSuggestion = (suggestion: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    
-    const newContent =
-      content.substring(0, start) +
-      suggestion +
-      content.substring(end);
-
-    setContent(newContent);
-    setPopoverOpen(false);
-
-    setTimeout(() => {
-        textarea.focus();
-        const newCursorPosition = start + suggestion.length;
-        textarea.setSelectionRange(newCursorPosition, newCursorPosition);
-    }, 0);
-  };
-
-  const handleGenerateScene = async () => {
-    if (!scenePrompt) return;
-    setIsGeneratingScene(true);
-    setGeneratedScene('');
-    try {
-      const input: GenerateContentInput = { 
-        prompt: scenePrompt,
-        bibleData: getFullContext()
-      };
-      const result = await generateContent(input);
-      setGeneratedScene(result.content);
-    } catch (error) {
-      console.error(error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate scene.' });
-    } finally {
-      setIsGeneratingScene(false);
-    }
-  };
-
-  const handleInsertScene = () => {
-    const textarea = textareaRef.current;
-    if (!textarea || !generatedScene) return;
-
-    const cursorPosition = textarea.selectionStart;
-    const textToInsert = (content.length > 0 && content[cursorPosition - 1] !== '\n' ? '\n\n' : '') + generatedScene;
-
-    const newContent = content.substring(0, cursorPosition) + textToInsert + content.substring(cursorPosition);
-    setContent(newContent);
-    setSceneGeneratorOpen(false);
-    setGeneratedScene('');
-    setScenePrompt('');
-    
-    setTimeout(() => {
-        textarea.focus();
-        const newCursorPosition = cursorPosition + textToInsert.length;
-        textarea.setSelectionRange(newCursorPosition, newCursorPosition);
-    }, 0);
-  };
-
   const handleSaveToVolume = () => {
     if (selectedVolume) {
         addChapter(selectedVolume, title, content);
@@ -259,87 +136,15 @@ export default function EditorPage() {
           className="font-headline text-2xl bg-transparent outline-none focus:border-b border-primary"
         />
         <div className="flex items-center gap-2 flex-wrap">
-            <Dialog open={sceneGeneratorOpen} onOpenChange={setSceneGeneratorOpen}>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <PenLine />
-                  Generate Scene
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[625px]">
-                <DialogHeader>
-                  <DialogTitle className="font-headline">Scene Generator</DialogTitle>
-                  <DialogDescription>
-                    Describe the scene you want to generate. Be as specific as you like.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="scene-prompt">
-                      Prompt
-                    </Label>
-                    <Textarea 
-                        id="scene-prompt" 
-                        value={scenePrompt} 
-                        onChange={(e) => setScenePrompt(e.target.value)} 
-                        placeholder="e.g., A tense standoff in a derelict warehouse. Rain streaks down the grimy windows."
-                        rows={5}
-                    />
-                  </div>
-                  <Button onClick={handleGenerateScene} disabled={isGeneratingScene || !scenePrompt}>
-                    {isGeneratingScene ? 'Generating...' : <><Sparkles className="mr-2 h-4 w-4" /> Generate Scene</>}
-                  </Button>
-                   {generatedScene && (
-                      <div className="space-y-2 pt-4">
-                        <h4 className="font-bold font-headline">Generated Scene:</h4>
-                        <div className="relative bg-accent/50 p-4 rounded-md space-y-2 prose prose-sm prose-invert max-h-60 overflow-auto">
-                          <p>{generatedScene}</p>
-                        </div>
-                      </div>
-                    )}
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setSceneGeneratorOpen(false)}>Cancel</Button>
-                  <Button onClick={handleInsertScene} disabled={!generatedScene}>
-                    Insert Scene
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <Button variant="ghost" size="sm" disabled>
+              <PenLine />
+              Generate Scene
+            </Button>
 
-          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-            <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" onClick={handleAskAI}>
-                    <Sparkles />
-                    Ask Oracle
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80">
-                <div className="grid gap-4">
-                  <div className="space-y-2">
-                    <h4 className="font-medium leading-none font-headline">Oracle Suggestions</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Based on: "{selectedText}"
-                    </p>
-                  </div>
-                  <div className="grid gap-2">
-                    {isGenerating && <p>Generating insights...</p>}
-                    {suggestions.length > 0 && (
-                      <ul className="space-y-2">
-                        {suggestions.slice(0, 5).map((suggestion, i) => (
-                          <li key={i}>
-                            <Button variant="link" className="p-0 h-auto text-left whitespace-normal" onClick={() => handleInsertSuggestion(suggestion)}>
-                              {suggestion}
-                            </Button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {!isGenerating && suggestions.length === 0 && <p>No suggestions found.</p>}
-                  </div>
-                </div>
-            </PopoverContent>
-          </Popover>
+            <Button variant="ghost" size="sm" disabled>
+                <Sparkles />
+                Ask Oracle
+            </Button>
 
           <Button variant="ghost" size="sm" onClick={() => setShowPreview(!showPreview)}>
             {showPreview ? <EyeOff /> : <Eye />}

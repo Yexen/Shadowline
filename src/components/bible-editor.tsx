@@ -16,7 +16,6 @@ import { Label } from '@/components/ui/label';
 import type { BibleEntry, BiblePage } from '@/hooks/use-bible';
 import { PlusCircle, Trash2, Sparkles, BookUser, List } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
-import { generateBibleFields, GenerateBibleFieldsInput } from '@/ai/flows/generate-bible-fields';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from './ui/textarea';
 import { ProfilePageEditor } from './profile-page-editor';
@@ -79,35 +78,11 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
   };
 
   const handleSuggestFields = async () => {
-    if (!currentEntry || !currentEntry.title) {
-      toast({
-        variant: 'destructive',
-        title: 'Title Required',
-        description: 'Please enter a title for the entry first.',
-      });
-      return;
-    }
-    setIsGenerating(true);
-    try {
-      const input: GenerateBibleFieldsInput = { category, title: currentEntry.title };
-      const result = await generateBibleFields(input);
-      if (result.fields) {
-        const newFields = result.fields.map(label => ({ label, value: '' }));
-        setCurrentEntry(prev => ({
-            ...(prev!),
-            fields: [...(prev?.fields || []), ...newFields]
-        }));
-      }
-    } catch (error) {
-      console.error("Failed to suggest fields:", error);
-      toast({
-        variant: 'destructive',
-        title: 'AI Error',
-        description: 'Could not generate field suggestions.',
-      });
-    } finally {
-      setIsGenerating(false);
-    }
+    toast({
+      variant: 'destructive',
+      title: 'AI Offline',
+      description: 'The AI field suggestion feature is temporarily disabled.',
+    });
   };
 
   const handleTitleChange = (newTitle: string) => {
