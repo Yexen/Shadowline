@@ -31,12 +31,12 @@ const defaultWriters: Writer[] = [
     { 
         id: 'writer-1', 
         name: 'Yekta', 
-        email: 'Yekta.kjs@Gmail.com',
+        email: 'yekta.kjs@gmail.com',
         avatarUrl: DEFAULT_AVATAR, 
         dataAiHint: 'writer portrait',
         role: 'head-writer',
         status: 'approved',
-        password: 'Livfreya',
+        password: 'LivFreya',
     },
 ];
 
