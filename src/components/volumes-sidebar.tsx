@@ -8,7 +8,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { useVolumes, type Volume, type Chapter } from "@/hooks/use-volumes";
+import { useVolumes, type Volume } from "@/hooks/use-volumes";
 import { useModalStore } from "@/hooks/use-modal-store";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { BookCopy, BookOpen, Library, PlusCircle } from "lucide-react";
@@ -48,7 +48,10 @@ export function VolumesSidebar({ open, onOpenChange }: VolumesSidebarProps) {
         deleteChapter,
         addChapterToVolume,
         updateVolumeOverview, 
-        updateVolumeResources 
+        getVolume,
+        addResource,
+        updateResource,
+        deleteResource
     } = useVolumes();
     const { modalType, modalData, closeModal, openModal } = useModalStore();
     const [outlineDialogVolume, setOutlineDialogVolume] = useState<Volume | null>(null);
@@ -57,7 +60,7 @@ export function VolumesSidebar({ open, onOpenChange }: VolumesSidebarProps) {
 
     const editingVolume = volumes.find(v => v.id === modalData?.volume?.id);
     const overviewVolume = volumes.find(v => v.id === modalData?.overview?.id);
-    const resourcesVolume = volumes.find(v => v.id === modalData?.resources?.id);
+    const resourcesVolume = getVolume(modalData?.resources?.id || '');
 
     const handleOpenOutlineDialog = (volume: Volume) => {
         setOutlineDialogVolume(volume);
@@ -193,8 +196,10 @@ export function VolumesSidebar({ open, onOpenChange }: VolumesSidebarProps) {
             />
             <ResourceEditor
                 volume={resourcesVolume || null}
-                onSave={updateVolumeResources}
                 onClose={closeModal}
+                onAddResource={addResource}
+                onUpdateResource={updateResource}
+                onDeleteResource={deleteResource}
             />
         </>
     );

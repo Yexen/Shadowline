@@ -9,6 +9,12 @@ export interface Chapter {
   content: string;
 }
 
+export interface Resource {
+    id: string;
+    title: string;
+    content: string;
+}
+
 export interface Volume {
   id: string;
   title: string;
@@ -16,7 +22,7 @@ export interface Volume {
   coverImage: string;
   chapters: Chapter[];
   overview?: string;
-  resources?: string;
+  resources?: Resource[];
 }
 
 const VOLUMES_STORAGE_KEY = 'gotham-volumes-data';
@@ -32,7 +38,10 @@ const defaultVolumes: Volume[] = [
             { id: 'chap-1-2', title: 'Thanksgiving', content: 'The second victim is found...' },
         ],
         overview: 'A detailed plot outline focusing on the main story beats and character arcs.',
-        resources: `Holiday Calendar: https://example.com/holidays\nFalcone Crime Family Tree: https://example.com/falcone`
+        resources: [
+            { id: 'res-1-1', title: 'Holiday Calendar', content: 'List of all major holidays and their dates for the year.' },
+            { id: 'res-1-2', title: 'Falcone Crime Family Tree', content: 'A visual breakdown of the Falcone family members and their roles.' }
+        ]
     },
     {
         id: 'vol-2',
@@ -41,7 +50,7 @@ const defaultVolumes: Volume[] = [
         coverImage: 'https://placehold.co/600x800.png',
         chapters: [],
         overview: 'Focuses on the psychological dualism between Batman and Joker.',
-        resources: ''
+        resources: []
     }
 ];
 
@@ -54,10 +63,13 @@ export function useVolumes() {
       const storedData = localStorage.getItem(VOLUMES_STORAGE_KEY);
       if (storedData) {
         const parsed = JSON.parse(storedData)
-        // Migration for resources from array to string
+        // Migration for resources from string to array
         const migratedData = parsed.map((v: any) => {
-          if (Array.isArray(v.resources)) {
-            return { ...v, resources: v.resources.map((r: any) => `${r.title}: ${r.url}`).join('\\n') };
+          if (typeof v.resources === 'string') {
+            return { ...v, resources: v.resources ? [{id: `res-${Date.now()}`, title: 'General Notes', content: v.resources}] : [] };
+          }
+           if (!v.resources) {
+            return { ...v, resources: [] };
           }
           return v;
         });
@@ -91,7 +103,7 @@ export function useVolumes() {
       coverImage: 'https://placehold.co/600x800.png',
       chapters: [],
       overview: '',
-      resources: '',
+      resources: [],
     };
     saveData([...volumes, newVolume]);
   };
@@ -147,15 +159,51 @@ export function useVolumes() {
     saveData(newVolumes);
   };
   
-  const updateVolumeResources = (volumeId: string, resources: string) => {
-    const newVolumes = volumes.map(v => v.id === volumeId ? { ...v, resources } : v);
-    saveData(newVolumes);
-  };
-
   const getChapter = useCallback((volumeId: string, chapterId: string) => {
     const volume = volumes.find(v => v.id === volumeId);
     return volume?.chapters.find(c => c.id === chapterId);
   }, [volumes]);
+
+  const getVolume = useCallback((volumeId: string) => {
+    return volumes.find(v => v.id === volumeId);
+  }, [volumes]);
+
+  const addResource = (volumeId: string) => {
+    const newResource: Resource = {
+      id: `res-${Date.now()}`,
+      title: 'New Resource',
+      content: '',
+    };
+    const newVolumes = volumes.map(v => {
+      if (v.id === volumeId) {
+        return { ...v, resources: [...(v.resources || []), newResource] };
+      }
+      return v;
+    });
+    saveData(newVolumes);
+  };
+
+  const updateResource = (volumeId: string, resourceId: string, updates: Partial<Omit<Resource, 'id'>>) => {
+    const newVolumes = volumes.map(v => {
+        if (v.id === volumeId) {
+            const newResources = (v.resources || []).map(r => r.id === resourceId ? { ...r, ...updates } : r);
+            return { ...v, resources: newResources };
+        }
+        return v;
+    });
+    saveData(newVolumes);
+  };
+
+  const deleteResource = (volumeId: string, resourceId: string) => {
+     const newVolumes = volumes.map(v => {
+        if (v.id === volumeId) {
+            return { ...v, resources: (v.resources || []).filter(r => r.id !== resourceId) };
+        }
+        return v;
+    });
+    saveData(newVolumes);
+  }
+
 
   return { 
     isLoaded, 
@@ -168,6 +216,9 @@ export function useVolumes() {
     deleteChapter,
     getChapter,
     updateVolumeOverview,
-    updateVolumeResources
+    getVolume,
+    addResource,
+    updateResource,
+    deleteResource,
   };
 }
