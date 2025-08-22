@@ -3,7 +3,7 @@
 /**
  * @fileOverview A Genkit flow for summarizing content from the Bible.
  */
-import { ai } from '@/ai/genkit';
+import { ai, getModel } from '@/ai/genkit';
 import { z } from 'zod';
 import { useBible } from '@/hooks/use-bible';
 
@@ -35,6 +35,8 @@ const SummarizeInputSchema = z.object({
   topic: z.string().describe("The topic to summarize, e.g., 'The Joker'."),
 });
 
+export type SummarizeInput = z.infer<typeof SummarizeInputSchema>;
+
 const summarizeFlow = ai.defineFlow(
   {
     name: 'summarizeFlow',
@@ -53,9 +55,10 @@ const summarizeFlow = ai.defineFlow(
             break;
         }
     }
-
+    
+    const model = await getModel();
     const { output } = await ai.generate({
-        model: 'googleai/gemini-1.5-flash',
+        model,
         prompt: `Based on the following context, provide a one-paragraph summary for the user. If no context is available, say so.
 
         Context:

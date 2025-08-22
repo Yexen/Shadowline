@@ -1,18 +1,21 @@
 
 'use client';
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { useLogo } from "@/hooks/use-logo";
 import { Separator } from "./ui/separator";
-import { Download, Shield } from "lucide-react";
+import { Download, Shield, Bot } from "lucide-react";
 import { useWriters } from "@/hooks/use-writers";
 import { PasswordInput } from "./password-input";
 import { useToast } from "@/hooks/use-toast";
 import { auth } from "@/lib/firebase";
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
+import { useAiProvider, AiProvider } from "@/hooks/use-ai-provider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Label } from "./ui/label";
 
 
 interface SettingsDialogProps {
@@ -25,10 +28,18 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
     const logoFileInputRef = useRef<HTMLInputElement>(null);
     const { activeWriter } = useWriters();
     const { toast } = useToast();
+    const { provider, setProvider, openAiApiKey, setOpenAiApiKey, isLoaded } = useAiProvider();
 
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [apiKey, setApiKey] = useState(openAiApiKey);
+    
+    useEffect(() => {
+        if(isLoaded) {
+            setApiKey(openAiApiKey);
+        }
+    }, [isLoaded, openAiApiKey]);
 
     const handleLogoFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -50,6 +61,8 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
             'gotham-gallery-data',
             'gotham-app-logo',
             'gotham-volumes-data',
+            'gotham-ai-provider',
+            'gotham-openai-key'
         ];
 
         keysToExport.forEach(key => {
@@ -114,7 +127,7 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                         Customize your application settings.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="py-4 space-y-4">
+                <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto pr-4">
                     {activeWriter?.role === 'head-writer' && (
                          <>
                             <div>
@@ -129,7 +142,7 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                             <Separator />
                          </>
                     )}
-
+                    
                     <div>
                         <h3 className="font-bold">Change Password</h3>
                         <div className="space-y-2 mt-2">
