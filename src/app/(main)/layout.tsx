@@ -70,6 +70,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { href: '/editor', label: 'Editor', icon: PenSquare },
     { href: '/drafts', label: 'Drafts', icon: FileText },
     { href: '/gallery', label: 'Gallery', icon: Images },
+    { href: '/ai-tools', label: 'AI Tools', icon: BrainCircuit },
     { href: '/maps', label: 'Maps', icon: MapIcon },
     { href: '/organization', label: 'Organization', icon: ClipboardList },
     { href: '/sources', label: 'Sources', icon: Book },
@@ -119,7 +120,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </SidebarHeader>
         <SidebarContent>
             <SidebarMenu>
-                {menuItems.filter(i => !['/ai-tools', '/nyxen'].includes(i.href)).slice(0, 7).map((item) => (
+                {menuItems.filter(i => !['/nyxen'].includes(i.href)).slice(0, 8).map((item) => (
                 <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                         onClick={() => router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href)}
@@ -198,7 +199,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 
-                {menuItems.filter(i => !['/ai-tools', '/nyxen'].includes(i.href)).slice(7).map((item) => (
+                {menuItems.filter(i => !['/nyxen'].includes(i.href)).slice(8).map((item) => (
                 <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                         onClick={() => router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href)}
