@@ -30,7 +30,7 @@ const DEFAULT_AVATAR = 'https://placehold.co/40x40.png';
 const defaultWriters: Writer[] = [
     { 
         id: 'writer-1', 
-        name: 'Yekta', 
+        name: 'Yekta Jokar', 
         email: 'yekta.kjs@gmail.com',
         avatarUrl: DEFAULT_AVATAR, 
         dataAiHint: 'writer portrait',
@@ -98,7 +98,7 @@ export function useWriters() {
             dataAiHint: 'writer portrait anonymous',
             role,
             status: 'pending',
-            password: password, // This line was missing the password
+            password: password,
             permissions: { readableSections: [] }
         };
         const newWriters = [...writers, newWriter];
