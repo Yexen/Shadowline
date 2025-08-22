@@ -4,9 +4,28 @@
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { BatLogo } from '@/components/bat-logo';
+import { useWriters } from '@/hooks/use-writers';
 
 export default function AuthPage() {
   const router = useRouter();
+  const { writers, setActiveWriter } = useWriters();
+
+  const handleHeadWriterAccess = () => {
+    const headWriter = writers.find(w => w.role === 'head-writer');
+    if (headWriter) {
+        try {
+            setActiveWriter(headWriter.id);
+            localStorage.setItem('isLoggedIn', 'true');
+            router.replace('/home');
+        } catch (e) {
+            console.error('Failed to set Head Writer session:', e);
+        }
+    } else {
+        console.error("Head Writer profile not found.");
+        // Optionally, show an error to the user
+    }
+  };
+
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-8">
@@ -20,19 +39,28 @@ export default function AuthPage() {
         </p>
         
         <div className="space-y-4">
-          <Button 
-            onClick={() => router.push('/login')} 
-            className="w-full font-headline h-12 text-lg"
+           <Button 
+            onClick={handleHeadWriterAccess} 
+            variant="destructive"
+            className="w-full font-headline h-14 text-lg bg-primary/20 text-primary hover:bg-primary/30 border border-primary"
           >
-            Sign In
+            Head Writer Access
           </Button>
-          <Button 
-            onClick={() => router.push('/signup')} 
-            variant="outline" 
-            className="w-full font-headline h-12 text-lg"
-          >
-            Sign Up
-          </Button>
+          <div className="flex items-center gap-4">
+             <Button 
+                onClick={() => router.push('/login')} 
+                className="w-full font-headline h-12 text-lg"
+              >
+                Sign In
+              </Button>
+              <Button 
+                onClick={() => router.push('/signup')} 
+                variant="outline" 
+                className="w-full font-headline h-12 text-lg"
+              >
+                Sign Up
+              </Button>
+          </div>
         </div>
       </div>
        <footer className="absolute bottom-4 text-center text-xs text-muted-foreground/50 font-code">
