@@ -1,8 +1,9 @@
 
 import { create } from 'zustand';
 import { BibleEntry } from './use-bible';
+import { Chapter, Volume, ResourcePage } from './use-volumes';
 
-export type ModalType = 'bible' | 'chapter' | 'resource';
+export type ModalType = 'bible' | 'chapter' | 'overview' | 'resources';
 
 interface BibleModalData {
     category: string;
@@ -11,18 +12,22 @@ interface BibleModalData {
 
 interface ChapterModalData {
     volumeId: string;
-    chapterId: string;
+    chapter: Chapter | null;
 }
 
-interface ResourceModalData {
-    resourceId: string;
+interface OverviewModalData {
+    volume: Volume;
 }
 
+interface ResourcesModalData {
+    volume: Volume;
+}
 
 interface ModalData {
     bible?: BibleModalData;
     chapter?: ChapterModalData;
-    resource?: ResourceModalData;
+    overview?: OverviewModalData;
+    resources?: ResourcesModalData;
 }
 
 interface ModalStore {

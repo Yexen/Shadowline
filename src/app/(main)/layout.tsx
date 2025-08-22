@@ -49,7 +49,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const { volumes, updateChapter } = useVolumes();
-  const [editingChapter, setEditingChapter] = useState<{ volumeId: string; chapterId: string } | null>(null);
+  const [editingChapter, setEditingChapter] = useState<{ volumeId: string; chapter: any } | null>(null);
 
 
   useEffect(() => {
@@ -94,6 +94,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const handleCloseEditor = () => {
     setEditingEntry(null);
     closeModal();
+  }
+
+  const handleSaveChapter = (volumeId: string, chapter: any) => {
+    updateChapter(volumeId, chapter.id, chapter);
+    closeModal();
+    setEditingChapter(null);
   }
   
   return (
@@ -240,14 +246,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
       />
-       {editingChapter && (
+       {modalType === 'chapter' && editingChapter && (
         <ChapterEditor
-          isOpen={!!editingChapter}
-          onClose={() => { setEditingChapter(null); closeModal(); }}
-          volumeId={editingChapter.volumeId}
-          chapterId={editingChapter.chapterId}
+            isOpen={true}
+            onClose={() => { setEditingChapter(null); closeModal(); }}
+            onSave={handleSaveChapter}
+            volumeId={editingChapter.volumeId}
+            chapter={editingChapter.chapter}
         />
-      )}
+       )}
     </SidebarProvider>
   );
 }

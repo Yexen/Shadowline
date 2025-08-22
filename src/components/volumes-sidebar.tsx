@@ -10,22 +10,23 @@ import { Skeleton } from './ui/skeleton';
 import { Button } from './ui/button';
 import { VolumeEditor } from './volume-editor';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { OutlinePopover } from './outline-popover';
+import { OverviewEditor } from './overview-editor';
+import { ResourceEditor } from './resource-editor';
 
 const romanNumerals = ["I", "II", "III", "IV", "V", "VI"];
 
 export function VolumesSidebar() {
-    const { isLoaded, volumes, addVolume, updateVolume, deleteVolume, getChapter, updateChapter, addChapterToVolume, deleteChapter } = useVolumes();
+    const { isLoaded, volumes, addVolume, updateVolume } = useVolumes();
     const [isEditorOpen, setEditorOpen] = useState(false);
     const [editingVolume, setEditingVolume] = useState<Volume | null>(null);
 
     const handleSaveVolume = (volumeData: Partial<Volume>) => {
         if (volumeData.id) {
-            updateVolume(volumeData.id, volumeData.title!, volumeData.description!, volumeData.imageUrl);
+            updateVolume(volumeData.id, volumeData);
         } else {
             addVolume(volumeData.title!, volumeData.description!, volumeData.imageUrl);
         }
-        // No need to close the editor, allow for continuous editing.
-        // Also refresh the specific volume being edited to see changes immediately.
         setEditingVolume(v => v ? {...v, ...volumeData} : null);
     };
 
@@ -34,13 +35,13 @@ export function VolumesSidebar() {
         setEditorOpen(true);
     };
 
-    const renderVolumeList = (volumeSet: Volume[]) => (
+    const renderVolumeList = (volumeSet: Volume[], clickHandler: (volume: Volume) => void) => (
          <div className="w-full mt-2 flex-grow overflow-y-auto pr-2 space-y-2">
-            {volumeSet.map((volume, index) => (
+            {volumeSet.map((volume) => (
                 <div 
                     key={volume.id}
                     className="p-3 rounded-md hover:bg-accent cursor-pointer border flex justify-between items-center"
-                    onClick={() => handleEditVolume(volume)}
+                    onClick={() => clickHandler(volume)}
                 >
                     <div className="flex items-center gap-3">
                         <Book className="h-5 w-5 text-primary"/>
@@ -51,6 +52,29 @@ export function VolumesSidebar() {
                     </div>
                 </div>
             ))}
+        </div>
+    );
+    
+    const renderOutlineList = () => (
+        <div className="w-full mt-2 flex-grow overflow-y-auto pr-2 space-y-2">
+            {volumes.slice(0, 6).map((volume) => (
+                <OutlinePopover key={volume.id} volume={volume}>
+                    <div className="p-3 rounded-md hover:bg-accent cursor-pointer border flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                            <BookOpen className="h-5 w-5 text-primary"/>
+                             <h4 className="font-headline">{volume.title}</h4>
+                        </div>
+                    </div>
+                </OutlinePopover>
+            ))}
+             <OutlinePopover volume={{ id: 'all', title: 'All Volumes', chapters: [], overview: '', resources: [] }}>
+                 <div className="p-3 rounded-md hover:bg-accent cursor-pointer border flex justify-between items-center mt-4 border-dashed">
+                    <div className="flex items-center gap-3">
+                        <BookOpen className="h-5 w-5 text-primary"/>
+                        <h4 className="font-headline">All Volumes</h4>
+                    </div>
+                </div>
+            </OutlinePopover>
         </div>
     );
 
@@ -82,12 +106,10 @@ export function VolumesSidebar() {
                             <TabsTrigger value="outlines"><BookOpen className="mr-2"/> Outlines</TabsTrigger>
                         </TabsList>
                         <TabsContent value="volumes" className="flex-grow flex flex-col overflow-y-auto">
-                            {renderVolumeList(volumes.slice(0, 6))}
+                            {renderVolumeList(volumes.slice(0, 6), handleEditVolume)}
                         </TabsContent>
                         <TabsContent value="outlines" className="flex-grow flex flex-col overflow-y-auto">
-                             <div className="flex-grow overflow-y-auto p-4 border rounded-md mt-2 text-center">
-                                <p className="text-muted-foreground">Outline view coming soon.</p>
-                            </div>
+                             {renderOutlineList()}
                         </TabsContent>
                     </Tabs>
                     )}
@@ -100,6 +122,9 @@ export function VolumesSidebar() {
                 onSave={handleSaveVolume}
                 volume={editingVolume}
             />
+            
+            <OverviewEditor />
+            <ResourceEditor />
         </>
     );
 }

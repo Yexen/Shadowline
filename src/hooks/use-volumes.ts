@@ -24,6 +24,7 @@ export interface Volume {
   description?: string;
   imageUrl?: string;
   chapters: Chapter[];
+  overview?: string;
   resources?: ResourcePage[];
 }
 
@@ -35,6 +36,7 @@ const defaultVolumesData: Volume[] = Array.from({ length: 6 }, (_, i) => ({
     description: `An overarching story arc, yet to be written.`,
     imageUrl: '',
     chapters: [],
+    overview: '',
     resources: []
 }));
 
@@ -48,19 +50,19 @@ export function useVolumes() {
       const storedData = localStorage.getItem(VOLUMES_STORAGE_KEY);
       if (storedData) {
         const parsed = JSON.parse(storedData);
-        // Ensure at least 6 volumes exist for the UI
-        if (parsed.length < 6) {
-          const missingCount = 6 - parsed.length;
+        // Ensure at least 6 volumes exist for the UI and they have the new fields
+        if (parsed.length < 6 || !('overview' in parsed[0])) {
           const romanNumerals = ["I", "II", "III", "IV", "V", "VI"];
-          const newVolumes = Array.from({ length: missingCount }, (_, i) => ({
-             id: `volume-${parsed.length + i + 1}`,
-             title: `Volume ${romanNumerals[parsed.length + i]}`,
-             description: 'An overarching story arc, yet to be written.',
-             imageUrl: '',
-             chapters: [],
-             resources: []
-          }));
-          const updated = [...parsed, ...newVolumes];
+          const updated = Array.from({ length: 6 }, (_, i) => {
+             const existing = parsed.find((v: Volume) => v.id === `volume-${i + 1}`);
+             return {
+                 ...defaultVolumesData[i],
+                 ...existing,
+                 title: `Volume ${romanNumerals[i]}`, // Ensure title is correct
+                 overview: existing?.overview || '',
+                 resources: existing?.resources || []
+             };
+          });
           setVolumes(updated);
           localStorage.setItem(VOLUMES_STORAGE_KEY, JSON.stringify(updated));
         } else {
@@ -94,14 +96,15 @@ export function useVolumes() {
       description,
       imageUrl,
       chapters: [],
+      overview: '',
       resources: [],
     };
     saveData([...volumes, newVolume]);
   };
 
-  const updateVolume = (volumeId: string, title: string, description?: string, imageUrl?: string) => {
+  const updateVolume = (volumeId: string, updates: Partial<Omit<Volume, 'id'>>) => {
     const newVolumes = volumes.map(v => 
-      v.id === volumeId ? { ...v, title, description, imageUrl } : v
+      v.id === volumeId ? { ...v, ...updates } : v
     );
     saveData(newVolumes);
   };
@@ -114,7 +117,6 @@ export function useVolumes() {
   const addChapterToVolume = (volumeId: string, chapter: Chapter) => {
     const newVolumes = volumes.map(v => {
       if (v.id === volumeId) {
-        // Avoid adding duplicate chapters
         if (v.chapters.some(c => c.id === chapter.id)) {
             return v;
         }
@@ -153,5 +155,43 @@ export function useVolumes() {
       saveData(newVolumes);
   };
 
-  return { isLoaded, volumes, addVolume, updateVolume, deleteVolume, addChapterToVolume, getChapter, updateChapter, deleteChapter };
+  const updateVolumeOverview = (volumeId: string, overview: string) => {
+    const newVolumes = volumes.map(v => (v.id === volumeId ? { ...v, overview } : v));
+    saveData(newVolumes);
+  };
+
+  const addResourceToVolume = (volumeId: string, resource: ResourcePage) => {
+      const newVolumes = volumes.map(v => {
+          if (v.id === volumeId) {
+              const resources = v.resources ? [...v.resources, resource] : [resource];
+              return { ...v, resources };
+          }
+          return v;
+      });
+      saveData(newVolumes);
+  };
+
+  const updateResource = (volumeId: string, resource: ResourcePage) => {
+      const newVolumes = volumes.map(v => {
+          if (v.id === volumeId) {
+              const resources = v.resources?.map(r => (r.id === resource.id ? resource : r));
+              return { ...v, resources };
+          }
+          return v;
+      });
+      saveData(newVolumes);
+  };
+  
+  const deleteResource = (volumeId: string, resourceId: string) => {
+      const newVolumes = volumes.map(v => {
+          if (v.id === volumeId) {
+              const resources = v.resources?.filter(r => r.id !== resourceId);
+              return { ...v, resources };
+          }
+          return v;
+      });
+      saveData(newVolumes);
+  };
+
+  return { isLoaded, volumes, addVolume, updateVolume, deleteVolume, addChapterToVolume, getChapter, updateChapter, deleteChapter, updateVolumeOverview, addResourceToVolume, updateResource, deleteResource };
 }
