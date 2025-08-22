@@ -54,8 +54,6 @@ export default function AuthPage() {
             router.push('/home');
         } else {
             console.error("Head Writer profile not found.");
-            // This can happen if the default data hasn't been set in local storage yet.
-            // A page refresh should typically solve this after the first load.
             setError("Head writer profile not ready. Please refresh the page.");
         }
     }

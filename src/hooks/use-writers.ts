@@ -53,7 +53,18 @@ export function useWriters() {
       // Load active writer
       const storedActiveWriter = localStorage.getItem(ACTIVE_WRITER_STORAGE_KEY);
       if (storedActiveWriter) {
-        _setActiveWriter(JSON.parse(storedActiveWriter));
+        try {
+          // Safeguard against non-JSON data
+          const parsedWriter = JSON.parse(storedActiveWriter);
+          if (typeof parsedWriter === 'object' && parsedWriter !== null) {
+            _setActiveWriter(parsedWriter);
+          } else {
+            localStorage.removeItem(ACTIVE_WRITER_STORAGE_KEY);
+          }
+        } catch (e) {
+          console.error("Failed to parse active writer, removing invalid data.", e);
+          localStorage.removeItem(ACTIVE_WRITER_STORAGE_KEY);
+        }
       }
     } catch (error) {
       console.error("Failed to access localStorage for writers", error);
