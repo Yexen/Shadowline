@@ -12,8 +12,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { toZod } from 'genkit/zod';
-import { Part, Role } from 'genkit/cohere';
 
 const NyxenMessageSchema = z.object({
     role: z.enum(['user', 'model']),
@@ -36,6 +34,11 @@ export async function continueConversation(input: NyxenChatInput): Promise<Nyxen
   return await nyxenChatFlow(input);
 }
 
+// Custom types to replace the invalid 'genkit/cohere' import
+type GKPart = { text: string };
+type GKMsg = { role: 'user' | 'model' | 'system'; content: GKPart[] };
+
+
 const nyxenChatFlow = ai.defineFlow(
   {
     name: 'nyxenChatFlow',
@@ -57,9 +60,9 @@ When answering, prioritize information from the provided context. If the informa
 ${bibleData ? `PROJECT CONTEXT:\n${bibleData}` : ''}
 `;
     
-    // Map the history to the format Genkit expects
-    const genkitHistory: { role: Role; content: Part[] }[] = history.map(msg => ({
-      role: msg.role,
+    // Map the history to the format Genkit expects using our custom types
+    const genkitHistory: GKMsg[] = history.map(msg => ({
+      role: msg.role as 'user' | 'model',
       content: [{ text: msg.content }]
     }));
 
