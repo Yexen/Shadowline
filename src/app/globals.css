@@ -111,6 +111,6 @@
   }
 }
 
-[data-scrollbar-track='true'] {
-    background-color: #000000;
+[data-radix-scroll-area-viewport] > div {
+    background-color: #000000 !important;
 }
