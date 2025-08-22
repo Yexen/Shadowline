@@ -1,5 +1,5 @@
 import {genkit} from 'genkit';
-import {openai} from '@genkit-ai/openai';
+import {openai} from 'genkit/x/openai';
 import {config} from 'dotenv';
 
 config();
