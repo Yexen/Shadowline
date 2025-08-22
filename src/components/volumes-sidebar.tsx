@@ -36,49 +36,34 @@ export function VolumesSidebar() {
     };
 
     const renderVolumeList = (volumeSet: Volume[], clickHandler: (volume: Volume) => void) => (
-         <div className="w-full mt-2 flex-grow overflow-y-auto pr-2 space-y-2">
+         <div className="w-full mt-4 flex-grow overflow-y-auto pr-2 space-y-4">
             {volumeSet.map((volume) => (
                 <div 
                     key={volume.id}
-                    className="p-3 rounded-md hover:bg-accent cursor-pointer border flex justify-between items-center"
+                    className="cursor-pointer group"
                     onClick={() => clickHandler(volume)}
                 >
-                    <div className="flex items-center gap-3">
-                        <Book className="h-5 w-5 text-primary"/>
-                        <div>
-                            <h4 className="font-headline">{volume.title}</h4>
-                            <p className="text-xs text-muted-foreground">{volume.chapters.length} Chapters</p>
-                        </div>
-                    </div>
+                    <h4 className="font-headline text-lg group-hover:text-primary transition-colors">{volume.title}</h4>
+                    <p className="text-sm text-muted-foreground">{volume.chapters.length} Chapters</p>
                 </div>
             ))}
         </div>
     );
     
     const renderOutlineList = () => (
-        <div className="w-full mt-2 flex-grow overflow-y-auto pr-2 space-y-2">
+        <div className="w-full mt-4 flex-grow overflow-y-auto pr-2 space-y-4">
             {volumes.slice(0, 6).map((volume) => (
                 <OutlinePopover key={volume.id} volume={volume}>
-                    <div className="p-3 rounded-md hover:bg-accent cursor-pointer border flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            <BookOpen className="h-5 w-5 text-primary"/>
-                             <div>
-                                <h4 className="font-headline">{volume.title}</h4>
-                                <p className="text-xs text-muted-foreground">High-Level Plan</p>
-                            </div>
-                        </div>
+                    <div className="cursor-pointer group">
+                        <h4 className="font-headline text-lg group-hover:text-primary transition-colors">{volume.title}</h4>
+                        <p className="text-sm text-muted-foreground">High-Level Plan</p>
                     </div>
                 </OutlinePopover>
             ))}
              <OutlinePopover volume={{ id: 'all', title: 'All Volumes', chapters: [], overview: '', resources: [] }}>
-                 <div className="p-3 rounded-md hover:bg-accent cursor-pointer border flex justify-between items-center mt-4 border-dashed">
-                    <div className="flex items-center gap-3">
-                        <BookOpen className="h-5 w-5 text-primary"/>
-                        <div>
-                            <h4 className="font-headline">All Volumes</h4>
-                            <p className="text-xs text-muted-foreground">Project-Wide View</p>
-                        </div>
-                    </div>
+                 <div className="cursor-pointer group mt-6">
+                    <h4 className="font-headline text-lg group-hover:text-primary transition-colors">All Volumes</h4>
+                    <p className="text-sm text-muted-foreground">Project-Wide View</p>
                 </div>
             </OutlinePopover>
         </div>
