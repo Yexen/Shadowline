@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -28,11 +29,8 @@ import { AppHeader } from '@/components/app-header';
 import { useWriters } from '@/hooks/use-writers';
 import { WriterProfile } from '@/components/writer-profile';
 import { SettingsDialog } from '@/components/settings-dialog';
-import { VolumesSidebar } from '@/components/volumes-sidebar';
 import { PlusCircle } from 'lucide-react';
 import { useModalStore } from '@/hooks/use-modal-store';
-import { useVolumes, type Chapter } from '@/hooks/use-volumes';
-import { ChapterEditor } from '@/components/chapter-editor';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -40,11 +38,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const { isLoaded: bibleLoaded, bibleData, addCategory, addOrUpdateEntry } = useBible();
   const { activeWriter } = useWriters();
-  const { updateChapter } = useVolumes();
   const { modalType, modalData, closeModal } = useModalStore();
 
   const [editingEntry, setEditingEntry] = useState<{ category: string; entry: BibleEntry } | null>(null);
-  const [editingChapter, setEditingChapter] = useState<{ volumeId: string; chapter: Chapter} | null>(null);
   const [newCategory, setNewCategory] = useState('');
   const [writerProfileOpen, setWriterProfileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -52,8 +48,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     if (modalType === 'bible' && modalData?.bible) {
       setEditingEntry(modalData.bible);
-    } else if (modalType === 'chapter' && modalData?.chapter) {
-      setEditingChapter(modalData.chapter);
     }
   }, [modalType, modalData]);
 
@@ -66,7 +60,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { href: '/gallery', label: 'Gallery', icon: Images },
     { href: '/maps', label: 'Maps', icon: MapIcon },
     { href: '/organization', label: 'Organization', icon: ClipboardList },
-    { href: '/volumes', label: 'Volumes', icon: BookOpenCheck },
     { href: '/about', label: 'About', icon: Info },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];
@@ -90,19 +83,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const handleCloseEditor = () => {
     setEditingEntry(null);
-    closeModal();
-  }
-
-  const handleSaveChapter = (chapter: Chapter) => {
-    if (editingChapter) {
-        updateChapter(editingChapter.volumeId, chapter.id, chapter.title, chapter.content);
-        setEditingChapter(null);
-        closeModal();
-    }
-  };
-  
-  const handleCloseChapterEditor = () => {
-    setEditingChapter(null);
     closeModal();
   }
   
@@ -132,7 +112,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 ))}
-                <VolumesSidebar />
 
                 <SidebarMenuItem>
                     <Sheet>
@@ -237,14 +216,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         onSave={handleSaveEntry}
       />
       
-      {editingChapter && (
-        <ChapterEditor 
-            chapter={editingChapter.chapter}
-            onSave={handleSaveChapter}
-            onClose={handleCloseChapterEditor}
-        />
-      )}
-
       <WriterProfile 
         isOpen={writerProfileOpen}
         onClose={() => setWriterProfileOpen(false)}
@@ -257,3 +228,5 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     </SidebarProvider>
   );
 }
+
+    
