@@ -6,6 +6,8 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/ca
 import { Sparkles, PenLine, ChevronRight, Image as ImageIcon, FileText } from 'lucide-react';
 import { ImageGenTool } from '@/components/image-gen-tool';
 import { SummarizeTool } from '@/components/summarize-tool';
+import { OracleChatTool } from '@/components/oracle-chat-tool';
+import { Separator } from '@/components/ui/separator';
 
 export default function AiToolsPage() {
   const router = useRouter();
@@ -19,7 +21,7 @@ export default function AiToolsPage() {
       cta: 'Go to Editor'
     },
     {
-      title: 'Ask the Oracle',
+      title: 'Ask the Oracle (Contextual)',
       description: 'Select text in the editor and ask contextual questions to get insights, clarify themes, or check character motivations.',
       icon: Sparkles,
       action: () => router.push('/editor/new'),
@@ -34,6 +36,10 @@ export default function AiToolsPage() {
           A suite of AI-powered tools to assist your writing process, from generating ideas to refining your drafts.
         </p>
       </div>
+
+      <OracleChatTool />
+
+      <Separator />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {tools.map((tool, index) => (
