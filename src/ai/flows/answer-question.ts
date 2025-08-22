@@ -45,7 +45,7 @@ If the answer is found within the provided context, you MUST prioritize that inf
 ${bibleData ? `PROJECT CONTEXT:\n${bibleData}`: ''}
 
 Based on the rules above, what is the answer to this question: "${question}"?`,
-      model: 'openai/gpt-4o',
+      model: 'gpt-4o',
       output: {
         schema: AnswerQuestionOutputSchema,
       }

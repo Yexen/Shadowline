@@ -47,7 +47,7 @@ ${bibleData}
 PROMPT: "${prompt}"
 
 Generate the content now.`,
-      model: 'openai/gpt-4o',
+      model: 'gpt-4o',
       output: {
         schema: GenerateContentOutputSchema,
       }

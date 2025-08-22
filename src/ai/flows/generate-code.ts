@@ -52,7 +52,7 @@ Description: "${description}"
 Language: ${language}
 
 Generate the code now.`,
-      model: 'openai/gpt-4o',
+      model: 'gpt-4o',
       output: {
         schema: GenerateCodeOutputSchema
       }

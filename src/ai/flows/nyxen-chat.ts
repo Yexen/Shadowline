@@ -69,7 +69,7 @@ ${bibleData ? `PROJECT CONTEXT:\n${bibleData}` : ''}
     }
 
     const { output } = await ai.generate({
-        model: 'openai/gpt-4o',
+        model: 'gpt-4o',
         prompt: lastMessage.content[0].text,
         history: genkitHistory,
         config: {
