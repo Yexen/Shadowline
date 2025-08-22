@@ -53,7 +53,7 @@ export function VolumesSidebar() {
     );
     
     const renderOutlineList = () => (
-        <div className="w-full mt-4 flex-grow overflow-y-auto pr-2">
+        <div className="w-full flex-grow overflow-y-auto pr-2">
             {volumes.slice(0, 6).map((volume, index) => (
                 <div key={volume.id}>
                     <OutlinePopover volume={volume}>
@@ -103,7 +103,7 @@ export function VolumesSidebar() {
                         <TabsContent value="volumes" className="flex-grow flex flex-col overflow-y-auto">
                             {renderVolumeList(volumes.slice(0, 6), handleEditVolume)}
                         </TabsContent>
-                        <TabsContent value="outlines" className="flex-grow flex flex-col overflow-y-auto">
+                        <TabsContent value="outlines" className="flex-grow flex flex-col overflow-y-auto pt-4">
                              {renderOutlineList()}
                         </TabsContent>
                     </Tabs>
