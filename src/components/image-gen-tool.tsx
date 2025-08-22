@@ -8,7 +8,7 @@ import { generateImage } from '@/ai/flows/image-gen-flow';
 import { Loader2, Image as ImageIcon, Save, Trash2, Download } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
 import Image from 'next/image';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useGallery } from '@/hooks/use-gallery';
