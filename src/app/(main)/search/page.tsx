@@ -24,7 +24,7 @@ interface SearchResult {
     source: string;
     sourceType: 'draft' | 'bible' | 'gallery';
     url: string;
-    data?: BibleEntry;
+    data?: { category: string; entry: BibleEntry };
 }
 
 export default function SearchPage() {
@@ -118,7 +118,7 @@ export default function SearchPage() {
         if (result.url !== '#') {
             router.push(result.url);
         } else if (result.sourceType === 'bible' && result.data) {
-            const { category, entry } = result.data as { category: string; entry: BibleEntry };
+            const { category, entry } = result.data;
             openModal('bible', { category, entry });
         }
     }

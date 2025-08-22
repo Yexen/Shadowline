@@ -215,7 +215,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         onClose={handleCloseEditor}
         onSave={handleSaveEntry}
       />
-
+      
       <WriterProfile 
         isOpen={writerProfileOpen}
         onClose={() => setWriterProfileOpen(false)}
