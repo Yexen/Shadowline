@@ -11,10 +11,9 @@ export default function AuthPage() {
   const { writers, setActiveWriter, isLoaded } = useWriters();
 
   const handleHeadWriterAccess = () => {
-    // Wait for the user data to be loaded from storage
+    // This check is now mostly for robustness, the button's disabled state is the primary guard.
     if (!isLoaded) {
       console.log("Writer data not loaded yet, please wait a moment and try again.");
-      // Optionally, you could disable the button until isLoaded is true.
       return;
     }
 
