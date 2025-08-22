@@ -4,7 +4,6 @@
  * @fileOverview A Genkit flow for generating images using DALL-E.
  */
 import { ai } from '@/ai/genkit';
-import { dall_e3 } from 'genkit/openai';
 import { z } from 'zod';
 
 const generateImageFlow = ai.defineFlow(
@@ -15,7 +14,7 @@ const generateImageFlow = ai.defineFlow(
   },
   async (prompt) => {
     const { media } = await ai.generate({
-      model: dall_e3,
+      model: 'openai/dall-e-3',
       prompt,
     });
 

@@ -4,14 +4,23 @@
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { useBible } from '@/hooks/use-bible';
 
 // This is a placeholder for a real database lookup.
+// In a real app, this would be a database call.
 async function getFullBibleText() {
-    // In a real app, this would be a database call.
-    // For now, we'll just simulate getting all the text.
-    const { bibleData } = useBible();
-    return JSON.stringify(bibleData);
+    // This is a placeholder for actual data fetching.
+    // We can't use the hook directly, so we simulate getting data.
+    // This is NOT how you would do this in a real application.
+    return JSON.stringify([
+      { 
+          category: "Characters", 
+          items: [
+              { title: "The Joker", fields: [{ label: "Biography", value: "An agent of chaos with a twisted sense of humor, the Joker is Batman's archenemy, seeking to disrupt order in Gotham City through elaborate and deadly schemes." }] }, 
+              { title: "Catwoman", fields: [{ label: "Biography", value: "A complex figure in Gotham's underworld, Selina Kyle operates as Catwoman, a master thief with a moral code that sometimes aligns her with Batman." }] }
+          ] 
+      },
+      { category: "Locations", items: [ { title: "Arkham Asylum", fields: [ { label: "Purpose", value: "A psychiatric hospital that houses many of Batman's most dangerous foes." } ] } ] }
+    ]);
 }
 
 export const OracleChatMessageSchema = z.object({
