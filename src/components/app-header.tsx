@@ -14,7 +14,7 @@ import { SidebarTrigger } from "./ui/sidebar";
 import { BatLogo } from "./bat-logo";
 
 const pathToTitle: { [key: string]: string } = {
-    '/home': "Welcome, Writer",
+    '/home': "welcome Gothamite",
     '/search': "Universal Search",
     '/editor': "The Editor",
     '/drafts': "Unfinished Business",
