@@ -49,7 +49,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [newCategory, setNewCategory] = useState('');
   const [writerProfileOpen, setWriterProfileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [volumesOpen, setVolumesOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -81,10 +80,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { href: '/search', label: 'Search', icon: Search },
     { href: '/editor', label: 'Editor', icon: PenSquare },
     { href: '/drafts', label: 'Drafts', icon: FileText },
-    { href: '/ai-tools', label: 'AI Tools', icon: BrainCircuit },
+    { href: '/ai-tools', label: 'AI Tools', icon: Bot },
     { href: '/gallery', label: 'Gallery', icon: Images },
     { href: '/maps', label: 'Maps', icon: MapIcon },
     { href: '/organization', label: 'Organization', icon: ClipboardList },
+    { href: '/volumes', label: 'Volumes', icon: BookOpenCheck },
+    { href: '/bible', label: 'Bible', icon: BookCopy },
     { href: '/about', label: 'About', icon: Info },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];
@@ -159,10 +160,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 </SidebarMenuItem>
                 ))}
                  <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => setVolumesOpen(true)} tooltip={{ children: "Volumes", side: "right", align: "center" }}>
-                       <BookOpenCheck />
-                       <span>Volumes</span>
-                    </SidebarMenuButton>
+                    <Sheet>
+                        <SidebarMenuButton asChild tooltip={{ children: "Volumes", side: "right", align: "center" }}>
+                            <SheetTrigger asChild>
+                                 <button className="flex w-full items-center gap-2">
+                                    <BookOpenCheck />
+                                    <span>Volumes</span>
+                                 </button>
+                             </SheetTrigger>
+                        </SidebarMenuButton>
+                        <VolumesSidebar isOpen={true} onClose={() => {}} />
+                    </Sheet>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                     <Sheet>
@@ -222,7 +230,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         </SheetContent>
                     </Sheet>
                 </SidebarMenuItem>
-                {menuItems.slice(8).map((item) => (
+                {menuItems.slice(10).map((item) => (
                 <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                         onClick={() => router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href)}
@@ -284,12 +292,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
       />
-
-      <VolumesSidebar
-        isOpen={volumesOpen}
-        onClose={() => setVolumesOpen(false)}
-      />
-
     </SidebarProvider>
   );
 }
