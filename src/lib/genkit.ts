@@ -1,6 +1,6 @@
 
 import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/googleai';
+import {openai} from 'genkit/plugins/openai';
 import {config} from 'dotenv';
 
 config();
@@ -11,10 +11,9 @@ config();
 // the correct plugins can be added.
 export const ai = genkit({
   plugins: [
-    googleAI({
-      apiVersion: ['v1beta'],
-    }),
+    openai({
+        apiKey: process.env.OPENAI_API_KEY
+    })
   ],
-  logLevel: 'debug',
   enableTracingAndMetrics: true,
 });

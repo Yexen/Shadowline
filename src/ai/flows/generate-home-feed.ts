@@ -59,7 +59,7 @@ For all items, provide all fields as defined in the output schema.
 - Provide a 1-2 word AI hint for a relevant thumbnail image for each item.
 
 Return your response as a single JSON object matching the required schema.`,
-      model: 'googleai/gemini-1.5-flash-latest',
+      model: 'openai/gpt-4o',
       output: {
         schema: HomeFeedOutputSchema,
       },

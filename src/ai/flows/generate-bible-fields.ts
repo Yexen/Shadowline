@@ -46,7 +46,7 @@ Category: "${category}"
 Title: "${title}"
 
 Return your response as a valid JSON object with a single key "fields" which is an array of strings. For example: { "fields": ["Real Name", "Alias", "Abilities"] }`,
-      model: 'googleai/gemini-1.5-flash-latest',
+      model: 'openai/gpt-4o',
       output: {
         schema: GenerateBibleFieldsOutputSchema,
       },
