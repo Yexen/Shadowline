@@ -50,18 +50,26 @@ export function useWriters() {
             const storedWriters = localStorage.getItem(WRITERS_STORAGE_KEY);
             const storedActiveWriterId = localStorage.getItem(ACTIVE_WRITER_STORAGE_KEY);
 
-            const currentWriters = storedWriters ? JSON.parse(storedWriters) : defaultWriters;
-            setWriters(currentWriters);
-
-            const active = currentWriters.find((w: Writer) => w.id === storedActiveWriterId) || currentWriters[0];
-            setActiveWriter(active);
-            
-            if (!storedWriters) {
+            let currentWriters = defaultWriters;
+            if (storedWriters) {
+                currentWriters = JSON.parse(storedWriters);
+            } else {
+                // If no writers are stored, save the default ones. This is the fix.
                 localStorage.setItem(WRITERS_STORAGE_KEY, JSON.stringify(defaultWriters));
             }
-            if (!storedActiveWriterId && currentWriters.length > 0) {
-                localStorage.setItem(ACTIVE_WRITER_STORAGE_KEY, currentWriters[0].id);
+            setWriters(currentWriters);
+
+            let active = null;
+            if (storedActiveWriterId) {
+                active = currentWriters.find((w: Writer) => w.id === storedActiveWriterId);
             }
+            
+            // If no active writer is found or stored, default to the first one.
+            if (!active && currentWriters.length > 0) {
+                active = currentWriters[0];
+                localStorage.setItem(ACTIVE_WRITER_STORAGE_KEY, active.id);
+            }
+            setActiveWriter(active);
 
         } catch (error) {
             console.error("Failed to access localStorage for writers", error);
