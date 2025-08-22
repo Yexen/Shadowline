@@ -35,41 +35,39 @@ export function VolumesSidebar() {
         setEditingVolume(volume);
         setEditorOpen(true);
     };
-
-    const renderVolumeList = (volumeSet: Volume[], clickHandler: (volume: Volume) => void) => (
+    
+    // Unified list rendering function
+    const renderList = (volumeSet: Volume[], isOutline: boolean = false) => (
          <div className="w-full mt-4 flex-grow overflow-y-auto pr-2">
             {volumeSet.map((volume, index) => (
                 <div key={volume.id}>
-                    <div 
-                        className="cursor-pointer group py-3"
-                        onClick={() => clickHandler(volume)}
-                    >
-                        <h4 className="font-headline text-lg group-hover:text-primary transition-colors">{volume.title}</h4>
-                    </div>
+                    {isOutline ? (
+                        <OutlinePopover volume={volume}>
+                            <div className="cursor-pointer group py-3">
+                                <h4 className="font-headline text-lg group-hover:text-primary transition-colors">{volume.title}</h4>
+                            </div>
+                        </OutlinePopover>
+                    ) : (
+                         <div 
+                            className="cursor-pointer group py-3"
+                            onClick={() => handleEditVolume(volume)}
+                        >
+                            <h4 className="font-headline text-lg group-hover:text-primary transition-colors">{volume.title}</h4>
+                        </div>
+                    )}
                     {index < volumeSet.length - 1 && <Separator className="bg-border/50" />}
                 </div>
             ))}
-        </div>
-    );
-    
-    const renderOutlineList = () => (
-        <div className="w-full mt-4 flex-grow overflow-y-auto pr-2">
-            {volumes.slice(0, 6).map((volume, index) => (
-                <div key={volume.id}>
-                    <OutlinePopover volume={volume}>
+            {isOutline && (
+                 <>
+                    <Separator className="bg-border/50" />
+                    <OutlinePopover volume={{ id: 'all', title: 'All Volumes', chapters: [], overview: '', resources: [] }}>
                         <div className="cursor-pointer group py-3">
-                            <h4 className="font-headline text-lg group-hover:text-primary transition-colors">{volume.title}</h4>
-                        </div>
-                    </OutlinePopover>
-                    {index < volumes.slice(0, 6).length -1 && <Separator className="bg-border/50" />}
-                </div>
-            ))}
-             <Separator className="bg-border/50" />
-             <OutlinePopover volume={{ id: 'all', title: 'All Volumes', chapters: [], overview: '', resources: [] }}>
-                 <div className="cursor-pointer group py-3">
-                    <h4 className="font-headline text-lg group-hover:text-primary transition-colors">All Volumes</h4>
-                </div>
-            </OutlinePopover>
+                           <h4 className="font-headline text-lg group-hover:text-primary transition-colors">All Volumes</h4>
+                       </div>
+                   </OutlinePopover>
+                </>
+            )}
         </div>
     );
 
@@ -101,10 +99,10 @@ export function VolumesSidebar() {
                             <TabsTrigger value="outlines"><BookOpen className="mr-2"/> Outlines</TabsTrigger>
                         </TabsList>
                         <TabsContent value="volumes" className="flex-grow flex flex-col overflow-y-auto">
-                            {renderVolumeList(volumes.slice(0, 6), handleEditVolume)}
+                           {renderList(volumes.slice(0, 6))}
                         </TabsContent>
                         <TabsContent value="outlines" className="flex-grow flex flex-col overflow-y-auto">
-                             {renderOutlineList()}
+                            {renderList(volumes.slice(0, 6), true)}
                         </TabsContent>
                     </Tabs>
                     )}
