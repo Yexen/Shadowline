@@ -52,6 +52,34 @@ const defaultVolumesData: Volume[] = [
     ],
     resources: []
   },
+  {
+    id: 'volume-3',
+    title: 'The Long Halloween',
+    description: 'A year-long mystery hunting the holiday-themed killer, Holiday.',
+    chapters: [],
+    resources: []
+  },
+  {
+    id: 'volume-4',
+    title: 'Hush',
+    description: 'A mysterious new villain manipulates Batman\'s entire rogue\'s gallery against him.',
+    chapters: [],
+    resources: []
+  },
+  {
+    id: 'volume-5',
+    title: 'No Man\'s Land',
+    description: 'After a cataclysmic earthquake, Gotham is abandoned by the U.S. government.',
+    chapters: [],
+    resources: []
+  },
+  {
+    id: 'volume-6',
+    title: 'The Killing Joke',
+    description: 'The definitive Joker origin story and a brutal attack on the Bat-family.',
+    chapters: [],
+    resources: []
+  },
 ];
 
 export function useVolumes() {
@@ -62,7 +90,16 @@ export function useVolumes() {
     try {
       const storedData = localStorage.getItem(VOLUMES_STORAGE_KEY);
       if (storedData) {
-        setVolumes(JSON.parse(storedData));
+        const parsed = JSON.parse(storedData)
+        // Ensure at least 6 volumes exist for the UI
+        if(parsed.length < 6) {
+          const missing = defaultVolumesData.slice(parsed.length);
+          const updated = [...parsed, ...missing];
+          setVolumes(updated);
+          localStorage.setItem(VOLUMES_STORAGE_KEY, JSON.stringify(updated));
+        } else {
+           setVolumes(parsed);
+        }
       } else {
         setVolumes(defaultVolumesData);
         localStorage.setItem(VOLUMES_STORAGE_KEY, JSON.stringify(defaultVolumesData));
