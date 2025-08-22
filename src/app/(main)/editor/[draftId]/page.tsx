@@ -24,7 +24,7 @@ import { useDrafts, type Draft } from '@/hooks/use-drafts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useGallery } from '@/hooks/use-gallery';
 import { useWriters } from '@/hooks/use-writers';
-import { useVolumes } from '@/hooks/use-volumes';
+
 
 export default function EditorPage() {
   const params = useParams();
@@ -45,9 +45,6 @@ export default function EditorPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
   
-  const { addChapterToVolume, volumes } = useVolumes();
-  const [saveToVolumeOpen, setSaveToVolumeOpen] = useState(false);
-  const [selectedVolume, setSelectedVolume] = useState('');
 
 
   useEffect(() => {
@@ -110,27 +107,7 @@ export default function EditorPage() {
     URL.revokeObjectURL(url);
   };
 
-  const handleSaveToVolume = () => {
-    if (selectedVolume && currentDraft) {
-      addChapterToVolume(selectedVolume, {
-        id: `chapter-${Date.now()}`,
-        title: currentDraft.title,
-        content: currentDraft.content,
-        status: 'draft',
-      });
-      toast({
-        title: 'Chapter Added',
-        description: `"${currentDraft.title}" has been added to the selected volume.`,
-      });
-      setSaveToVolumeOpen(false);
-    } else {
-       toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: `Please select a volume.`,
-      });
-    }
-  };
+
 
   return (
     <div className="flex flex-col h-[calc(100vh-14rem)]">
@@ -152,40 +129,6 @@ export default function EditorPage() {
                 Ask Oracle
             </Button>
           
-          <Dialog open={saveToVolumeOpen} onOpenChange={setSaveToVolumeOpen}>
-            <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" disabled={draftId === 'new'}>
-                    <Library />
-                    Save to Volume
-                </Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Add Draft to Volume</DialogTitle>
-                    <DialogDescription>
-                        Select a volume to add this draft as a new chapter.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="py-4">
-                    <Select onValueChange={setSelectedVolume} value={selectedVolume}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select a volume..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {volumes.map(volume => (
-                                <SelectItem key={volume.id} value={volume.id}>{volume.title}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => setSaveToVolumeOpen(false)}>Cancel</Button>
-                    <Button onClick={handleSaveToVolume}>
-                        <BookPlus className="mr-2"/> Add Chapter
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-          </Dialog>
 
           <Button variant="ghost" size="sm" onClick={() => setShowPreview(!showPreview)}>
             {showPreview ? <EyeOff /> : <Eye />}

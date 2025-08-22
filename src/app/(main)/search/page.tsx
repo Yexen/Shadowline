@@ -14,16 +14,16 @@ import { useBible, BibleEntry } from '@/hooks/use-bible';
 import { useDrafts } from '@/hooks/use-drafts';
 import { useGallery } from '@/hooks/use-gallery';
 import { useModalStore } from '@/hooks/use-modal-store';
-import { useVolumes } from '@/hooks/use-volumes';
 
-type SearchScope = 'all' | 'drafts' | 'bible' | 'gallery' | 'volumes';
+
+type SearchScope = 'all' | 'drafts' | 'bible' | 'gallery';
 
 interface SearchResult {
     id: string;
     title: string;
     snippet: string;
     source: string;
-    sourceType: 'draft' | 'bible' | 'gallery' | 'volume' | 'chapter';
+    sourceType: 'draft' | 'bible' | 'gallery';
     url: string;
     data?: any;
 }
@@ -37,7 +37,6 @@ export default function SearchPage() {
     const { bibleData } = useBible();
     const { drafts } = useDrafts();
     const { folders } = useGallery();
-    const { volumes } = useVolumes();
     const { openModal } = useModalStore();
     
     const searchOptions = useMemo(() => {
@@ -46,7 +45,6 @@ export default function SearchPage() {
             { id: 'drafts', label: 'Drafts', icon: FileText },
             { id: 'bible', label: 'Bible', icon: BookOpen },
             { id: 'gallery', label: 'Gallery', icon: ImageIcon },
-            { id: 'volumes', label: 'Volumes', icon: Library },
         ];
     }, []);
 
@@ -112,39 +110,10 @@ export default function SearchPage() {
                 })
             })
         }
-
-        // Search Volumes & Chapters
-        if (scope === 'all' || scope === 'volumes') {
-            volumes.forEach(volume => {
-                 if (volume.title.toLowerCase().includes(lowerCaseQuery)) {
-                    newResults.push({
-                        id: `volume-${volume.id}`,
-                        title: volume.title,
-                        snippet: volume.description?.substring(0, 150) + '...' || `A collection of ${volume.chapters.length} chapters.`,
-                        source: 'Volume',
-                        sourceType: 'volume',
-                        url: '#', // Volumes are not directly navigable
-                    });
-                }
-                volume.chapters.forEach(chapter => {
-                    if (chapter.title.toLowerCase().includes(lowerCaseQuery) || chapter.content.toLowerCase().includes(lowerCaseQuery)) {
-                        newResults.push({
-                            id: `chapter-${volume.id}-${chapter.id}`,
-                            title: chapter.title,
-                            snippet: chapter.content.substring(0, 150) + '...',
-                            source: `Volume: ${volume.title}`,
-                            sourceType: 'chapter',
-                            url: '#',
-                            data: { chapter: { volumeId: volume.id, chapterId: chapter.id } }
-                        });
-                    }
-                });
-            })
-        }
         
         setResults(newResults);
 
-    }, [query, scope, bibleData, drafts, folders, volumes]);
+    }, [query, scope, bibleData, drafts, folders]);
     
     const handleResultClick = (result: SearchResult) => {
         if (result.url !== '#') {
@@ -152,8 +121,6 @@ export default function SearchPage() {
         } else if (result.data) {
             if (result.sourceType === 'bible') {
                 openModal('bible', result.data.bible);
-            } else if (result.sourceType === 'chapter') {
-                openModal('chapter', result.data.chapter);
             }
         }
     }

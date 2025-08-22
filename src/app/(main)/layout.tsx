@@ -31,9 +31,7 @@ import { WriterProfile } from '@/components/writer-profile';
 import { SettingsDialog } from '@/components/settings-dialog';
 import { PlusCircle } from 'lucide-react';
 import { useModalStore } from '@/hooks/use-modal-store';
-import { VolumesSidebar } from '@/components/volumes-sidebar';
-import { useVolumes } from '@/hooks/use-volumes';
-import { ChapterEditor } from '@/components/chapter-editor';
+
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -48,16 +46,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [writerProfileOpen, setWriterProfileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const { volumes, updateChapter } = useVolumes();
-  const [editingChapter, setEditingChapter] = useState<{ volumeId: string; chapter: any } | null>(null);
 
 
   useEffect(() => {
     if (modalType === 'bible' && modalData?.bible) {
       setEditingEntry(modalData.bible);
-    }
-    if (modalType === 'chapter' && modalData?.chapter) {
-      setEditingChapter(modalData.chapter);
     }
   }, [modalType, modalData]);
 
@@ -97,11 +90,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     closeModal();
   }
 
-  const handleSaveChapter = (volumeId: string, chapter: any) => {
-    updateChapter(volumeId, chapter.id, chapter);
-    closeModal();
-    setEditingChapter(null);
-  }
   
   return (
     <SidebarProvider>
@@ -189,10 +177,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </Sheet>
                 </SidebarMenuItem>
                 
-                <SidebarMenuItem>
-                    <VolumesSidebar />
-                </SidebarMenuItem>
-
                 {menuItems.filter(i => !['/ai-tools', '/nyxen'].includes(i.href)).slice(7).map((item) => (
                 <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
@@ -247,15 +231,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
       />
-       {modalType === 'chapter' && editingChapter && (
-        <ChapterEditor
-            isOpen={true}
-            onClose={() => { setEditingChapter(null); closeModal(); }}
-            onSave={handleSaveChapter}
-            volumeId={editingChapter.volumeId}
-            chapter={editingChapter.chapter}
-        />
-       )}
     </SidebarProvider>
   );
 }
