@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Image from "next/image";
@@ -23,6 +22,7 @@ const pathToTitle: { [key: string]: string } = {
     '/gallery': "Visual Archives",
     '/maps': "Cartography",
     '/organization': "Mission Control",
+    '/sources': "Intel",
     '/about': "Project Intel",
     '/nyxen': "Nyxen Chat"
 };
