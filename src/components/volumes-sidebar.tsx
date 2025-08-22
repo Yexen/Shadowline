@@ -4,146 +4,54 @@
 import { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { SidebarMenuButton } from '@/components/ui/sidebar';
-import { Library, FolderPlus, MoreHorizontal, Pencil, Trash2, FileText, CheckCircle, Clock, BookCopy, BookOpen } from 'lucide-react';
+import { Library, FolderPlus, MoreHorizontal, Pencil, Trash2, FileText, CheckCircle, Clock, BookCopy, BookOpen, Book } from 'lucide-react';
 import { useVolumes, Volume } from '@/hooks/use-volumes';
 import { Skeleton } from './ui/skeleton';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { Button } from './ui/button';
 import { VolumeEditor } from './volume-editor';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
-import { useModalStore } from '@/hooks/use-modal-store';
-import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 const romanNumerals = ["I", "II", "III", "IV", "V", "VI"];
 
 export function VolumesSidebar() {
-    const { isLoaded, volumes, addVolume, updateVolume, deleteVolume, deleteChapter } = useVolumes();
+    const { isLoaded, volumes, addVolume, updateVolume, deleteVolume, getChapter, updateChapter, addChapterToVolume, deleteChapter } = useVolumes();
     const [isEditorOpen, setEditorOpen] = useState(false);
     const [editingVolume, setEditingVolume] = useState<Volume | null>(null);
-    const { openModal } = useModalStore();
 
     const handleSaveVolume = (volumeData: Partial<Volume>) => {
-        if (editingVolume) {
-            updateVolume(editingVolume.id, volumeData.title!, volumeData.description!);
+        if (volumeData.id) {
+            updateVolume(volumeData.id, volumeData.title!, volumeData.description!, volumeData.imageUrl);
         } else {
-            addVolume(volumeData.title!, volumeData.description!);
+            addVolume(volumeData.title!, volumeData.description!, volumeData.imageUrl);
         }
-        setEditingVolume(null);
+        // No need to close the editor, allow for continuous editing.
+        // Also refresh the specific volume being edited to see changes immediately.
+        setEditingVolume(v => v ? {...v, ...volumeData} : null);
     };
 
     const handleEditVolume = (volume: Volume) => {
         setEditingVolume(volume);
         setEditorOpen(true);
     };
-    
-    const handleAddNewVolume = () => {
-        setEditingVolume(null);
-        setEditorOpen(true);
-    };
-
-    const statusIcon = (status: string) => {
-        switch(status) {
-            case 'draft': return <Pencil className="h-3 w-3 text-muted-foreground" />;
-            case 'review': return <Clock className="h-3 w-3 text-yellow-500" />;
-            case 'final': return <CheckCircle className="h-3 w-3 text-green-500" />;
-            default: return null;
-        }
-    };
 
     const renderVolumeList = (volumeSet: Volume[]) => (
-         <Accordion type="multiple" className="w-full mt-2 flex-grow overflow-y-auto pr-2">
+         <div className="w-full mt-2 flex-grow overflow-y-auto pr-2 space-y-2">
             {volumeSet.map((volume, index) => (
-                <AccordionItem value={volume.id} key={volume.id}>
-                    <AccordionTrigger className="font-headline text-base hover:no-underline">
-                        <div className="flex items-center justify-between w-full group">
-                            <span>Volume {romanNumerals[index]}: {volume.title}</span>
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity pr-2">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
-                                            <MoreHorizontal />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
-                                        <DropdownMenuItem onClick={() => handleEditVolume(volume)}>
-                                            <Pencil className="mr-2"/> Edit Volume
-                                        </DropdownMenuItem>
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                                    <Trash2 className="mr-2 text-destructive"/> Delete Volume
-                                                </DropdownMenuItem>
-                                            </AlertDialogTrigger>
-                                             <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    This will permanently delete the volume "{volume.title}" and all its chapters.
-                                                </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => deleteVolume(volume.id)}>Delete</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
+                <div 
+                    key={volume.id}
+                    className="p-3 rounded-md hover:bg-accent cursor-pointer border flex justify-between items-center"
+                    onClick={() => handleEditVolume(volume)}
+                >
+                    <div className="flex items-center gap-3">
+                        <Book className="h-5 w-5 text-primary"/>
+                        <div>
+                            <h4 className="font-headline">{volume.title}</h4>
+                            <p className="text-xs text-muted-foreground">{volume.chapters.length} Chapters</p>
                         </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                        <ul className="space-y-1">
-                            {volume.chapters.length > 0 ? volume.chapters.map(chapter => (
-                                <li key={chapter.id} className="group flex items-center justify-between p-2 rounded-md hover:bg-accent cursor-pointer" onClick={() => openModal('chapter', { volumeId: volume.id, chapterId: chapter.id })}>
-                                    <div className="flex items-center gap-2">
-                                        <FileText className="h-4 w-4 text-muted-foreground" />
-                                        <div>
-                                            <h4 className="font-semibold">{chapter.title}</h4>
-                                            <div className="flex items-center gap-1.5">
-                                                {statusIcon(chapter.status)}
-                                                <span className="text-xs text-muted-foreground capitalize">{chapter.status}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
-                                                <Trash2 className="h-4 w-4 text-destructive"/>
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                            <AlertDialogTitle>Delete Chapter?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Permanently delete the chapter "{chapter.title}"?
-                                            </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => deleteChapter(volume.id, chapter.id)}>Delete</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </li>
-                            )) : <p className="text-sm text-muted-foreground text-center p-4">No chapters yet.</p>}
-                        </ul>
-                    </AccordionContent>
-                </AccordionItem>
+                    </div>
+                </div>
             ))}
-        </Accordion>
+        </div>
     );
 
     return (
@@ -165,6 +73,7 @@ export function VolumesSidebar() {
                         <div className="space-y-4 mt-4">
                             <Skeleton className="h-12 w-full" />
                             <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
                         </div>
                     ) : (
                     <Tabs defaultValue="volumes" className="flex-grow flex flex-col mt-4 min-h-0">
@@ -172,24 +81,16 @@ export function VolumesSidebar() {
                             <TabsTrigger value="volumes"><BookCopy className="mr-2"/> Volumes</TabsTrigger>
                             <TabsTrigger value="outlines"><BookOpen className="mr-2"/> Outlines</TabsTrigger>
                         </TabsList>
-                        <TabsContent value="volumes" className="flex-grow overflow-y-auto">
+                        <TabsContent value="volumes" className="flex-grow flex flex-col overflow-y-auto">
                             {renderVolumeList(volumes.slice(0, 6))}
                         </TabsContent>
                         <TabsContent value="outlines" className="flex-grow flex flex-col overflow-y-auto">
-                             <div className="flex-grow overflow-y-auto">
-                                {renderVolumeList(volumes.slice(0, 6))}
-                            </div>
-                            <div className="p-2 mt-auto">
-                                <Button variant="secondary" className="w-full">All Volumes</Button>
+                             <div className="flex-grow overflow-y-auto p-4 border rounded-md mt-2 text-center">
+                                <p className="text-muted-foreground">Outline view coming soon.</p>
                             </div>
                         </TabsContent>
                     </Tabs>
                     )}
-                    <div className="mt-auto border-t pt-4">
-                        <Button variant="outline" className="w-full" onClick={handleAddNewVolume}>
-                            <FolderPlus className="mr-2" /> Add New Volume
-                        </Button>
-                    </div>
                 </SheetContent>
             </Sheet>
 

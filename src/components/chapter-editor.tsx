@@ -10,67 +10,67 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { BookUp } from 'lucide-react';
+import { BookUp, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface ChapterEditorProps {
     isOpen: boolean;
     onClose: () => void;
+    onSave: (volumeId: string, chapter: Chapter) => void;
     volumeId: string;
-    chapterId: string;
+    chapter: Chapter | null; // Can be a new or existing chapter
 }
 
-export function ChapterEditor({ isOpen, onClose, volumeId, chapterId }: ChapterEditorProps) {
+export function ChapterEditor({ isOpen, onClose, onSave, volumeId, chapter }: ChapterEditorProps) {
     const { getChapter, updateChapter } = useVolumes();
     const { toast } = useToast();
     const router = useRouter();
 
-    const [chapter, setChapter] = useState<Chapter | null>(null);
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [status, setStatus] = useState<ChapterStatus>('draft');
+    const [isEditing, setIsEditing] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
-            const foundChapter = getChapter(volumeId, chapterId);
-            if (foundChapter) {
-                setChapter(foundChapter);
-                setTitle(foundChapter.title);
-                setContent(foundChapter.content);
-                setStatus(foundChapter.status);
-            }
+           if (chapter) {
+                setTitle(chapter.title);
+                setContent(chapter.content);
+                setStatus(chapter.status);
+                setIsEditing(true);
+           } else {
+                setTitle('New Chapter');
+                setContent('');
+                setStatus('draft');
+                setIsEditing(false);
+           }
         }
-    }, [isOpen, volumeId, chapterId, getChapter]);
+    }, [isOpen, chapter]);
 
     const handleSave = () => {
-        if (chapter) {
-            updateChapter(volumeId, chapter.id, { title, content, status });
-            toast({
-                title: 'Chapter Saved',
-                description: `Changes to "${title}" have been saved.`,
-            });
-            onClose();
-        }
+        const chapterData: Chapter = {
+            id: isEditing ? chapter!.id : `chapter-${Date.now()}`,
+            title,
+            content,
+            status,
+        };
+        onSave(volumeId, chapterData);
+        onClose();
+        toast({
+            title: `Chapter ${isEditing ? 'Saved' : 'Created'}`,
+            description: `Changes to "${title}" have been saved.`,
+        });
     };
-
-    const handleOpenInEditor = () => {
-        if (chapter) {
-            // This is a simplified approach. A more robust solution might involve
-            // creating a temporary draft or handling this state more carefully.
-            onClose();
-            router.push(`/editor/${chapter.id}?from=volume`); // A query param could signify its origin
-        }
-    }
-
-    if (!chapter) return null;
+    
+    if (!isOpen) return null;
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-2xl h-[80vh] flex flex-col">
                 <DialogHeader>
-                    <DialogTitle className="font-headline">Edit Chapter: {chapter.title}</DialogTitle>
+                    <DialogTitle className="font-headline">{isEditing ? `Edit Chapter: ${chapter?.title}` : 'Create New Chapter'}</DialogTitle>
                     <DialogDescription>
-                        Make changes to this chapter's content and status. For major edits, open in the main editor.
+                        Write your chapter content and set its status.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex-grow space-y-4 py-4 overflow-y-auto pr-4">
@@ -91,7 +91,7 @@ export function ChapterEditor({ isOpen, onClose, volumeId, chapterId }: ChapterE
                             className="flex-grow resize-none"
                         />
                     </div>
-                    <div className="space-y-2">
+                     <div className="space-y-2">
                         <Label htmlFor="chapter-status">Status</Label>
                         <Select value={status} onValueChange={(value: ChapterStatus) => setStatus(value)}>
                             <SelectTrigger id="chapter-status">
@@ -106,16 +106,13 @@ export function ChapterEditor({ isOpen, onClose, volumeId, chapterId }: ChapterE
                     </div>
                 </div>
                 <DialogFooter className="justify-between">
-                    <Button variant="outline" onClick={handleOpenInEditor}>
-                       <BookUp className="mr-2"/> Open in Full Editor
-                    </Button>
+                    <div></div>
                     <div className="flex gap-2">
                         <Button variant="outline" onClick={onClose}>Cancel</Button>
-                        <Button onClick={handleSave}>Save Changes</Button>
+                        <Button onClick={handleSave}><Save className="mr-2"/> Save Chapter</Button>
                     </div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     );
 }
-

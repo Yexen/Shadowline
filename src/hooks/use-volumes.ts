@@ -22,65 +22,22 @@ export interface Volume {
   id: string;
   title: string;
   description?: string;
+  imageUrl?: string;
   chapters: Chapter[];
   resources?: ResourcePage[];
 }
 
 const VOLUMES_STORAGE_KEY = 'gotham-volumes-data';
 
-const defaultVolumesData: Volume[] = [
-  {
-    id: 'volume-1',
-    title: 'The Court of Owls',
-    description: 'A secretive cabal that has controlled Gotham for centuries emerges from the shadows.',
-    chapters: [
-      { id: 'chapter-1-1', title: 'Whispers in the Walls', content: 'Bruce Wayne dismisses the Court of Owls as a myth...', status: 'final' },
-      { id: 'chapter-1-2', title: 'The Talon Strikes', content: 'A deadly assassin known as the Talon attacks Bruce Wayne...', status: 'review' },
-      { id: 'chapter-1-3', title: 'The Labyrinth', content: 'Trapped and drugged, Batman must navigate the Court\'s maze...', status: 'draft' },
-    ],
-    resources: [
-        { id: 'res-1-1', title: 'Court of Owls History', content: 'Founded in the 17th century...' },
-        { id: 'res-1-2', title: 'Talon Assassins', content: 'Undead warriors, highly skilled...' },
-    ]
-  },
-   {
-    id: 'volume-2',
-    title: 'City of Bane',
-    description: 'Bane takes control of Gotham City, forcing Batman into exile.',
-    chapters: [
-       { id: 'chapter-2-1', title: 'The Fall of Gotham', content: '...', status: 'draft' },
-    ],
-    resources: []
-  },
-  {
-    id: 'volume-3',
-    title: 'The Long Halloween',
-    description: 'A year-long mystery hunting the holiday-themed killer, Holiday.',
+const defaultVolumesData: Volume[] = Array.from({ length: 6 }, (_, i) => ({
+    id: `volume-${i + 1}`,
+    title: `Volume ${["I", "II", "III", "IV", "V", "VI"][i]}`,
+    description: `An overarching story arc, yet to be written.`,
+    imageUrl: '',
     chapters: [],
     resources: []
-  },
-  {
-    id: 'volume-4',
-    title: 'Hush',
-    description: 'A mysterious new villain manipulates Batman\'s entire rogue\'s gallery against him.',
-    chapters: [],
-    resources: []
-  },
-  {
-    id: 'volume-5',
-    title: 'No Man\'s Land',
-    description: 'After a cataclysmic earthquake, Gotham is abandoned by the U.S. government.',
-    chapters: [],
-    resources: []
-  },
-  {
-    id: 'volume-6',
-    title: 'The Killing Joke',
-    description: 'The definitive Joker origin story and a brutal attack on the Bat-family.',
-    chapters: [],
-    resources: []
-  },
-];
+}));
+
 
 export function useVolumes() {
   const [volumes, setVolumes] = useState<Volume[]>([]);
@@ -90,11 +47,20 @@ export function useVolumes() {
     try {
       const storedData = localStorage.getItem(VOLUMES_STORAGE_KEY);
       if (storedData) {
-        const parsed = JSON.parse(storedData)
+        const parsed = JSON.parse(storedData);
         // Ensure at least 6 volumes exist for the UI
-        if(parsed.length < 6) {
-          const missing = defaultVolumesData.slice(parsed.length);
-          const updated = [...parsed, ...missing];
+        if (parsed.length < 6) {
+          const missingCount = 6 - parsed.length;
+          const romanNumerals = ["I", "II", "III", "IV", "V", "VI"];
+          const newVolumes = Array.from({ length: missingCount }, (_, i) => ({
+             id: `volume-${parsed.length + i + 1}`,
+             title: `Volume ${romanNumerals[parsed.length + i]}`,
+             description: 'An overarching story arc, yet to be written.',
+             imageUrl: '',
+             chapters: [],
+             resources: []
+          }));
+          const updated = [...parsed, ...newVolumes];
           setVolumes(updated);
           localStorage.setItem(VOLUMES_STORAGE_KEY, JSON.stringify(updated));
         } else {
@@ -121,20 +87,21 @@ export function useVolumes() {
     }
   }, []);
 
-  const addVolume = (title: string, description: string) => {
+  const addVolume = (title: string, description: string, imageUrl?: string) => {
     const newVolume: Volume = {
       id: `volume-${Date.now()}`,
       title,
       description,
+      imageUrl,
       chapters: [],
       resources: [],
     };
     saveData([...volumes, newVolume]);
   };
 
-  const updateVolume = (volumeId: string, title: string, description: string) => {
+  const updateVolume = (volumeId: string, title: string, description?: string, imageUrl?: string) => {
     const newVolumes = volumes.map(v => 
-      v.id === volumeId ? { ...v, title, description } : v
+      v.id === volumeId ? { ...v, title, description, imageUrl } : v
     );
     saveData(newVolumes);
   };
