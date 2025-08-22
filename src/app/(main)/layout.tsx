@@ -16,7 +16,7 @@ import {
 import { BatLogo } from '@/components/bat-logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Home, PenSquare, BrainCircuit, Info, LogOut, FileText, Images, Settings, BookCopy, BookOpenCheck, ClipboardList, Map as MapIcon, Search, Library, Book } from 'lucide-react';
+import { Home, PenSquare, BrainCircuit, Info, LogOut, FileText, Images, Settings, BookCopy, BookOpenCheck, ClipboardList, Map as MapIcon, Search, Library, Book, MessageSquare } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -73,6 +73,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { href: '/ai-tools', label: 'AI Tools', icon: BrainCircuit },
     { href: '/maps', label: 'Maps', icon: MapIcon },
     { href: '/organization', label: 'Organization', icon: ClipboardList },
+    { href: '/messages', label: 'Messages', icon: MessageSquare },
     { href: '/sources', label: 'Sources', icon: Book },
     { href: '/about', label: 'About', icon: Info },
     { href: '/settings', label: 'Settings', icon: Settings, action: () => setSettingsOpen(true) },
@@ -120,7 +121,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </SidebarHeader>
         <SidebarContent>
             <SidebarMenu>
-                {menuItems.filter(i => !['/nyxen'].includes(i.href)).slice(0, 8).map((item) => (
+                {menuItems.filter(i => !['/nyxen'].includes(i.href)).slice(0, 9).map((item) => (
                 <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                         onClick={() => item.action ? item.action() : router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href)}
@@ -199,7 +200,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 
-                {menuItems.filter(i => !['/nyxen'].includes(i.href)).slice(8).map((item) => (
+                {menuItems.filter(i => !['/nyxen'].includes(i.href)).slice(9).map((item) => (
                 <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                         onClick={() => item.action ? item.action() : router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href)}
@@ -252,6 +253,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <SettingsDialog
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
+        onOpenUserManagement={() => setWriterProfileOpen(true)}
       />
 
       <VolumesSidebar open={volumesSidebarOpen} onOpenChange={setVolumesSidebarOpen} />

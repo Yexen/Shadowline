@@ -22,6 +22,7 @@ const pathToTitle: { [key: string]: string } = {
     '/gallery': "Visual Archives",
     '/maps': "Cartography",
     '/organization': "Mission Control",
+    '/messages': "Secure Comms",
     '/sources': "Intel",
     '/about': "Project Intel",
     '/nyxen': "Nyxen Chat"

@@ -127,9 +127,14 @@ export function useWriters() {
     saveData(updatedWriters);
   }
 
+  const deleteWriter = (writerId: string) => {
+    const updatedWriters = writers.filter(w => w.id !== writerId);
+    saveData(updatedWriters);
+  }
+
   const logout = () => {
     setActiveWriter(null);
   }
 
-  return { isLoaded, writers, activeWriter, setActiveWriter, addWriter, logout, updateWriterStatus, updateWriterRole };
+  return { isLoaded, writers, activeWriter, setActiveWriter, addWriter, logout, updateWriterStatus, updateWriterRole, deleteWriter };
 }

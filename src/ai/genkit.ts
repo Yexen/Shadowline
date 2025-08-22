@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview This file configures and initializes the Genkit AI instance.
@@ -5,12 +6,16 @@
  */
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
+import { openai } from 'genkit/openai';
+import { useAiProvider } from '@/hooks/use-ai-provider';
 
-// Statically initialize Genkit with the Google AI plugin.
-// This ensures server-side flows have access without relying on client-side hooks.
+// Statically initialize Genkit with all possible plugins.
+// The actual model used will be determined in each flow.
 export const ai = genkit({
-  plugins: [googleAI()],
+  plugins: [
+    googleAI(),
+    openai({
+      apiKey: process.env.OPENAI_API_KEY || useAiProvider.getState().openAiApiKey,
+    })
+  ],
 });
-
-// Define the default model for consistency across flows.
-const GEMINI_MODEL = 'googleai/gemini-1.5-flash';

@@ -1,16 +1,17 @@
 
 'use client';
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
-import { Input } from "./ui/input";
 import { useWriters, Writer, UserRole, UserStatus } from "@/hooks/use-writers";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { CheckCircle, Pencil, Plus, Trash2, User, X } from "lucide-react";
+import { CheckCircle, MessageSquare, Pencil, Plus, Trash2, User, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Badge } from "./ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
+import { useRouter } from "next/navigation";
 
 interface WriterProfileProps {
     isOpen: boolean;
@@ -18,8 +19,9 @@ interface WriterProfileProps {
 }
 
 export function WriterProfile({ isOpen, onClose }: WriterProfileProps) {
-    const { writers, activeWriter, updateWriterStatus, updateWriterRole } = useWriters();
+    const { writers, activeWriter, updateWriterStatus, updateWriterRole, deleteWriter } = useWriters();
     const { toast } = useToast();
+    const router = useRouter();
 
     const handleStatusChange = async (writerId: string, status: UserStatus) => {
         try {
@@ -55,15 +57,39 @@ export function WriterProfile({ isOpen, onClose }: WriterProfileProps) {
         }
     };
 
+    const handleDeleteWriter = async (writerId: string) => {
+        try {
+            await deleteWriter(writerId);
+            toast({
+                title: 'User Deleted',
+                description: 'The user has been removed from the system.',
+                variant: 'destructive'
+            });
+        } catch(error) {
+            console.error("Failed to delete user:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Could not delete user.',
+            });
+        }
+    }
+
+    const handleStartMessage = (writerId: string) => {
+        // Navigate to the messages page with a query param to start a new conversation
+        onClose();
+        router.push(`/messages?new=${writerId}`);
+    }
+
     const canManageUsers = activeWriter?.role === 'head-writer';
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-3xl">
                 <DialogHeader>
                     <DialogTitle className="font-headline">Manage Users</DialogTitle>
                     <DialogDescription>
-                        {canManageUsers ? "Approve, edit roles for, or reject user profiles." : "You do not have permission to manage users."}
+                        {canManageUsers ? "Approve, edit roles for, or remove user profiles." : "You do not have permission to manage users."}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -80,7 +106,7 @@ export function WriterProfile({ isOpen, onClose }: WriterProfileProps) {
                                     <p className="text-xs text-muted-foreground">{writer.email}</p>
                                 </div>
                                 {canManageUsers && writer.id !== activeWriter?.id ? (
-                                    <>
+                                    <div className="flex items-center gap-2">
                                         <Select value={writer.status} onValueChange={(value: UserStatus) => handleStatusChange(writer.id, value)}>
                                             <SelectTrigger className="w-[120px]">
                                                 <SelectValue placeholder="Status" />
@@ -101,7 +127,29 @@ export function WriterProfile({ isOpen, onClose }: WriterProfileProps) {
                                                 <SelectItem value="reader">Reader</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                    </>
+                                        <Button variant="ghost" size="icon" onClick={() => handleStartMessage(writer.id)}>
+                                            <MessageSquare className="h-4 w-4" />
+                                        </Button>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        This will permanently delete {writer.name}'s profile. This action cannot be undone.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteWriter(writer.id)}>Delete User</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
                                 ) : (
                                     <>
                                      <Badge variant={writer.status === 'approved' ? 'default' : 'secondary'}>{writer.status}</Badge>

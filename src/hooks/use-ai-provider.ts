@@ -4,23 +4,17 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-export type AiProvider = 'gemini' | 'openai';
-
 interface AiProviderState {
-  provider: AiProvider;
   openAiApiKey: string;
   isLoaded: boolean;
-  setProvider: (provider: AiProvider) => void;
   setOpenAiApiKey: (key: string) => void;
 }
 
 export const useAiProvider = create<AiProviderState>()(
   persist(
     (set) => ({
-      provider: 'gemini',
       openAiApiKey: '',
       isLoaded: false,
-      setProvider: (provider) => set({ provider }),
       setOpenAiApiKey: (key) => set({ openAiApiKey: key }),
     }),
     {

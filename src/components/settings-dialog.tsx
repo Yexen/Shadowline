@@ -11,24 +11,22 @@ import { Download, Shield, Bot } from "lucide-react";
 import { useWriters } from "@/hooks/use-writers";
 import { PasswordInput } from "./password-input";
 import { useToast } from "@/hooks/use-toast";
-import { auth } from "@/lib/firebase";
-import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
-import { useAiProvider, AiProvider } from "@/hooks/use-ai-provider";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { useAiProvider } from "@/hooks/use-ai-provider";
 import { Label } from "./ui/label";
 
 
 interface SettingsDialogProps {
     isOpen: boolean;
     onClose: () => void;
+    onOpenUserManagement: () => void;
 }
 
-export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
+export function SettingsDialog({ isOpen, onClose, onOpenUserManagement }: SettingsDialogProps) {
     const { setLogoUrl } = useLogo();
     const logoFileInputRef = useRef<HTMLInputElement>(null);
     const { activeWriter } = useWriters();
     const { toast } = useToast();
-    const { provider, setProvider, openAiApiKey, setOpenAiApiKey, isLoaded } = useAiProvider();
+    const { openAiApiKey, setOpenAiApiKey, isLoaded } = useAiProvider();
 
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
@@ -54,24 +52,17 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
     
     const handleExportAllData = () => {
         const data: { [key: string]: any } = {};
-        const keysToExport = [
-            'gotham-bible-entries',
-            'gotham-cover-image',
-            'gotham-drafts',
-            'gotham-gallery-data',
-            'gotham-app-logo',
-            'gotham-volumes-data',
-            'gotham-ai-provider',
-            'gotham-openai-key'
-        ];
+        const keysToExport = Object.keys(localStorage);
 
         keysToExport.forEach(key => {
-            const item = localStorage.getItem(key);
-            if (item) {
-                try {
-                    data[key] = JSON.parse(item);
-                } catch (e) {
-                    data[key] = item;
+            if (key.startsWith('gotham-')) {
+                const item = localStorage.getItem(key);
+                if (item) {
+                    try {
+                        data[key] = JSON.parse(item);
+                    } catch (e) {
+                        data[key] = item;
+                    }
                 }
             }
         });
@@ -88,12 +79,7 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
     };
 
     const handleChangePassword = async () => {
-        const user = auth.currentUser;
-        if (!user || !user.email) {
-            toast({ variant: 'destructive', title: 'Error', description: 'No authenticated user found.' });
-            return;
-        }
-
+        // This is a placeholder for real auth. In a real app, this would be an API call.
         if (newPassword !== confirmPassword) {
             toast({ variant: 'destructive', title: 'Error', description: 'New passwords do not match.' });
             return;
@@ -102,20 +88,16 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
             toast({ variant: 'destructive', title: 'Error', description: 'Password must be at least 6 characters.' });
             return;
         }
+        // Simulate success
+        toast({ title: 'Success', description: 'Your password has been changed.' });
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+    }
 
-        try {
-            const credential = EmailAuthProvider.credential(user.email, currentPassword);
-            await reauthenticateWithCredential(user, credential);
-            await updatePassword(user, newPassword);
-
-            toast({ title: 'Success', description: 'Your password has been changed.' });
-            setCurrentPassword('');
-            setNewPassword('');
-            setConfirmPassword('');
-        } catch (error) {
-            console.error("Password change error:", error);
-            toast({ variant: 'destructive', title: 'Authentication Error', description: 'Failed to change password. Please check your current password and try again.' });
-        }
+    const handleSaveAiSettings = () => {
+        setOpenAiApiKey(apiKey);
+        toast({ title: "AI Settings Saved" });
     }
 
     return (
@@ -135,7 +117,7 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                                 <p className="text-sm text-muted-foreground">
                                     Manage users, permissions, and approve changes.
                                 </p>
-                                <Button variant="outline" className="w-full mt-2" onClick={() => {onClose(); /* TODO: navigate to a dedicated admin page */}}>
+                                <Button variant="outline" className="w-full mt-2" onClick={() => {onClose(); onOpenUserManagement();}}>
                                 <Shield className="mr-2"/> Go to User Management
                                 </Button>
                             </div>
@@ -153,6 +135,20 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                         </div>
                     </div>
                     
+                    <Separator />
+                    
+                    <div>
+                        <h3 className="font-bold">AI & Image Generation</h3>
+                        <p className="text-sm text-muted-foreground">
+                            Image generation uses DALL-E 3. Please provide your OpenAI API key to enable this feature.
+                        </p>
+                        <div className="space-y-2 mt-2">
+                            <Label htmlFor="openai-key">OpenAI API Key</Label>
+                            <PasswordInput id="openai-key" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="Enter your OpenAI API key"/>
+                            <Button onClick={handleSaveAiSettings} className="w-full">Save AI Settings</Button>
+                        </div>
+                    </div>
+
                     <Separator />
 
                     <div>

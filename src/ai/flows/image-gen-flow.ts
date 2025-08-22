@@ -1,9 +1,10 @@
 
 'use server';
 /**
- * @fileOverview A Genkit flow for generating images.
+ * @fileOverview A Genkit flow for generating images using DALL-E.
  */
-import { ai } from '@/ai/genkit';
+import { generate } from 'genkit/ai';
+import { dall_e3 } from 'genkit/openai';
 import { z } from 'zod';
 
 const generateImageFlow = ai.defineFlow(
@@ -13,12 +14,9 @@ const generateImageFlow = ai.defineFlow(
     outputSchema: z.string().describe('The data URI of the generated image.'),
   },
   async (prompt) => {
-    const { media } = await ai.generate({
-      model: 'googleai/gemini-2.0-flash-preview-image-generation',
+    const { media } = await generate({
+      model: dall_e3,
       prompt,
-      config: {
-        responseModalities: ['TEXT', 'IMAGE'],
-      },
     });
 
     return media?.url || 'No image could be generated.';
