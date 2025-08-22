@@ -174,6 +174,7 @@ export function VolumeEditor({ volume, onSave, onClose, onDeleteChapter, onAddCh
                             <PopoverContent className="w-48 p-2">
                                 <Button variant="ghost" className="w-full justify-start" onClick={() => handleExportChapter(chapter, 'md')}>Markdown (.md)</Button>
                                 <Button variant="ghost" className="w-full justify-start" onClick={() => handleExportChapter(chapter, 'txt')}>Text (.txt)</Button>
+                                <Button variant="ghost" className="w-full justify-start" disabled>PDF (.pdf)</Button>
                             </PopoverContent>
                         </Popover>
                         <AlertDialog>
