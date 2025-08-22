@@ -32,6 +32,7 @@ import { WriterProfile } from '@/components/writer-profile';
 import { SettingsDialog } from '@/components/settings-dialog';
 import { VolumesSidebar } from '@/components/volumes-sidebar';
 import { PlusCircle } from 'lucide-react';
+import { useModalStore } from '@/hooks/use-modal-store';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -41,11 +42,20 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const { isLoaded: bibleLoaded, bibleData, addCategory, addOrUpdateEntry } = useBible();
   const { writers, activeWriter, isLoaded: writersLoaded } = useWriters();
 
+  const { modalType, modalData, closeModal } = useModalStore();
+  const isBibleModalOpen = modalType === 'bible' && !!modalData?.bible;
+  
   const [editingEntry, setEditingEntry] = useState<{ category: string; entry: BibleEntry } | null>(null);
   const [newCategory, setNewCategory] = useState('');
   const [writerProfileOpen, setWriterProfileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [volumesOpen, setVolumesOpen] = useState(false);
+  
+  useEffect(() => {
+    if(isBibleModalOpen) {
+        setEditingEntry(modalData.bible);
+    }
+  }, [isBibleModalOpen, modalData?.bible])
 
 
   useEffect(() => {
@@ -84,6 +94,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const handleSaveEntry = (category: string, entry: BibleEntry) => {
     addOrUpdateEntry(category, entry, editingEntry?.entry.title);
     setEditingEntry(null);
+    closeModal();
   }
 
   const handleAddNewEntry = (category: string) => {
@@ -95,6 +106,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         addCategory(newCategory.trim());
         setNewCategory('');
     }
+  }
+
+  const handleCloseEditor = () => {
+    setEditingEntry(null);
+    closeModal();
   }
 
 
@@ -237,7 +253,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <BibleEditor 
         entry={editingEntry?.entry ?? null}
         category={editingEntry?.category ?? ''}
-        onClose={() => setEditingEntry(null)}
+        onClose={handleCloseEditor}
         onSave={handleSaveEntry}
       />
 

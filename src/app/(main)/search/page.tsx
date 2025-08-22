@@ -10,10 +10,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { FileText, BookOpen, Image as ImageIcon, Library, SearchIcon, Globe } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-import { useBible } from '@/hooks/use-bible';
+import { useBible, BibleEntry } from '@/hooks/use-bible';
 import { useDrafts } from '@/hooks/use-drafts';
-import { useVolumes } from '@/hooks/use-volumes';
+import { useVolumes, Chapter } from '@/hooks/use-volumes';
 import { useGallery } from '@/hooks/use-gallery';
+import { useModalStore } from '@/hooks/use-modal-store';
 
 type SearchScope = 'all' | 'drafts' | 'bible' | 'gallery' | string; // string for volume IDs
 
@@ -24,6 +25,7 @@ interface SearchResult {
     source: string;
     sourceType: 'draft' | 'bible' | 'gallery' | 'volume';
     url: string;
+    data?: BibleEntry | { volumeId: string; chapter: Chapter };
 }
 
 export default function SearchPage() {
@@ -36,6 +38,7 @@ export default function SearchPage() {
     const { drafts } = useDrafts();
     const { volumes } = useVolumes();
     const { folders } = useGallery();
+    const { openModal } = useModalStore();
     
     const searchOptions = useMemo(() => {
         const options = [
@@ -95,7 +98,8 @@ export default function SearchPage() {
                             snippet: item.fields?.[0]?.value.substring(0, 150) + '...' || 'Bible Entry',
                             source: `Bible: ${category.category}`,
                             sourceType: 'bible',
-                            url: '#' // Bible entries open in a modal, no direct URL
+                            url: '#',
+                            data: { category: category.category, entry: item }
                         });
                     }
                 });
@@ -135,7 +139,8 @@ export default function SearchPage() {
                             snippet: chapter.content.replace(/<[^>]*>?/gm, '').substring(0, 150) + '...',
                             source: `Volume: ${volume.title}`,
                             sourceType: 'volume',
-                            url: '#' // Chapters also open in modals
+                            url: '#',
+                            data: { volumeId: volume.id, chapter: chapter }
                         });
                     }
                 });
@@ -147,10 +152,14 @@ export default function SearchPage() {
     }, [query, scope, bibleData, drafts, volumes, folders]);
     
     const handleResultClick = (result: SearchResult) => {
-        // For now, only direct navigation is supported. 
-        // Modal-based results will need more complex handling via a global state or context.
-        if(result.url !== '#') {
+        if (result.url !== '#') {
             router.push(result.url);
+        } else if (result.sourceType === 'bible' && result.data) {
+            const { category, entry } = result.data as { category: string; entry: BibleEntry };
+            openModal('bible', { category, entry });
+        } else if (result.sourceType === 'volume' && result.data) {
+            const { volumeId, chapter } = result.data as { volumeId: string; chapter: Chapter };
+            openModal('chapter', { volumeId, chapter });
         }
     }
 

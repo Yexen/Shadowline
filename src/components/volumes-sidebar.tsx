@@ -13,6 +13,7 @@ import { ChapterEditor } from './chapter-editor';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { ScrollArea } from './ui/scroll-area';
 import { VolumeEditor } from './volume-editor';
+import { useModalStore } from '@/hooks/use-modal-store';
 
 
 interface VolumesSidebarProps {
@@ -32,6 +33,15 @@ export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
   const [selectedVolume, setSelectedVolume] = useState<Volume | null>(null);
 
   const [openAccordions, setOpenAccordions] = useState<string[]>([]);
+  
+  const { modalType, modalData, closeModal } = useModalStore();
+  const isChapterModalOpen = modalType === 'chapter' && !!modalData?.chapter;
+
+  useEffect(() => {
+    if (isChapterModalOpen) {
+        handleEditChapter(modalData.chapter.volumeId, modalData.chapter.chapter);
+    }
+  }, [isChapterModalOpen, modalData?.chapter])
 
   // When volumes data is loaded, open the first volume by default
   useEffect(() => {
@@ -45,6 +55,7 @@ export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
         updateChapter(activeVolumeIdForChapter, chapter.id, chapter.title, chapter.content);
         setEditingChapter(null);
         setActiveVolumeIdForChapter('');
+        closeModal();
     }
   };
 
@@ -60,6 +71,12 @@ export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
   const handleEditChapter = (volumeId: string, chapter: Chapter) => {
     setActiveVolumeIdForChapter(volumeId);
     setEditingChapter(chapter);
+  }
+  
+  const handleCloseChapterEditor = () => {
+    setEditingChapter(null);
+    setActiveVolumeIdForChapter('');
+    closeModal();
   }
   
   const currentSelectedVolume = volumes.find(v => v.id === selectedVolume?.id) || null;
@@ -193,7 +210,7 @@ export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
         <ChapterEditor 
             chapter={editingChapter}
             onSave={handleSaveChapter}
-            onClose={() => setEditingChapter(null)}
+            onClose={handleCloseChapterEditor}
         />
       )}
 
