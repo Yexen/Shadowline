@@ -99,8 +99,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     closeModal();
   }
 
-  const handleSaveChapter = (volumeId: string, chapterId: string, content: string) => {
-    updateChapter(volumeId, chapterId, { content });
+  const handleSaveChapter = (volumeId: string, chapterId: string, title: string, content: string) => {
+    updateChapter(volumeId, chapterId, { title, content });
     closeModal();
     setEditingChapter(null);
   };

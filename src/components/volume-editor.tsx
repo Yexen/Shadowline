@@ -8,10 +8,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ImagePlus, Trash2, GripVertical, BookOpen, PlusCircle } from 'lucide-react';
+import { ImagePlus, Trash2, GripVertical, BookOpen, PlusCircle, Download } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { useModalStore } from '@/hooks/use-modal-store';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 
 interface VolumeEditorProps {
   volume: Volume | null;
@@ -67,11 +68,32 @@ export function VolumeEditor({ volume, onSave, onClose, onDeleteChapter, onAddCh
   const handleAddChapter = () => {
     if (currentVolume) {
         onAddChapter(currentVolume.id);
-        // We need to re-sync state after adding a chapter. A simple way is to refetch or just close and reopen.
-        // For a better UX, the useVolumes hook should return the updated volume or we should update local state.
-        // For now, let's assume the parent component will handle the state update.
     }
   }
+
+  const handleExport = (content: string, fileName: string, format: 'txt' | 'md') => {
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${fileName.replace(/\s+/g, '_')}.${format}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+  
+  const handleExportVolume = (format: 'txt' | 'md') => {
+    if (!currentVolume) return;
+    const volumeContent = currentVolume.chapters
+      .map(ch => `## ${ch.title}\n\n${ch.content}`)
+      .join('\n\n---\n\n');
+    handleExport(volumeContent, currentVolume.title, format);
+  };
+  
+  const handleExportChapter = (chapter: Chapter, format: 'txt' | 'md') => {
+    handleExport(chapter.content, chapter.title, format);
+  };
 
   if (!currentVolume) return null;
 
@@ -145,6 +167,15 @@ export function VolumeEditor({ volume, onSave, onClose, onDeleteChapter, onAddCh
                         <Button variant="ghost" size="sm" onClick={() => handleChapterClick(chapter.id)}>
                             <BookOpen className="mr-2" /> Open
                         </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">Export</Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <DropdownMenuItem onClick={() => handleExportChapter(chapter, 'md')}>Markdown (.md)</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleExportChapter(chapter, 'txt')}>Text (.txt)</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
@@ -175,9 +206,22 @@ export function VolumeEditor({ volume, onSave, onClose, onDeleteChapter, onAddCh
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSaveChanges}>Save Changes</Button>
+        <DialogFooter className="justify-between">
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline"><Download className="mr-2"/> Export Volume</Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => handleExportVolume('md')}>Markdown (.md)</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExportVolume('txt')}>Text (.txt)</DropdownMenuItem>
+                    <DropdownMenuItem disabled>PDF (.pdf)</DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onClose}>Cancel</Button>
+              <Button onClick={handleSaveChanges}>Save Changes</Button>
+            </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
