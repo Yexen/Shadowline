@@ -111,6 +111,19 @@
   }
 }
 
-[data-radix-scroll-area-viewport] {
+div[data-radix-scroll-area-viewport] > div {
     background-color: #000000 !important;
+}
+
+div[data-radix-scroll-area-viewport] > div > [data-radix-scroll-area-scrollbar] {
+    background-color: transparent;
+}
+[data-radix-scroll-area-thumb] {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 9999px;
+  transition: background-color 0.2s;
+}
+
+[data-radix-scroll-area-thumb]:hover {
+  background-color: rgba(255, 255, 255, 0.2) !important;
 }
