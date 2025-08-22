@@ -3,11 +3,21 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
+export type UserRole = 'head-writer' | 'writer' | 'reader';
+
+// TODO: Define this more robustly
+export type Permissions = {
+    readableSections: string[]; // e.g., ['/drafts', '/bible/Characters']
+}
+
 export interface Writer {
   id: string;
   name: string;
   avatarUrl: string;
   dataAiHint: string;
+  role: UserRole;
+  password?: string;
+  permissions?: Permissions;
 }
 
 const WRITERS_STORAGE_KEY = 'gotham-writers';
@@ -15,7 +25,14 @@ const ACTIVE_WRITER_STORAGE_KEY = 'gotham-active-writer';
 const DEFAULT_AVATAR = 'https://placehold.co/40x40.png';
 
 const defaultWriters: Writer[] = [
-    { id: 'writer-1', name: 'The Writer', avatarUrl: DEFAULT_AVATAR, dataAiHint: 'writer portrait' },
+    { 
+        id: 'writer-1', 
+        name: 'The Writer', 
+        avatarUrl: DEFAULT_AVATAR, 
+        dataAiHint: 'writer portrait',
+        role: 'head-writer',
+        password: 'Livfreya',
+    },
 ];
 
 export function useWriters() {
@@ -64,7 +81,10 @@ export function useWriters() {
             id: `writer-${Date.now()}`,
             name,
             avatarUrl: DEFAULT_AVATAR,
-            dataAiHint: 'writer portrait anonymous'
+            dataAiHint: 'writer portrait anonymous',
+            role: 'writer',
+            password: 'password', // Default password, should be changed
+            permissions: { readableSections: [] }
         };
         const newWriters = [...writers, newWriter];
         saveData(newWriters);
@@ -77,6 +97,15 @@ export function useWriters() {
             setActiveWriter(updatedWriter);
         }
     };
+    
+    const updateWriterPassword = (writerId: string, newPassword: string) => {
+        const newWriters = writers.map(w => w.id === writerId ? { ...w, password: newPassword } : w);
+        saveData(newWriters);
+         if(activeWriter?.id === writerId) {
+            setActiveWriter(newWriters.find(w => w.id === writerId) || null);
+        }
+    }
+
 
     const deleteWriter = (writerId: string) => {
         if (writers.length <= 1) return; // Cannot delete the last writer
@@ -104,7 +133,8 @@ export function useWriters() {
         writers, 
         activeWriter, 
         addWriter, 
-        updateWriter, 
+        updateWriter,
+        updateWriterPassword, 
         deleteWriter, 
         setActiveWriter: switchActiveWriter
     };

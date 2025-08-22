@@ -4,13 +4,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { BatLogo } from '@/components/bat-logo';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Terminal, Mail } from 'lucide-react';
-
-// In a real app, this would be handled by a proper auth system.
-const CORRECT_PASSWORD = 'Livfreya';
+import { Terminal } from 'lucide-react';
+import { useWriters } from '@/hooks/use-writers';
+import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/password-input';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -18,25 +17,35 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { writers, setActiveWriter, isLoaded } = useWriters();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Simulate network delay
     setTimeout(() => {
-      if (password === CORRECT_PASSWORD) {
-        try {
-          localStorage.setItem('isLoggedIn', 'true');
-          router.replace('/home');
-        } catch (e) {
-            setError('Local storage is unavailable. Please enable it in your browser settings.');
+        if (!isLoaded) {
+            setError('User database not loaded. Please try again.');
+            setIsLoading(false);
+            return;
         }
-      } else {
-        setError('ACCESS DENIED: INCORRECT PASSWORD');
-      }
-      setIsLoading(false);
+
+        const user = writers.find(w => w.name.toLowerCase() === email.toLowerCase());
+
+        if (user && user.password === password) {
+            try {
+                setActiveWriter(user.id);
+                localStorage.setItem('isLoggedIn', 'true');
+                router.replace('/home');
+            } catch (e) {
+                setError('Local storage is unavailable. Please enable it in your browser settings.');
+                setIsLoading(false);
+            }
+        } else {
+            setError('ACCESS DENIED: INCORRECT CREDENTIALS');
+            setIsLoading(false);
+        }
     }, 1000);
   };
 
@@ -55,17 +64,16 @@ export default function LoginPage() {
           <div className="space-y-4">
              <Input
               id="email"
-              type="email"
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="ENTER EMAIL"
+              placeholder="ENTER USERNAME"
               required
               className="text-center font-code tracking-widest h-12 text-lg"
-              aria-label="Email"
+              aria-label="Username"
             />
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="ENTER PASSWORD"
@@ -82,7 +90,7 @@ export default function LoginPage() {
                 </AlertDescription>
             </Alert>
           )}
-          <Button type="submit" className="w-full font-headline h-12 text-lg" disabled={isLoading}>
+          <Button type="submit" className="w-full font-headline h-12 text-lg" disabled={isLoading || !isLoaded}>
             {isLoading ? (
                 <div className="flex items-center gap-2">
                     <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

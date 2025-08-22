@@ -1,13 +1,16 @@
 
 'use client';
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { useLogo } from "@/hooks/use-logo";
 import { Separator } from "./ui/separator";
-import { Download } from "lucide-react";
+import { Download, Shield } from "lucide-react";
+import { useWriters } from "@/hooks/use-writers";
+import { PasswordInput } from "./password-input";
+import { useToast } from "@/hooks/use-toast";
 
 
 interface SettingsDialogProps {
@@ -18,6 +21,12 @@ interface SettingsDialogProps {
 export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
     const { setLogoUrl } = useLogo();
     const logoFileInputRef = useRef<HTMLInputElement>(null);
+    const { activeWriter, updateWriterPassword } = useWriters();
+    const { toast } = useToast();
+
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
 
     const handleLogoFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -65,6 +74,29 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
         URL.revokeObjectURL(url);
     };
 
+    const handleChangePassword = () => {
+        if (!activeWriter) return;
+
+        if (activeWriter.password !== currentPassword) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Current password is incorrect.' });
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            toast({ variant: 'destructive', title: 'Error', description: 'New passwords do not match.' });
+            return;
+        }
+        if (newPassword.length < 6) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Password must be at least 6 characters.' });
+            return;
+        }
+
+        updateWriterPassword(activeWriter.id, newPassword);
+        toast({ title: 'Success', description: 'Your password has been changed.' });
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+    }
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent>
@@ -75,6 +107,33 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
+                    {activeWriter?.role === 'head-writer' && (
+                         <>
+                            <div>
+                                <h3 className="font-bold">Head Writer's Console</h3>
+                                <p className="text-sm text-muted-foreground">
+                                    Manage users, permissions, and approve changes.
+                                </p>
+                                <Button variant="outline" className="w-full mt-2" disabled>
+                                <Shield className="mr-2"/> Go to Console (Coming Soon)
+                                </Button>
+                            </div>
+                            <Separator />
+                         </>
+                    )}
+
+                    <div>
+                        <h3 className="font-bold">Change Password</h3>
+                        <div className="space-y-2 mt-2">
+                             <PasswordInput placeholder="Current Password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} />
+                             <PasswordInput placeholder="New Password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                             <PasswordInput placeholder="Confirm New Password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+                             <Button onClick={handleChangePassword} className="w-full">Update Password</Button>
+                        </div>
+                    </div>
+                    
+                    <Separator />
+
                     <div>
                         <h3 className="font-bold">Change Logo</h3>
                         <p className="text-sm text-muted-foreground">
