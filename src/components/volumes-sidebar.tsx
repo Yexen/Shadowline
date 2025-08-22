@@ -62,7 +62,10 @@ export function VolumesSidebar() {
                     <div className="p-3 rounded-md hover:bg-accent cursor-pointer border flex justify-between items-center">
                         <div className="flex items-center gap-3">
                             <BookOpen className="h-5 w-5 text-primary"/>
-                             <h4 className="font-headline">{volume.title}</h4>
+                             <div>
+                                <h4 className="font-headline">{volume.title}</h4>
+                                <p className="text-xs text-muted-foreground">High-Level Plan</p>
+                            </div>
                         </div>
                     </div>
                 </OutlinePopover>
@@ -71,7 +74,10 @@ export function VolumesSidebar() {
                  <div className="p-3 rounded-md hover:bg-accent cursor-pointer border flex justify-between items-center mt-4 border-dashed">
                     <div className="flex items-center gap-3">
                         <BookOpen className="h-5 w-5 text-primary"/>
-                        <h4 className="font-headline">All Volumes</h4>
+                        <div>
+                            <h4 className="font-headline">All Volumes</h4>
+                            <p className="text-xs text-muted-foreground">Project-Wide View</p>
+                        </div>
                     </div>
                 </div>
             </OutlinePopover>
