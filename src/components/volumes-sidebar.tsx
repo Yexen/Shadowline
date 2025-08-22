@@ -53,7 +53,7 @@ export function VolumesSidebar() {
     );
     
     const renderOutlineList = () => (
-        <div className="w-full flex-grow overflow-y-auto pr-2">
+        <div className="w-full mt-4 flex-grow overflow-y-auto pr-2">
             {volumes.slice(0, 6).map((volume, index) => (
                 <div key={volume.id}>
                     <OutlinePopover volume={volume}>
@@ -64,7 +64,7 @@ export function VolumesSidebar() {
                     {index < volumes.slice(0, 6).length -1 && <Separator className="bg-border/50" />}
                 </div>
             ))}
-             <Separator className="my-3 bg-border/50" />
+             <Separator className="bg-border/50" />
              <OutlinePopover volume={{ id: 'all', title: 'All Volumes', chapters: [], overview: '', resources: [] }}>
                  <div className="cursor-pointer group py-3">
                     <h4 className="font-headline text-lg group-hover:text-primary transition-colors">All Volumes</h4>
