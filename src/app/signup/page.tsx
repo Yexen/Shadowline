@@ -10,8 +10,12 @@ import { Terminal, CheckCircle, UserPlus, BookUser } from 'lucide-react';
 import { useWriters, UserRole } from '@/hooks/use-writers';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/password-input';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth, db } from '@/lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 type SignUpStep = 'role' | 'form' | 'pending';
+const DEFAULT_AVATAR = 'https://placehold.co/40x40.png';
 
 export default function SignUpPage() {
   const [step, setStep] = useState<SignUpStep>('role');
@@ -23,14 +27,13 @@ export default function SignUpPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { addWriter, getWriterByEmail, isLoaded } = useWriters();
 
   const handleRoleSelect = (selectedRole: UserRole) => {
     setRole(selectedRole);
     setStep('form');
   };
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -43,21 +46,39 @@ export default function SignUpPage() {
       return;
     }
 
-    if (getWriterByEmail(email)) {
-        setError('An account with this email already exists.');
-        return;
-    }
-
     setIsLoading(true);
-    setTimeout(() => {
-      if (role) {
-        addWriter(name, email, role, password);
+    
+    try {
+        if (!role) throw new Error("Role not selected");
+
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Create a user profile document in Firestore
+        await setDoc(doc(db, 'users', user.uid), {
+            name: name,
+            email: email,
+            role: role,
+            status: 'pending',
+            avatarUrl: DEFAULT_AVATAR,
+            dataAiHint: 'writer portrait anonymous',
+        });
+
         setStep('pending');
-      } else {
-          setError('A user role must be selected.');
-      }
-      setIsLoading(false);
-    }, 1000);
+
+    } catch (error: any) {
+        if (error.code === 'auth/email-already-in-use') {
+            setError('An account with this email already exists.');
+        } else if (error.code === 'auth/invalid-email') {
+            setError('Please enter a valid email address.');
+        }
+        else {
+            setError('An unknown error occurred during sign up.');
+            console.error('Firebase sign up error:', error);
+        }
+    } finally {
+        setIsLoading(false);
+    }
   };
   
   const renderContent = () => {
@@ -108,7 +129,7 @@ export default function SignUpPage() {
                   <AlertDescription className="font-code text-sm">{error}</AlertDescription>
                 </Alert>
               )}
-              <Button type="submit" className="w-full font-headline h-12 text-lg" disabled={isLoading || !isLoaded}>
+              <Button type="submit" className="w-full font-headline h-12 text-lg" disabled={isLoading}>
                 {isLoading ? 'SUBMITTING...' : 'Request Access'}
               </Button>
                <Button variant="link" onClick={() => setStep('role')}>

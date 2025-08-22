@@ -2,161 +2,101 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { auth, db } from '@/lib/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { doc, getDoc, setDoc, onSnapshot, collection, getDocs, writeBatch } from 'firebase/firestore';
 
 export type UserRole = 'head-writer' | 'writer' | 'reader';
-export type UserStatus = 'approved' | 'pending';
-
-// TODO: Define this more robustly
-export type Permissions = {
-    readableSections: string[]; // e.g., ['/drafts', '/bible/Characters']
-}
+export type UserStatus = 'approved' | 'pending' | 'rejected';
 
 export interface Writer {
-  id: string;
+  id: string; // This will be the Firebase Auth UID
   name: string;
   email: string;
   avatarUrl: string;
   dataAiHint: string;
   role: UserRole;
   status: UserStatus;
-  password?: string;
-  permissions?: Permissions;
 }
 
-const WRITERS_STORAGE_KEY = 'gotham-writers';
-const ACTIVE_WRITER_STORAGE_KEY = 'gotham-active-writer';
 const DEFAULT_AVATAR = 'https://placehold.co/40x40.png';
-
-const defaultWriters: Writer[] = [
-    { 
-        id: 'writer-1', 
-        name: 'Yekta Jokar', 
-        email: 'yekta.kjs@gmail.com',
-        avatarUrl: DEFAULT_AVATAR, 
-        dataAiHint: 'writer portrait',
-        role: 'head-writer',
-        status: 'approved',
-        password: 'LivFreya',
-    },
-];
 
 export function useWriters() {
     const [writers, setWriters] = useState<Writer[]>([]);
     const [activeWriter, setActiveWriter] = useState<Writer | null>(null);
+    const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
 
+    // Listen for auth state changes
     useEffect(() => {
-        try {
-            const storedWriters = localStorage.getItem(WRITERS_STORAGE_KEY);
-            const storedActiveWriterId = localStorage.getItem(ACTIVE_WRITER_STORAGE_KEY);
-
-            let currentWriters = defaultWriters;
-            if (storedWriters) {
-                currentWriters = JSON.parse(storedWriters);
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            setFirebaseUser(user);
+            if (user) {
+                // User is signed in, fetch their profile
+                const userDocRef = doc(db, 'users', user.uid);
+                const userDocSnap = await getDoc(userDocRef);
+                if (userDocSnap.exists()) {
+                    setActiveWriter({ id: user.uid, ...userDocSnap.data() } as Writer);
+                } else {
+                    // This case might happen if the Firestore doc wasn't created properly
+                    setActiveWriter(null); 
+                }
             } else {
-                localStorage.setItem(WRITERS_STORAGE_KEY, JSON.stringify(defaultWriters));
+                // User is signed out
+                setActiveWriter(null);
             }
-            setWriters(currentWriters);
-
-            let active = null;
-            if (storedActiveWriterId) {
-                active = currentWriters.find((w: Writer) => w.id === storedActiveWriterId);
-            }
-            
-            if (!active && currentWriters.length > 0) {
-                active = currentWriters[0];
-                localStorage.setItem(ACTIVE_WRITER_STORAGE_KEY, active.id);
-            }
-            setActiveWriter(active);
-
-        } catch (error) {
-            console.error("Failed to access localStorage for writers", error);
-            setWriters(defaultWriters);
-            if (defaultWriters.length > 0) {
-                setActiveWriter(defaultWriters[0]);
-            }
-        } finally {
             setIsLoaded(true);
-        }
-    }, []);
+        });
 
-    const saveData = useCallback((newWriters: Writer[]) => {
-        try {
-            localStorage.setItem(WRITERS_STORAGE_KEY, JSON.stringify(newWriters));
-            setWriters(newWriters);
-        } catch (error) {
-            console.error("Failed to save writers to localStorage", error);
-        }
+        return () => unsubscribe();
     }, []);
-
-    const addWriter = (name: string, email: string, role: UserRole, password?: string) => {
-        const newWriter: Writer = {
-            id: `writer-${Date.now()}`,
-            name,
-            email,
-            avatarUrl: DEFAULT_AVATAR,
-            dataAiHint: 'writer portrait anonymous',
-            role,
-            status: 'pending',
-            password: password,
-            permissions: { readableSections: [] }
+    
+    // Listen for changes to all users (for head-writer)
+    useEffect(() => {
+        if (activeWriter?.role !== 'head-writer') {
+            setWriters(activeWriter ? [activeWriter] : []);
+            return;
         };
-        const newWriters = [...writers, newWriter];
-        saveData(newWriters);
-        return newWriter;
+
+        const usersCollectionRef = collection(db, 'users');
+        const unsubscribe = onSnapshot(usersCollectionRef, (snapshot) => {
+            const usersList = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as Writer));
+            setWriters(usersList);
+        });
+
+        return () => unsubscribe();
+    }, [activeWriter]);
+
+
+    const updateWriterStatus = async (writerId: string, status: UserStatus) => {
+        if (activeWriter?.role !== 'head-writer') return;
+        const userDocRef = doc(db, 'users', writerId);
+        await setDoc(userDocRef, { status }, { merge: true });
     };
 
-    const updateWriter = (writerId: string, updatedWriter: Writer) => {
-        const newWriters = writers.map(w => w.id === writerId ? updatedWriter : w);
-        saveData(newWriters);
-        if(activeWriter?.id === writerId) {
-            setActiveWriter(updatedWriter);
-        }
+    const updateWriterRole = async (writerId: string, role: UserRole) => {
+        if (activeWriter?.role !== 'head-writer') return;
+        const userDocRef = doc(db, 'users', writerId);
+        await setDoc(userDocRef, { role }, { merge: true });
     };
     
-    const updateWriterPassword = (writerId: string, newPassword: string) => {
-        const newWriters = writers.map(w => w.id === writerId ? { ...w, password: newPassword } : w);
-        saveData(newWriters);
-         if(activeWriter?.id === writerId) {
-            setActiveWriter(newWriters.find(w => w.id === writerId) || null);
-        }
+    const getWriterById = async (writerId: string) => {
+        const userDocRef = doc(db, 'users', writerId);
+        const userDocSnap = await getDoc(userDocRef);
+        return userDocSnap.exists() ? { id: userDocSnap.id, ...userDocSnap.data() } as Writer : null;
     }
 
-
-    const deleteWriter = (writerId: string) => {
-        if (writers.length <= 1) return; // Cannot delete the last writer
-        const newWriters = writers.filter(w => w.id !== writerId);
-        saveData(newWriters);
-        if (activeWriter?.id === writerId) {
-            switchActiveWriter(newWriters[0].id);
-        }
-    };
-    
-    const switchActiveWriter = (writerId: string) => {
-        const newActiveWriter = writers.find(w => w.id === writerId);
-        if (newActiveWriter) {
-            try {
-                localStorage.setItem(ACTIVE_WRITER_STORAGE_KEY, writerId);
-                setActiveWriter(newActiveWriter);
-            } catch (error) {
-                console.error("Failed to set active writer in localStorage", error);
-            }
-        }
-    };
-    
-    const getWriterByEmail = (email: string) => {
-        return writers.find(w => w && w.email && w.email.toLowerCase() === email.toLowerCase());
-    }
 
     return { 
         isLoaded, 
         writers, 
         activeWriter, 
-        addWriter, 
-        updateWriter,
-        updateWriterPassword, 
-        deleteWriter, 
-        setActiveWriter: switchActiveWriter,
-        getWriterByEmail
+        firebaseUser,
+        updateWriterStatus,
+        updateWriterRole,
+        getWriterById,
     };
 }

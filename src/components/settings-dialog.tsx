@@ -11,6 +11,8 @@ import { Download, Shield } from "lucide-react";
 import { useWriters } from "@/hooks/use-writers";
 import { PasswordInput } from "./password-input";
 import { useToast } from "@/hooks/use-toast";
+import { auth } from "@/lib/firebase";
+import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
 
 
 interface SettingsDialogProps {
@@ -21,7 +23,7 @@ interface SettingsDialogProps {
 export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
     const { setLogoUrl } = useLogo();
     const logoFileInputRef = useRef<HTMLInputElement>(null);
-    const { activeWriter, updateWriterPassword } = useWriters();
+    const { activeWriter } = useWriters();
     const { toast } = useToast();
 
     const [currentPassword, setCurrentPassword] = useState('');
@@ -47,8 +49,6 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
             'gotham-drafts',
             'gotham-gallery-data',
             'gotham-app-logo',
-            'gotham-writers',
-            'gotham-active-writer',
             'gotham-volumes-data',
         ];
 
@@ -74,13 +74,13 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
         URL.revokeObjectURL(url);
     };
 
-    const handleChangePassword = () => {
-        if (!activeWriter) return;
-
-        if (activeWriter.password !== currentPassword) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Current password is incorrect.' });
+    const handleChangePassword = async () => {
+        const user = auth.currentUser;
+        if (!user || !user.email) {
+            toast({ variant: 'destructive', title: 'Error', description: 'No authenticated user found.' });
             return;
         }
+
         if (newPassword !== confirmPassword) {
             toast({ variant: 'destructive', title: 'Error', description: 'New passwords do not match.' });
             return;
@@ -90,11 +90,19 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
             return;
         }
 
-        updateWriterPassword(activeWriter.id, newPassword);
-        toast({ title: 'Success', description: 'Your password has been changed.' });
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
+        try {
+            const credential = EmailAuthProvider.credential(user.email, currentPassword);
+            await reauthenticateWithCredential(user, credential);
+            await updatePassword(user, newPassword);
+
+            toast({ title: 'Success', description: 'Your password has been changed.' });
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+        } catch (error) {
+            console.error("Password change error:", error);
+            toast({ variant: 'destructive', title: 'Authentication Error', description: 'Failed to change password. Please check your current password and try again.' });
+        }
     }
 
     return (
@@ -114,8 +122,8 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                                 <p className="text-sm text-muted-foreground">
                                     Manage users, permissions, and approve changes.
                                 </p>
-                                <Button variant="outline" className="w-full mt-2" disabled>
-                                <Shield className="mr-2"/> Go to Console (Coming Soon)
+                                <Button variant="outline" className="w-full mt-2" onClick={() => {onClose(); /* TODO: navigate to a dedicated admin page */}}>
+                                <Shield className="mr-2"/> Go to User Management
                                 </Button>
                             </div>
                             <Separator />
@@ -125,9 +133,9 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                     <div>
                         <h3 className="font-bold">Change Password</h3>
                         <div className="space-y-2 mt-2">
-                             <PasswordInput placeholder="Current Password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} />
-                             <PasswordInput placeholder="New Password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
-                             <PasswordInput placeholder="Confirm New Password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+                             <PasswordInput placeholder="Current Password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} autoComplete="current-password" />
+                             <PasswordInput placeholder="New Password" value={newPassword} onChange={e => setNewPassword(e.target.value)} autoComplete="new-password"/>
+                             <PasswordInput placeholder="Confirm New Password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password"/>
                              <Button onClick={handleChangePassword} className="w-full">Update Password</Button>
                         </div>
                     </div>
@@ -157,8 +165,7 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
 
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button onClick={onClose}>Save</Button>
+                    <Button onClick={onClose}>Done</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

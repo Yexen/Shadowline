@@ -5,27 +5,35 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { BatLogo } from '@/components/bat-logo';
 import { useWriters } from '@/hooks/use-writers';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AuthPage() {
   const router = useRouter();
-  const { writers, setActiveWriter, isLoaded } = useWriters();
+  const { isLoaded } = useWriters();
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleHeadWriterAccess = () => {
-    const headWriter = writers.find(w => w.role === 'head-writer');
-    if (headWriter) {
-        try {
-            setActiveWriter(headWriter.id);
-            localStorage.setItem('isLoggedIn', 'true');
-            router.replace('/home');
-        } catch (e) {
-            console.error('Failed to set Head Writer session:', e);
-        }
-    } else {
-        console.error("Head Writer profile not found.");
-        // This can happen if the default data hasn't been set in local storage yet.
-        // A page refresh should typically solve this after the first load.
+  const handleHeadWriterAccess = async () => {
+    setIsLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, 'yekta.kjs@gmail.com', 'LivFreya');
+      // onAuthStateChanged in useWriters will handle the redirect and state update
+      router.replace('/home');
+    } catch (error: any) {
+      console.error('Head Writer login failed:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Head Writer Access Failed',
+        description: 'Could not sign in. Please check console for details.',
+      })
+    } finally {
+        setIsLoading(false);
     }
   };
+
 
   if (!isLoaded) {
     return (
@@ -58,8 +66,9 @@ export default function AuthPage() {
             onClick={handleHeadWriterAccess} 
             variant="destructive"
             className="w-full font-headline h-14 text-lg bg-primary/20 text-primary hover:bg-primary/30 border border-primary"
+            disabled={isLoading}
           >
-            Head Writer Access
+            {isLoading ? "ACCESSING..." : "Head Writer Access"}
           </Button>
           <div className="flex items-center gap-4">
              <Button 

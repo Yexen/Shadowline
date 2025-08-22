@@ -34,14 +34,14 @@ import { PlusCircle } from 'lucide-react';
 import { useModalStore } from '@/hooks/use-modal-store';
 import { useVolumes, type Chapter } from '@/hooks/use-volumes';
 import { ChapterEditor } from '@/components/chapter-editor';
+import { auth } from '@/lib/firebase';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [isClient, setIsClient] = useState(false);
 
   const { isLoaded: bibleLoaded, bibleData, addCategory, addOrUpdateEntry } = useBible();
-  const { writers, activeWriter, isLoaded: writersLoaded } = useWriters();
+  const { isLoaded: writersLoaded, activeWriter, firebaseUser } = useWriters();
   const { updateChapter } = useVolumes();
   const { modalType, modalData, closeModal } = useModalStore();
 
@@ -62,23 +62,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
 
   useEffect(() => {
-    setIsClient(true);
-    try {
-      const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
-      if (!loggedIn) {
-        router.replace('/auth');
-      }
-    } catch (e) {
+    if (writersLoaded && !firebaseUser) {
       router.replace('/auth');
     }
-  }, [router]);
+  }, [writersLoaded, firebaseUser, router]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     try {
-      localStorage.removeItem('isLoggedIn');
-      localStorage.removeItem('gotham-active-writer');
-    } finally {
+      await auth.signOut();
       router.replace('/auth');
+    } catch (e) {
+      console.error("Logout failed", e);
     }
   };
 
@@ -131,7 +125,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   }
 
 
-  if (!isClient || !writersLoaded || !activeWriter) {
+  if (!writersLoaded || !activeWriter) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">

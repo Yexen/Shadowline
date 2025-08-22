@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { BatLogo } from '@/components/bat-logo';
@@ -10,6 +10,9 @@ import { Terminal } from 'lucide-react';
 import { useWriters } from '@/hooks/use-writers';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/password-input';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth, db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -17,47 +20,54 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { writers, setActiveWriter, isLoaded, getWriterByEmail } = useWriters();
+  const { isLoaded, activeWriter } = useWriters();
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (isLoaded && activeWriter) {
+        router.replace('/home');
+    }
+  }, [isLoaded, activeWriter, router]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    setTimeout(() => {
-        if (!isLoaded) {
-            setError('User database not loaded. Please try again.');
-            setIsLoading(false);
-            return;
-        }
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
 
-        const user = getWriterByEmail(email);
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
 
-        if (user && user.password === password) {
-            if (user.status === 'pending') {
+        if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+            if (userData.status === 'pending') {
                 setError('ACCESS DENIED: Your account is pending approval.');
-                setIsLoading(false);
-                return;
-            }
-            try {
-                setActiveWriter(user.id);
-                localStorage.setItem('isLoggedIn', 'true');
-                router.replace('/home');
-            } catch (e) {
-                setError('Local storage is unavailable. Please enable it in your browser settings.');
-                setIsLoading(false);
+                await auth.signOut(); // Sign out the user
+            } else if (userData.status === 'rejected') {
+                 setError('ACCESS DENIED: Your account registration was rejected.');
+                 await auth.signOut();
+            } else {
+                // Success, onAuthStateChanged will handle redirect
             }
         } else {
-            setError('ACCESS DENIED: INCORRECT CREDENTIALS');
-            setIsLoading(false);
+             setError('ACCESS DENIED: User profile not found in database.');
+             await auth.signOut();
         }
-    }, 1000);
+
+    } catch (error: any) {
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+            setError('ACCESS DENIED: INCORRECT CREDENTIALS');
+        } else {
+            setError('An unknown error occurred. Please try again.');
+            console.error('Firebase login error:', error);
+        }
+    } finally {
+        setIsLoading(false);
+    }
   };
   
-  const isPasswordCorrect = useMemo(() => {
-    const user = getWriterByEmail(email);
-    return !!user && user.password === password;
-  }, [email, password, getWriterByEmail]);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-8">
@@ -81,6 +91,7 @@ export default function LoginPage() {
               required
               className="text-center font-code tracking-widest h-12 text-lg"
               aria-label="Email"
+              autoComplete="email"
             />
             <PasswordInput
               id="password"
@@ -90,7 +101,7 @@ export default function LoginPage() {
               required
               className="text-center font-code tracking-widest h-12 text-lg"
               aria-label="Password"
-              showTick={isPasswordCorrect}
+              autoComplete="current-password"
             />
           </div>
           {error && (
