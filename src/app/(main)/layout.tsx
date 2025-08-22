@@ -57,10 +57,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   }, []);
   
   useEffect(() => {
-    if (writersLoaded && !activeWriter) {
+    if (isClient && writersLoaded && !activeWriter) {
       router.replace('/auth');
     }
-  }, [writersLoaded, activeWriter, router]);
+  }, [isClient, writersLoaded, activeWriter, router]);
 
   useEffect(() => {
     if (modalType === 'bible' && modalData?.bible) {
@@ -146,7 +146,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </SidebarHeader>
         <SidebarContent>
             <SidebarMenu>
-                {menuItems.map((item) => (
+                {menuItems.slice(0, 9).map((item) => (
                 <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                         onClick={() => router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href)}
@@ -158,13 +158,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 ))}
-                <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => setSettingsOpen(true)} tooltip={{ children: "Settings", side: "right", align: "center" }}>
-                        <Settings />
-                        <span>Settings</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
+                 <SidebarMenuItem>
                     <SidebarMenuButton onClick={() => setVolumesOpen(true)} tooltip={{ children: "Volumes", side: "right", align: "center" }}>
                        <BookOpenCheck />
                        <span>Volumes</span>
@@ -227,6 +221,24 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             </div>
                         </SheetContent>
                     </Sheet>
+                </SidebarMenuItem>
+                {menuItems.slice(9).map((item) => (
+                <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                        onClick={() => router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href)}
+                        isActive={pathname.startsWith(item.href)}
+                        tooltip={{ children: item.label, side: "right", align: "center" }}
+                    >
+                        <item.icon />
+                        <span>{item.label}</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                ))}
+                <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => setSettingsOpen(true)} tooltip={{ children: "Settings", side: "right", align: "center" }}>
+                        <Settings />
+                        <span>Settings</span>
+                    </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
         </SidebarContent>
