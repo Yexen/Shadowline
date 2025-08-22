@@ -136,20 +136,6 @@ export function SettingsDialog({ isOpen, onClose, onOpenUserManagement }: Settin
                     </div>
                     
                     <Separator />
-                    
-                    <div>
-                        <h3 className="font-bold">AI & Image Generation (DALL-E)</h3>
-                        <p className="text-sm text-muted-foreground">
-                            Image generation uses DALL-E 3. Please provide your OpenAI API key to enable this feature. Your key is stored securely in your browser.
-                        </p>
-                        <div className="space-y-2 mt-2">
-                            <Label htmlFor="openai-key">OpenAI API Key</Label>
-                            <PasswordInput id="openai-key" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="Enter your OpenAI API key"/>
-                            <Button onClick={handleSaveAiSettings} className="w-full">Save API Key</Button>
-                        </div>
-                    </div>
-
-                    <Separator />
 
                     <div>
                         <h3 className="font-bold">Change Logo</h3>
