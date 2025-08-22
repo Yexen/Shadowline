@@ -1,4 +1,3 @@
-
 'use client';
 
 import { create } from 'zustand';
@@ -18,7 +17,7 @@ export const useAiProvider = create<AiProviderState>()(
       setOpenAiApiKey: (key) => set({ openAiApiKey: key }),
     }),
     {
-      name: 'gotham-ai-provider-settings',
+      name: 'gotham-ai-provider-storage',
       storage: createJSONStorage(() => localStorage),
       onRehydrateStorage: () => (state) => {
         if (state) {

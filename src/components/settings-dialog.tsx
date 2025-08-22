@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRef, useState, useEffect } from "react";
@@ -31,13 +30,13 @@ export function SettingsDialog({ isOpen, onClose, onOpenUserManagement }: Settin
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [apiKey, setApiKey] = useState(openAiApiKey);
+    const [apiKey, setApiKey] = useState('');
     
     useEffect(() => {
         if(isLoaded) {
             setApiKey(openAiApiKey);
         }
-    }, [isLoaded, openAiApiKey]);
+    }, [isLoaded, openAiApiKey, isOpen]);
 
     const handleLogoFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -97,7 +96,8 @@ export function SettingsDialog({ isOpen, onClose, onOpenUserManagement }: Settin
 
     const handleSaveAiSettings = () => {
         setOpenAiApiKey(apiKey);
-        toast({ title: "AI Settings Saved" });
+        toast({ title: "AI Settings Saved", description: "Your OpenAI API key has been saved." });
+        onClose();
     }
 
     return (
@@ -138,14 +138,14 @@ export function SettingsDialog({ isOpen, onClose, onOpenUserManagement }: Settin
                     <Separator />
                     
                     <div>
-                        <h3 className="font-bold">AI & Image Generation</h3>
+                        <h3 className="font-bold">AI & Image Generation (DALL-E)</h3>
                         <p className="text-sm text-muted-foreground">
-                            Image generation uses DALL-E 3. Please provide your OpenAI API key to enable this feature.
+                            Image generation uses DALL-E 3. Please provide your OpenAI API key to enable this feature. Your key is stored securely in your browser.
                         </p>
                         <div className="space-y-2 mt-2">
                             <Label htmlFor="openai-key">OpenAI API Key</Label>
                             <PasswordInput id="openai-key" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="Enter your OpenAI API key"/>
-                            <Button onClick={handleSaveAiSettings} className="w-full">Save AI Settings</Button>
+                            <Button onClick={handleSaveAiSettings} className="w-full">Save API Key</Button>
                         </div>
                     </div>
 
