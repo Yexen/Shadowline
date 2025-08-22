@@ -61,19 +61,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   }, [modalType, modalData]);
 
 
-  useEffect(() => {
-    if (writersLoaded && !firebaseUser) {
-      router.replace('/auth');
-    }
-  }, [writersLoaded, firebaseUser, router]);
-
   const handleLogout = async () => {
-    try {
-      await auth.signOut();
-      router.replace('/auth');
-    } catch (e) {
-      console.error("Logout failed", e);
-    }
+    // This will be re-enabled when auth is back
+    // try {
+    //   await auth.signOut();
+    //   router.replace('/auth');
+    // } catch (e) {
+    //   console.error("Logout failed", e);
+    // }
+    console.log("Logout clicked");
   };
 
   const menuItems = [
@@ -122,21 +118,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const handleCloseChapterEditor = () => {
     setEditingChapter(null);
     closeModal();
-  }
-
-
-  if (!writersLoaded || !activeWriter) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <svg className="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-          </svg>
-          <p className="font-headline text-muted-foreground">CHECKING CREDENTIALS...</p>
-        </div>
-      </div>
-    );
   }
 
   return (
