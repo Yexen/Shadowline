@@ -22,6 +22,28 @@ interface VolumeEditorProps {
   onAddChapter: (volumeId: string) => void;
 }
 
+function ExportPopover({ onExport, disabled = false }: { onExport: (format: 'txt' | 'md') => void; disabled?: boolean }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+        <div onMouseLeave={() => setOpen(false)}>
+            <PopoverTrigger asChild onMouseEnter={() => setOpen(true)}>
+                <Button variant="ghost" size="sm" disabled={disabled}>Export</Button>
+            </PopoverTrigger>
+            {open && (
+                <PopoverContent className="w-48 p-2" onMouseLeave={() => setOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start" onClick={() => { onExport('md'); setOpen(false); }}>Markdown (.md)</Button>
+                    <Button variant="ghost" className="w-full justify-start" onClick={() => { onExport('txt'); setOpen(false); }}>Text (.txt)</Button>
+                    <Button variant="ghost" className="w-full justify-start" disabled>PDF (.pdf)</Button>
+                </PopoverContent>
+            )}
+        </div>
+    </Popover>
+  );
+}
+
+
 export function VolumeEditor({ volume, onSave, onClose, onDeleteChapter, onAddChapter }: VolumeEditorProps) {
   const [currentVolume, setCurrentVolume] = useState<Volume | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -167,16 +189,7 @@ export function VolumeEditor({ volume, onSave, onClose, onDeleteChapter, onAddCh
                         <Button variant="ghost" size="sm" onClick={() => handleChapterClick(chapter.id)}>
                             <BookOpen className="mr-2" /> Open
                         </Button>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button variant="ghost" size="sm">Export</Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-48 p-2">
-                                <Button variant="ghost" className="w-full justify-start" onClick={() => handleExportChapter(chapter, 'md')}>Markdown (.md)</Button>
-                                <Button variant="ghost" className="w-full justify-start" onClick={() => handleExportChapter(chapter, 'txt')}>Text (.txt)</Button>
-                                <Button variant="ghost" className="w-full justify-start" disabled>PDF (.pdf)</Button>
-                            </PopoverContent>
-                        </Popover>
+                        <ExportPopover onExport={(format) => handleExportChapter(chapter, format)} />
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
@@ -208,17 +221,7 @@ export function VolumeEditor({ volume, onSave, onClose, onDeleteChapter, onAddCh
         </div>
 
         <DialogFooter className="justify-between">
-            <Popover>
-                <PopoverTrigger asChild>
-                    <Button variant="outline"><Download className="mr-2"/> Export Volume</Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-48 p-2">
-                    <Button variant="ghost" className="w-full justify-start" onClick={() => handleExportVolume('md')}>Markdown (.md)</Button>
-                    <Button variant="ghost" className="w-full justify-start" onClick={() => handleExportVolume('txt')}>Text (.txt)</Button>
-                    <Button variant="ghost" className="w-full justify-start" disabled>PDF (.pdf)</Button>
-                </PopoverContent>
-            </Popover>
-
+            <ExportPopover onExport={handleExportVolume} />
             <div className="flex gap-2">
               <Button variant="outline" onClick={onClose}>Cancel</Button>
               <Button onClick={handleSaveChanges}>Save Changes</Button>
