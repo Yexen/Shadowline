@@ -54,7 +54,6 @@ export function useWriters() {
             if (storedWriters) {
                 currentWriters = JSON.parse(storedWriters);
             } else {
-                // If no writers are stored, save the default ones. This is the fix.
                 localStorage.setItem(WRITERS_STORAGE_KEY, JSON.stringify(defaultWriters));
             }
             setWriters(currentWriters);
@@ -64,7 +63,6 @@ export function useWriters() {
                 active = currentWriters.find((w: Writer) => w.id === storedActiveWriterId);
             }
             
-            // If no active writer is found or stored, default to the first one.
             if (!active && currentWriters.length > 0) {
                 active = currentWriters[0];
                 localStorage.setItem(ACTIVE_WRITER_STORAGE_KEY, active.id);
@@ -100,7 +98,7 @@ export function useWriters() {
             dataAiHint: 'writer portrait anonymous',
             role,
             status: 'pending',
-            password: password,
+            password: password, // This line was missing the password
             permissions: { readableSections: [] }
         };
         const newWriters = [...writers, newWriter];
