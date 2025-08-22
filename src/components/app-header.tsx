@@ -101,9 +101,9 @@ export function AppHeader() {
                 </Dialog>
             </div>
             <div className="absolute bottom-0 left-0 p-6 flex items-center gap-2">
-                 <SidebarTrigger className="md:hidden">
+                <SidebarTrigger className="md:hidden bg-black/50 hover:bg-black/70 rounded-md p-2 transition-colors">
                     <BatLogo className="w-6 h-3 text-white" />
-                 </SidebarTrigger>
+                </SidebarTrigger>
                 <h1 className="font-headline text-3xl md:text-4xl font-bold uppercase tracking-wider text-white drop-shadow-lg">
                     {title}
                 </h1>
