@@ -1,6 +1,6 @@
 
 import { genkit } from 'genkit';
-import { openai } from 'genkit/plugins/openai';
+import { openai } from 'genkit-plugin-openai';
 import { config } from 'dotenv';
 
 config();
