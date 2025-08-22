@@ -6,7 +6,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-export const generateImageFlow = ai.defineFlow(
+const generateImageFlow = ai.defineFlow(
   {
     name: 'generateImageFlow',
     inputSchema: z.string().describe('A text prompt describing the image to generate.'),

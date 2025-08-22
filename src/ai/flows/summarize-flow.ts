@@ -35,7 +35,7 @@ const SummarizeInputSchema = z.object({
   topic: z.string().describe("The topic to summarize, e.g., 'The Joker'."),
 });
 
-export const summarizeFlow = ai.defineFlow(
+const summarizeFlow = ai.defineFlow(
   {
     name: 'summarizeFlow',
     inputSchema: SummarizeInputSchema,

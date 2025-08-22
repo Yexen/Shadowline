@@ -11,7 +11,7 @@ const BibleFieldsInputSchema = z.object({
   entryCategory: z.string().describe("The category of the entry (e.g., 'Characters', 'Locations')."),
 });
 
-export const suggestBibleFieldsFlow = ai.defineFlow(
+const suggestBibleFieldsFlow = ai.defineFlow(
   {
     name: 'suggestBibleFieldsFlow',
     inputSchema: BibleFieldsInputSchema,

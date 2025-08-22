@@ -6,7 +6,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-export const generateSceneFlow = ai.defineFlow(
+const generateSceneFlow = ai.defineFlow(
   {
     name: 'generateSceneFlow',
     inputSchema: z.string(),

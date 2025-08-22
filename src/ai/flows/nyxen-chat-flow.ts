@@ -14,7 +14,7 @@ export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
 const NyxenChatInputSchema = z.array(ChatMessageSchema);
 
-export const nyxenChatFlow = ai.defineFlow(
+const nyxenChatFlow = ai.defineFlow(
   {
     name: 'nyxenChatFlow',
     inputSchema: NyxenChatInputSchema,

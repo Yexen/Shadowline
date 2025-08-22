@@ -11,7 +11,7 @@ const OracleInputSchema = z.object({
   context: z.string().describe('The text content to analyze.'),
 });
 
-export const askOracleFlow = ai.defineFlow(
+const askOracleFlow = ai.defineFlow(
   {
     name: 'askOracleFlow',
     inputSchema: OracleInputSchema,
