@@ -4,7 +4,7 @@
  * @fileOverview This file configures and initializes the Genkit AI instance.
  */
 import { genkit } from 'genkit';
-import { googleAI } from 'genkit/googleai';
+import { googleAI } from '@genkit-ai/googleai';
 
 export const ai = genkit({
   plugins: [
