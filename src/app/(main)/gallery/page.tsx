@@ -7,15 +7,18 @@ import { useGallery } from '@/hooks/use-gallery';
 import { GalleryFolder } from '@/components/gallery-folder';
 import { GalleryControls } from '@/components/gallery-controls';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+
+export type GalleryFilter = 'all' | 'image' | 'video';
 
 export default function GalleryPage() {
-  const { folders, addFolder, addImageToFolder, updateImage, deleteImage, updateFolder, deleteFolder, isLoaded } = useGallery();
+  const { folders, addFolder, addItemToFolder, updateItem, deleteItem, updateFolder, deleteFolder, isLoaded } = useGallery();
+  const [filter, setFilter] = useState<GalleryFilter>('all');
 
   if (!isLoaded) {
     return (
         <div className="space-y-8">
             <div>
-                
                 <p className="mt-2 text-muted-foreground">
                   Loading visual archives...
                 </p>
@@ -35,12 +38,19 @@ export default function GalleryPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        
-        <p className="mt-2 text-muted-foreground">
-          A visual archive of your world. Add folders and images to build your reference library.
-        </p>
+      <div className="flex justify-between items-start">
+        <div>
+            <p className="mt-2 text-muted-foreground">
+              A visual archive of your world. Add folders, images, and videos to build your reference library.
+            </p>
+        </div>
+         <div className="flex items-center gap-2 flex-shrink-0">
+            <Button variant={filter === 'all' ? 'secondary' : 'ghost'} onClick={() => setFilter('all')}>All</Button>
+            <Button variant={filter === 'image' ? 'secondary' : 'ghost'} onClick={() => setFilter('image')}>Images</Button>
+            <Button variant={filter === 'video' ? 'secondary' : 'ghost'} onClick={() => setFilter('video')}>Videos</Button>
+        </div>
       </div>
+
 
       <GalleryControls addFolder={addFolder} />
 
@@ -49,9 +59,10 @@ export default function GalleryPage() {
           <GalleryFolder
             key={folder.id}
             folder={folder}
-            onAddImage={addImageToFolder}
-            onUpdateImage={updateImage}
-            onDeleteImage={deleteImage}
+            filter={filter}
+            onAddItem={addItemToFolder}
+            onUpdateItem={updateItem}
+            onDeleteItem={deleteItem}
             onUpdateFolder={updateFolder}
             onDeleteFolder={deleteFolder}
           />
