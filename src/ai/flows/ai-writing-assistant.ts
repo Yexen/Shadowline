@@ -47,7 +47,7 @@ ${bibleData}
 PROMPT: "${prompt}"
 
 Generate the content now.`,
-      model: 'openai/gpt-4o-mini',
+      model: 'googleai/gemini-1.5-flash-latest',
       output: {
         schema: GenerateContentOutputSchema,
       }

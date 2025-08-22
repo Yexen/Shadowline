@@ -52,7 +52,7 @@ Description: "${description}"
 Language: ${language}
 
 Generate the code now.`,
-      model: 'openai/gpt-4o-mini',
+      model: 'googleai/gemini-1.5-flash-latest',
       output: {
         schema: GenerateCodeOutputSchema
       }
