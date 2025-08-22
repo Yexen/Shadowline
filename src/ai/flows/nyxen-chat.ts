@@ -69,30 +69,12 @@ ${bibleData ? `PROJECT CONTEXT:\n${bibleData}` : ''}
     }
 
     const { output } = await ai.generate({
-        model: 'googleai/gemini-1.5-flash-latest',
+        model: 'openai/gpt-4o-mini',
         prompt: lastMessage.content[0].text,
         history: genkitHistory,
         config: {
             // Prepend our system prompt to whatever the model's default is.
-            systemPrompt: systemPrompt,
-            safetySettings: [
-                 {
-                    category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-                    threshold: 'BLOCK_NONE',
-                },
-                {
-                    category: 'HARM_CATEGORY_HARASSMENT',
-                    threshold: 'BLOCK_NONE',
-                },
-                {
-                    category: 'HARM_CATEGORY_HATE_SPEECH',
-                    threshold: 'BLOCK_NONE',
-                },
-                {
-                    category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-                    threshold: 'BLOCK_NONE',
-                },
-            ],
+            systemPrompt: systemPrompt
         },
         output: {
             format: 'text'

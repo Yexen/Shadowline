@@ -45,29 +45,9 @@ If the answer is found within the provided context, you MUST prioritize that inf
 ${bibleData ? `PROJECT CONTEXT:\n${bibleData}`: ''}
 
 Based on the rules above, what is the answer to this question: "${question}"?`,
-      model: 'googleai/gemini-1.5-flash-latest',
+      model: 'openai/gpt-4o-mini',
       output: {
         schema: AnswerQuestionOutputSchema,
-      },
-       config: {
-        safetySettings: [
-            {
-                category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-                threshold: 'BLOCK_NONE',
-            },
-            {
-                category: 'HARM_CATEGORY_HARASSMENT',
-                threshold: 'BLOCK_NONE',
-            },
-            {
-                category: 'HARM_CATEGORY_HATE_SPEECH',
-                threshold: 'BLOCK_NONE',
-            },
-            {
-                category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-                threshold: 'BLOCK_NONE',
-            },
-        ],
       }
     });
 
