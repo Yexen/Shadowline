@@ -110,3 +110,7 @@
     color: hsl(var(--muted-foreground));
   }
 }
+
+[data-scrollbar-track='true'] {
+    background-color: #000000;
+}
