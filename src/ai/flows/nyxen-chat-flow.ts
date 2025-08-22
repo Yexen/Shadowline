@@ -2,7 +2,7 @@
 /**
  * @fileOverview The main Genkit flow for the Nyxen chat assistant.
  */
-import { ai } from '@/ai/genkit';
+import { ai, TEXT_MODEL } from '@/ai/genkit';
 import { z } from 'zod';
 import { ChatMessageSchema, type ChatMessage } from '@/ai/types';
 
@@ -16,7 +16,7 @@ const nyxenChatFlow = ai.defineFlow(
   },
   async (messages) => {
     const { output } = await ai.generate({
-      model: 'googleai/gemini-1.5-flash',
+      model: TEXT_MODEL,
       history: messages.slice(0, -1), // All but the last message
       prompt: messages[messages.length - 1].content,
       system: `You are Nyxen, an AI assistant for a writer using the "Shadows of Gotham Writer's Protocol" application. Your purpose is to help the writer with their project. You can answer questions about characters, suggest plot points, help with world-building, or provide creative inspiration. Be helpful, concise, and stay in character as a sophisticated AI built to serve a writer of dark, noir stories.`,

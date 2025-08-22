@@ -29,4 +29,6 @@ export const useAiProvider = create<AiProviderState>()(
 );
 
 // Mark as loaded on initial client-side mount
-useAiProvider.setState({ isLoaded: true });
+if (typeof window !== 'undefined') {
+    useAiProvider.setState({ isLoaded: true });
+}

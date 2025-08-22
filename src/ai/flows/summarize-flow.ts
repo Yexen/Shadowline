@@ -2,17 +2,11 @@
 /**
  * @fileOverview A Genkit flow for summarizing content from the Bible.
  */
-import { ai } from '@/ai/genkit';
+import { ai, TEXT_MODEL } from '@/ai/genkit';
 import { z } from 'zod';
-import { useBible } from '@/hooks/use-bible';
 
-// Note: This is a bit of a hack since we can't use hooks directly in server components like this.
-// In a real app, this data would be fetched from a database. For this prototype,
-// we'll re-read from localStorage on the server-side, which is not a recommended practice.
-import { promises as fs } from 'fs';
-import path from 'path';
-
-// Helper to get bible data on the server
+// This is a placeholder for a real database lookup.
+// In a real app, this would be a database call.
 async function getBibleData() {
   // This is a placeholder for actual data fetching.
   // We can't use the hook directly, so we simulate getting data.
@@ -56,7 +50,7 @@ const summarizeFlow = ai.defineFlow(
     }
     
     const { output } = await ai.generate({
-        model: 'googleai/gemini-1.5-flash',
+        model: TEXT_MODEL,
         prompt: `Based on the following context, provide a one-paragraph summary for the user. If no context is available, say so.
 
         Context:

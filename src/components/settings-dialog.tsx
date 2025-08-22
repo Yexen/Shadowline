@@ -6,13 +6,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "./ui/input";
 import { useLogo } from "@/hooks/use-logo";
 import { Separator } from "./ui/separator";
-import { Download, Shield, Bot } from "lucide-react";
+import { Download, Shield, Bot, Save } from "lucide-react";
 import { useWriters } from "@/hooks/use-writers";
 import { PasswordInput } from "./password-input";
 import { useToast } from "@/hooks/use-toast";
 import { useAiProvider } from "@/hooks/use-ai-provider";
 import { Label } from "./ui/label";
-
 
 interface SettingsDialogProps {
     isOpen: boolean;
@@ -96,8 +95,7 @@ export function SettingsDialog({ isOpen, onClose, onOpenUserManagement }: Settin
 
     const handleSaveAiSettings = () => {
         setOpenAiApiKey(apiKey);
-        toast({ title: "AI Settings Saved", description: "Your OpenAI API key has been saved." });
-        onClose();
+        toast({ title: "AI Settings Saved", description: "Your API key has been updated." });
     }
 
     return (
@@ -124,6 +122,20 @@ export function SettingsDialog({ isOpen, onClose, onOpenUserManagement }: Settin
                             <Separator />
                          </>
                     )}
+
+                    <div>
+                        <h3 className="font-bold flex items-center gap-2"><Bot /> AI & Image Generation</h3>
+                         <div className="space-y-4 mt-2 p-3 border rounded-md">
+                            <div className="space-y-2">
+                                <Label htmlFor="openai-key">OpenAI API Key</Label>
+                                <p className="text-xs text-muted-foreground">This key is stored locally and never shared. It is currently only used for certain image generation features.</p>
+                                <PasswordInput id="openai-key" placeholder="sk-..." value={apiKey} onChange={e => setApiKey(e.target.value)} />
+                            </div>
+                            <Button onClick={handleSaveAiSettings} className="w-full"><Save className="mr-2"/> Save AI Settings</Button>
+                        </div>
+                    </div>
+                    
+                    <Separator />
                     
                     <div>
                         <h3 className="font-bold">Change Password</h3>

@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview A Genkit flow for generating images.
+ * @fileOverview A Genkit flow for generating images using Gemini.
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
@@ -13,8 +13,20 @@ const generateImageFlow = ai.defineFlow(
     outputSchema: z.string().describe('The data URI of the generated image.'),
   },
   async (prompt) => {
-    // TODO: Re-enable with correct image generation model when available.
     console.log(`Image generation requested for prompt: ${prompt}`);
+    
+    const { media } = await ai.generate({
+      model: 'googleai/gemini-2.0-flash-preview-image-generation',
+      prompt: prompt,
+      config: {
+        responseModalities: ['TEXT', 'IMAGE'],
+      },
+    });
+
+    if (media?.url) {
+      return media.url;
+    }
+    
     return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='; // 1x1 transparent pixel
   }
 );

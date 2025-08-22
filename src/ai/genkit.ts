@@ -12,3 +12,5 @@ export const ai = genkit({
     googleAI(),
   ],
 });
+
+export const TEXT_MODEL = 'googleai/gemini-1.5-flash';
