@@ -16,7 +16,7 @@ import {
 import { BatLogo } from '@/components/bat-logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Home, PenSquare, Info, LogOut, FileText, Images, Settings, BookCopy, ClipboardList, Map as MapIcon, Search } from 'lucide-react';
+import { Home, PenSquare, BrainCircuit, Info, LogOut, FileText, Images, Settings, BookCopy, BookOpenCheck, ClipboardList, Map as MapIcon, Search, Library } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -31,6 +31,9 @@ import { WriterProfile } from '@/components/writer-profile';
 import { SettingsDialog } from '@/components/settings-dialog';
 import { PlusCircle } from 'lucide-react';
 import { useModalStore } from '@/hooks/use-modal-store';
+import { VolumesSidebar } from '@/components/volumes-sidebar';
+import { useVolumes } from '@/hooks/use-volumes';
+import { ChapterEditor } from '@/components/chapter-editor';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -45,9 +48,16 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [writerProfileOpen, setWriterProfileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  const { volumes, updateChapter } = useVolumes();
+  const [editingChapter, setEditingChapter] = useState<{ volumeId: string; chapterId: string } | null>(null);
+
+
   useEffect(() => {
     if (modalType === 'bible' && modalData?.bible) {
       setEditingEntry(modalData.bible);
+    }
+    if (modalType === 'chapter' && modalData?.chapter) {
+      setEditingChapter(modalData.chapter);
     }
   }, [modalType, modalData]);
 
@@ -171,6 +181,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         </SheetContent>
                     </Sheet>
                 </SidebarMenuItem>
+                
+                <SidebarMenuItem>
+                    <VolumesSidebar />
+                </SidebarMenuItem>
+
                 {menuItems.filter(i => !['/ai-tools', '/nyxen'].includes(i.href)).slice(7).map((item) => (
                 <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
@@ -225,6 +240,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
       />
+       {editingChapter && (
+        <ChapterEditor
+          isOpen={!!editingChapter}
+          onClose={() => { setEditingChapter(null); closeModal(); }}
+          volumeId={editingChapter.volumeId}
+          chapterId={editingChapter.chapterId}
+        />
+      )}
     </SidebarProvider>
   );
 }

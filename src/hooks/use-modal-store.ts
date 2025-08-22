@@ -2,15 +2,27 @@
 import { create } from 'zustand';
 import { BibleEntry } from './use-bible';
 
-export type ModalType = 'bible';
+export type ModalType = 'bible' | 'chapter' | 'resource';
 
 interface BibleModalData {
     category: string;
     entry: BibleEntry;
 }
 
+interface ChapterModalData {
+    volumeId: string;
+    chapterId: string;
+}
+
+interface ResourceModalData {
+    resourceId: string;
+}
+
+
 interface ModalData {
     bible?: BibleModalData;
+    chapter?: ChapterModalData;
+    resource?: ResourceModalData;
 }
 
 interface ModalStore {

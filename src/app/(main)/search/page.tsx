@@ -7,24 +7,25 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
-import { FileText, BookOpen, Image as ImageIcon, SearchIcon, Globe } from 'lucide-react';
+import { FileText, BookOpen, Image as ImageIcon, SearchIcon, Globe, Library } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { useBible, BibleEntry } from '@/hooks/use-bible';
 import { useDrafts } from '@/hooks/use-drafts';
 import { useGallery } from '@/hooks/use-gallery';
 import { useModalStore } from '@/hooks/use-modal-store';
+import { useVolumes } from '@/hooks/use-volumes';
 
-type SearchScope = 'all' | 'drafts' | 'bible' | 'gallery';
+type SearchScope = 'all' | 'drafts' | 'bible' | 'gallery' | 'volumes';
 
 interface SearchResult {
     id: string;
     title: string;
     snippet: string;
     source: string;
-    sourceType: 'draft' | 'bible' | 'gallery';
+    sourceType: 'draft' | 'bible' | 'gallery' | 'volume' | 'chapter';
     url: string;
-    data?: { category: string; entry: BibleEntry };
+    data?: any;
 }
 
 export default function SearchPage() {
@@ -36,6 +37,7 @@ export default function SearchPage() {
     const { bibleData } = useBible();
     const { drafts } = useDrafts();
     const { folders } = useGallery();
+    const { volumes } = useVolumes();
     const { openModal } = useModalStore();
     
     const searchOptions = useMemo(() => {
@@ -44,6 +46,7 @@ export default function SearchPage() {
             { id: 'drafts', label: 'Drafts', icon: FileText },
             { id: 'bible', label: 'Bible', icon: BookOpen },
             { id: 'gallery', label: 'Gallery', icon: ImageIcon },
+            { id: 'volumes', label: 'Volumes', icon: Library },
         ];
     }, []);
 
@@ -85,7 +88,7 @@ export default function SearchPage() {
                             source: `Bible: ${category.category}`,
                             sourceType: 'bible',
                             url: '#',
-                            data: { category: category.category, entry: item }
+                            data: { bible: { category: category.category, entry: item } }
                         });
                     }
                 });
@@ -109,17 +112,49 @@ export default function SearchPage() {
                 })
             })
         }
+
+        // Search Volumes & Chapters
+        if (scope === 'all' || scope === 'volumes') {
+            volumes.forEach(volume => {
+                 if (volume.title.toLowerCase().includes(lowerCaseQuery)) {
+                    newResults.push({
+                        id: `volume-${volume.id}`,
+                        title: volume.title,
+                        snippet: volume.description?.substring(0, 150) + '...' || `A collection of ${volume.chapters.length} chapters.`,
+                        source: 'Volume',
+                        sourceType: 'volume',
+                        url: '#', // Volumes are not directly navigable
+                    });
+                }
+                volume.chapters.forEach(chapter => {
+                    if (chapter.title.toLowerCase().includes(lowerCaseQuery) || chapter.content.toLowerCase().includes(lowerCaseQuery)) {
+                        newResults.push({
+                            id: `chapter-${volume.id}-${chapter.id}`,
+                            title: chapter.title,
+                            snippet: chapter.content.substring(0, 150) + '...',
+                            source: `Volume: ${volume.title}`,
+                            sourceType: 'chapter',
+                            url: '#',
+                            data: { chapter: { volumeId: volume.id, chapterId: chapter.id } }
+                        });
+                    }
+                });
+            })
+        }
         
         setResults(newResults);
 
-    }, [query, scope, bibleData, drafts, folders]);
+    }, [query, scope, bibleData, drafts, folders, volumes]);
     
     const handleResultClick = (result: SearchResult) => {
         if (result.url !== '#') {
             router.push(result.url);
-        } else if (result.sourceType === 'bible' && result.data) {
-            const { category, entry } = result.data;
-            openModal('bible', { category, entry });
+        } else if (result.data) {
+            if (result.sourceType === 'bible') {
+                openModal('bible', result.data.bible);
+            } else if (result.sourceType === 'chapter') {
+                openModal('chapter', result.data.chapter);
+            }
         }
     }
 

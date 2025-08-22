@@ -6,10 +6,9 @@ import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
-import { Save, Eye, EyeOff, Download, FileText, FileCode, Sparkles, PenLine } from 'lucide-react';
+import { Save, Eye, EyeOff, Download, FileText, FileCode, Sparkles, PenLine, Library, BookPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Dialog,
   DialogContent,
@@ -21,10 +20,11 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from '@/components/ui/label';
 import { useBible } from '@/hooks/use-bible';
-import { useDrafts } from '@/hooks/use-drafts';
+import { useDrafts, type Draft } from '@/hooks/use-drafts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useGallery } from '@/hooks/use-gallery';
 import { useWriters } from '@/hooks/use-writers';
+import { useVolumes } from '@/hooks/use-volumes';
 
 export default function EditorPage() {
   const params = useParams();
@@ -36,6 +36,7 @@ export default function EditorPage() {
   const [content, setContent] = useState('');
   const [title, setTitle] = useState('Untitled Draft');
   const [isLoaded, setIsLoaded] = useState(false);
+  const [currentDraft, setCurrentDraft] = useState<Draft | null>(null);
 
   const [showPreview, setShowPreview] = useState(true);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -43,9 +44,11 @@ export default function EditorPage() {
   const statusRef = useRef<HTMLParagraphElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
-  const { bibleData } = useBible();
-  const { folders } = useGallery();
-  const { writers, activeWriter } = useWriters();
+  
+  const { addChapterToVolume, volumes } = useVolumes();
+  const [saveToVolumeOpen, setSaveToVolumeOpen] = useState(false);
+  const [selectedVolume, setSelectedVolume] = useState('');
+
 
   useEffect(() => {
     if (draftId === 'new') {
@@ -55,6 +58,7 @@ export default function EditorPage() {
     } else {
       const draft = getDraft(draftId);
       if (draft) {
+        setCurrentDraft(draft);
         setTitle(draft.title);
         setContent(draft.content);
         setLastSaved(draft.lastModified ? new Date(draft.lastModified) : null);
@@ -106,6 +110,28 @@ export default function EditorPage() {
     URL.revokeObjectURL(url);
   };
 
+  const handleSaveToVolume = () => {
+    if (selectedVolume && currentDraft) {
+      addChapterToVolume(selectedVolume, {
+        id: `chapter-${Date.now()}`,
+        title: currentDraft.title,
+        content: currentDraft.content,
+        status: 'draft',
+      });
+      toast({
+        title: 'Chapter Added',
+        description: `"${currentDraft.title}" has been added to the selected volume.`,
+      });
+      setSaveToVolumeOpen(false);
+    } else {
+       toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: `Please select a volume.`,
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-14rem)]">
       <header className="flex items-center justify-between mb-4 flex-wrap gap-4">
@@ -125,6 +151,41 @@ export default function EditorPage() {
                 <Sparkles />
                 Ask Oracle
             </Button>
+          
+          <Dialog open={saveToVolumeOpen} onOpenChange={setSaveToVolumeOpen}>
+            <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" disabled={draftId === 'new'}>
+                    <Library />
+                    Save to Volume
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Add Draft to Volume</DialogTitle>
+                    <DialogDescription>
+                        Select a volume to add this draft as a new chapter.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <Select onValueChange={setSelectedVolume} value={selectedVolume}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a volume..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {volumes.map(volume => (
+                                <SelectItem key={volume.id} value={volume.id}>{volume.title}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setSaveToVolumeOpen(false)}>Cancel</Button>
+                    <Button onClick={handleSaveToVolume}>
+                        <BookPlus className="mr-2"/> Add Chapter
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           <Button variant="ghost" size="sm" onClick={() => setShowPreview(!showPreview)}>
             {showPreview ? <EyeOff /> : <Eye />}
