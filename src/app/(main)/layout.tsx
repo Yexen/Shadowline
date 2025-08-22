@@ -209,7 +209,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </SidebarContent>
         <SidebarFooter>
             <div className="p-2 border-t border-sidebar-border">
-                <button className="flex items-center p-2 rounded-md hover:bg-accent w-full group" onClick={() => setWriterProfileOpen(true)}>
+                <div role="button" className="flex items-center p-2 rounded-md hover:bg-accent w-full group cursor-pointer" onClick={() => setWriterProfileOpen(true)}>
                     <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">
                             <AvatarImage src={activeWriter?.avatarUrl} alt={activeWriter?.name} data-ai-hint={activeWriter?.dataAiHint} />
@@ -220,7 +220,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                      <div className="opacity-0 group-hover:opacity-100 group-data-[state=collapsed]:hidden ml-auto">
                         <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); /* handleLogout(); */ }}><LogOut/></Button>
                     </div>
-                </button>
+                </div>
             </div>
         </SidebarFooter>
       </Sidebar>
