@@ -9,12 +9,6 @@ export interface Chapter {
   content: string;
 }
 
-export interface VolumeResource {
-    id: string;
-    title: string;
-    url: string;
-}
-
 export interface Volume {
   id: string;
   title: string;
@@ -22,7 +16,7 @@ export interface Volume {
   coverImage: string;
   chapters: Chapter[];
   overview?: string;
-  resources?: VolumeResource[];
+  resources?: string;
 }
 
 const VOLUMES_STORAGE_KEY = 'gotham-volumes-data';
@@ -38,10 +32,7 @@ const defaultVolumes: Volume[] = [
             { id: 'chap-1-2', title: 'Thanksgiving', content: 'The second victim is found...' },
         ],
         overview: 'A detailed plot outline focusing on the main story beats and character arcs.',
-        resources: [
-            { id: 'res-1-1', title: 'Holiday Calendar', url: 'https://example.com/holidays' },
-            { id: 'res-1-2', title: 'Falcone Crime Family Tree', url: 'https://example.com/falcone' },
-        ]
+        resources: `Holiday Calendar: https://example.com/holidays\nFalcone Crime Family Tree: https://example.com/falcone`
     },
     {
         id: 'vol-2',
@@ -50,7 +41,7 @@ const defaultVolumes: Volume[] = [
         coverImage: 'https://placehold.co/600x800.png',
         chapters: [],
         overview: 'Focuses on the psychological dualism between Batman and Joker.',
-        resources: []
+        resources: ''
     }
 ];
 
@@ -62,7 +53,15 @@ export function useVolumes() {
     try {
       const storedData = localStorage.getItem(VOLUMES_STORAGE_KEY);
       if (storedData) {
-        setVolumes(JSON.parse(storedData));
+        const parsed = JSON.parse(storedData)
+        // Migration for resources from array to string
+        const migratedData = parsed.map((v: any) => {
+          if (Array.isArray(v.resources)) {
+            return { ...v, resources: v.resources.map((r: any) => `${r.title}: ${r.url}`).join('\\n') };
+          }
+          return v;
+        });
+        setVolumes(migratedData);
       } else {
         setVolumes(defaultVolumes);
         localStorage.setItem(VOLUMES_STORAGE_KEY, JSON.stringify(defaultVolumes));
@@ -92,7 +91,7 @@ export function useVolumes() {
       coverImage: 'https://placehold.co/600x800.png',
       chapters: [],
       overview: '',
-      resources: [],
+      resources: '',
     };
     saveData([...volumes, newVolume]);
   };
@@ -148,7 +147,7 @@ export function useVolumes() {
     saveData(newVolumes);
   };
   
-  const updateVolumeResources = (volumeId: string, resources: VolumeResource[]) => {
+  const updateVolumeResources = (volumeId: string, resources: string) => {
     const newVolumes = volumes.map(v => v.id === volumeId ? { ...v, resources } : v);
     saveData(newVolumes);
   };

@@ -18,7 +18,7 @@ import { Button } from "./ui/button";
 import { VolumeEditor } from "./volume-editor";
 import { OverviewEditor } from "./overview-editor";
 import { ResourceEditor } from "./resource-editor";
-import { OutlinePopover } from "./outline-popover";
+import { Dialog, DialogHeader, DialogTitle, DialogContent, DialogFooter, DialogClose } from "./ui/dialog";
 
 interface VolumesSidebarProps {
     open: boolean;
@@ -50,13 +50,36 @@ export function VolumesSidebar({ open, onOpenChange }: VolumesSidebarProps) {
         updateVolumeOverview, 
         updateVolumeResources 
     } = useVolumes();
-    const { modalType, modalData, closeModal } = useModalStore();
+    const { modalType, modalData, closeModal, openModal } = useModalStore();
+    const [outlineDialogVolume, setOutlineDialogVolume] = useState<Volume | null>(null);
 
-    const [activeTab, setActiveTab] = useState("volumes");
-    
+    const activeTab = modalType === 'volume' ? 'volumes' : 'outlines';
+
     const editingVolume = volumes.find(v => v.id === modalData?.volume?.id);
     const overviewVolume = volumes.find(v => v.id === modalData?.overview?.id);
     const resourcesVolume = volumes.find(v => v.id === modalData?.resources?.id);
+
+    const handleOpenOutlineDialog = (volume: Volume) => {
+        setOutlineDialogVolume(volume);
+    };
+
+    const handleCloseOutlineDialog = () => {
+        setOutlineDialogVolume(null);
+    };
+
+    const handleOpenOverview = () => {
+        if (outlineDialogVolume) {
+            openModal('overview', { id: outlineDialogVolume.id });
+            handleCloseOutlineDialog();
+        }
+    };
+    
+    const handleOpenResources = () => {
+        if (outlineDialogVolume) {
+            openModal('resources', { id: outlineDialogVolume.id });
+            handleCloseOutlineDialog();
+        }
+    };
 
     const renderList = (
         items: any[], 
@@ -85,21 +108,13 @@ export function VolumesSidebar({ open, onOpenChange }: VolumesSidebarProps) {
     );
 
     const renderOutlineItem = (volume: Volume, index: number) => (
-         <OutlinePopover volumeId={volume.id}>
-             <div className="w-full text-left p-2 rounded-md hover:bg-accent transition-colors cursor-pointer">
-                <h3 className="font-headline font-bold text-lg">VOLUME {toRoman(index + 1)}</h3>
-                <p className="text-sm text-muted-foreground truncate">{volume.title}</p>
-            </div>
-        </OutlinePopover>
-    );
-    
-    const renderAllVolumesItem = () => (
-         <OutlinePopover volumeId="all-volumes">
-             <div className="w-full text-left p-2 rounded-md hover:bg-accent transition-colors cursor-pointer">
-                <h3 className="font-headline font-bold text-lg">ALL VOLUMES</h3>
-                <p className="text-sm text-muted-foreground">Aggregate View</p>
-            </div>
-        </OutlinePopover>
+        <button 
+            className="w-full text-left p-2 rounded-md hover:bg-accent transition-colors"
+            onClick={() => handleOpenOutlineDialog(volume)}
+        >
+            <h3 className="font-headline font-bold text-lg">VOLUME {toRoman(index + 1)}</h3>
+            <p className="text-sm text-muted-foreground truncate">{volume.title}</p>
+        </button>
     );
 
     return (
@@ -111,7 +126,7 @@ export function VolumesSidebar({ open, onOpenChange }: VolumesSidebarProps) {
                             <Library /> STORY VOLUMES
                         </SheetTitle>
                     </SheetHeader>
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-grow flex flex-col mt-4">
+                    <Tabs value={activeTab} className="flex-grow flex flex-col mt-4">
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="volumes"><BookCopy className="mr-2"/> Volumes</TabsTrigger>
                             <TabsTrigger value="outlines"><BookOpen className="mr-2"/> Outlines</TabsTrigger>
@@ -135,27 +150,34 @@ export function VolumesSidebar({ open, onOpenChange }: VolumesSidebarProps) {
                                     <Skeleton className="h-16 w-full" />
                                     <Skeleton className="h-16 w-full" />
                                 </div>
-                            ) : (
-                                <div className="w-full mt-4 flex-grow overflow-y-auto pr-2">
-                                    <ul className="space-y-2">
-                                        {volumes.slice(0, 6).map((vol, index) => (
-                                            <li key={vol.id}>
-                                                {renderOutlineItem(vol, index)}
-                                                <Separator className="mt-2 bg-border/50" />
-                                            </li>
-                                        ))}
-                                         <li>
-                                            {renderAllVolumesItem()}
-                                            <Separator className="mt-2 bg-border/50" />
-                                        </li>
-                                    </ul>
-                                </div>
-                            )}
+                            ) : renderList(volumes.slice(0, 6), renderOutlineItem)}
                         </TabsContent>
                     </Tabs>
                 </SheetContent>
             </Sheet>
             
+            {/* Outline selection dialog */}
+            <Dialog open={!!outlineDialogVolume} onOpenChange={handleCloseOutlineDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="font-headline">{outlineDialogVolume?.title}</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4 grid grid-cols-2 gap-4">
+                        <Button variant="outline" size="lg" onClick={handleOpenOverview}>
+                            <BookOpen className="mr-2"/> Edit Overview
+                        </Button>
+                        <Button variant="outline" size="lg" onClick={handleOpenResources}>
+                            <BookCopy className="mr-2"/> Edit Resources
+                        </Button>
+                    </div>
+                    <DialogFooter>
+                        <DialogClose asChild>
+                             <Button variant="secondary">Close</Button>
+                        </DialogClose>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             {/* Modals for editing */}
             <VolumeEditor 
                 volume={editingVolume || null}
