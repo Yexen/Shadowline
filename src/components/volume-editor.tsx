@@ -12,7 +12,7 @@ import { ImagePlus, Trash2, GripVertical, BookOpen, PlusCircle, Download } from 
 import { ScrollArea } from './ui/scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { useModalStore } from '@/hooks/use-modal-store';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 
 interface VolumeEditorProps {
   volume: Volume | null;
@@ -167,15 +167,15 @@ export function VolumeEditor({ volume, onSave, onClose, onDeleteChapter, onAddCh
                         <Button variant="ghost" size="sm" onClick={() => handleChapterClick(chapter.id)}>
                             <BookOpen className="mr-2" /> Open
                         </Button>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
+                        <Popover>
+                            <PopoverTrigger asChild>
                                 <Button variant="ghost" size="sm">Export</Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                                <DropdownMenuItem onClick={() => handleExportChapter(chapter, 'md')}>Markdown (.md)</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleExportChapter(chapter, 'txt')}>Text (.txt)</DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-48 p-2">
+                                <Button variant="ghost" className="w-full justify-start" onClick={() => handleExportChapter(chapter, 'md')}>Markdown (.md)</Button>
+                                <Button variant="ghost" className="w-full justify-start" onClick={() => handleExportChapter(chapter, 'txt')}>Text (.txt)</Button>
+                            </PopoverContent>
+                        </Popover>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
@@ -207,16 +207,16 @@ export function VolumeEditor({ volume, onSave, onClose, onDeleteChapter, onAddCh
         </div>
 
         <DialogFooter className="justify-between">
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+            <Popover>
+                <PopoverTrigger asChild>
                     <Button variant="outline"><Download className="mr-2"/> Export Volume</Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => handleExportVolume('md')}>Markdown (.md)</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleExportVolume('txt')}>Text (.txt)</DropdownMenuItem>
-                    <DropdownMenuItem disabled>PDF (.pdf)</DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+                </PopoverTrigger>
+                <PopoverContent className="w-48 p-2">
+                    <Button variant="ghost" className="w-full justify-start" onClick={() => handleExportVolume('md')}>Markdown (.md)</Button>
+                    <Button variant="ghost" className="w-full justify-start" onClick={() => handleExportVolume('txt')}>Text (.txt)</Button>
+                    <Button variant="ghost" className="w-full justify-start" disabled>PDF (.pdf)</Button>
+                </PopoverContent>
+            </Popover>
 
             <div className="flex gap-2">
               <Button variant="outline" onClick={onClose}>Cancel</Button>
