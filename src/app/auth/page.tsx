@@ -64,7 +64,8 @@ export default function AuthPage() {
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
             <BatLogo className="w-24 h-12 mx-auto text-primary" />
-            <h1 className="font-headline text-3xl font-bold mt-4">Writer's Protocol</h1>
+            <h1 className="font-headline text-3xl font-bold mt-4">Shadowline</h1>
+            <p className="font-headline text-xl text-muted-foreground">Writer’s Protocol</p>
             <p className="text-muted-foreground">Access your Gotham chronicles.</p>
         </div>
         <Card>
