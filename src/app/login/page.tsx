@@ -17,7 +17,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { writers, setActiveWriter, isLoaded } = useWriters();
+  const { writers, setActiveWriter, isLoaded, getWriterByEmail } = useWriters();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,9 +31,14 @@ export default function LoginPage() {
             return;
         }
 
-        const user = writers.find(w => w.name.toLowerCase() === email.toLowerCase());
+        const user = getWriterByEmail(email);
 
         if (user && user.password === password) {
+            if (user.status === 'pending') {
+                setError('ACCESS DENIED: Your account is pending approval.');
+                setIsLoading(false);
+                return;
+            }
             try {
                 setActiveWriter(user.id);
                 localStorage.setItem('isLoggedIn', 'true');
@@ -57,20 +62,20 @@ export default function LoginPage() {
           Writer's Protocol
         </h1>
         <p className="mt-2 mb-8 text-muted-foreground">
-          Restricted Access. Authentication Required.
+          Sign In. Restricted Access.
         </p>
         
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="space-y-4">
              <Input
               id="email"
-              type="text"
+              type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="ENTER USERNAME"
+              placeholder="ENTER EMAIL"
               required
               className="text-center font-code tracking-widest h-12 text-lg"
-              aria-label="Username"
+              aria-label="Email"
             />
             <PasswordInput
               id="password"
@@ -103,6 +108,9 @@ export default function LoginPage() {
               'ENGAGE'
             )}
           </Button>
+            <Button variant="link" onClick={() => router.push('/auth')}>
+                Back to main menu
+            </Button>
         </form>
       </div>
       <footer className="absolute bottom-4 text-center text-xs text-muted-foreground/50 font-code">

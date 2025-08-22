@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
 export type UserRole = 'head-writer' | 'writer' | 'reader';
+export type UserStatus = 'approved' | 'pending';
 
 // TODO: Define this more robustly
 export type Permissions = {
@@ -13,9 +14,11 @@ export type Permissions = {
 export interface Writer {
   id: string;
   name: string;
+  email: string;
   avatarUrl: string;
   dataAiHint: string;
   role: UserRole;
+  status: UserStatus;
   password?: string;
   permissions?: Permissions;
 }
@@ -27,10 +30,12 @@ const DEFAULT_AVATAR = 'https://placehold.co/40x40.png';
 const defaultWriters: Writer[] = [
     { 
         id: 'writer-1', 
-        name: 'The Writer', 
+        name: 'Yekta', 
+        email: 'Yekta.kjs@Gmail.com',
         avatarUrl: DEFAULT_AVATAR, 
         dataAiHint: 'writer portrait',
         role: 'head-writer',
+        status: 'approved',
         password: 'Livfreya',
     },
 ];
@@ -54,14 +59,16 @@ export function useWriters() {
             if (!storedWriters) {
                 localStorage.setItem(WRITERS_STORAGE_KEY, JSON.stringify(defaultWriters));
             }
-            if (!storedActiveWriterId) {
+            if (!storedActiveWriterId && currentWriters.length > 0) {
                 localStorage.setItem(ACTIVE_WRITER_STORAGE_KEY, currentWriters[0].id);
             }
 
         } catch (error) {
             console.error("Failed to access localStorage for writers", error);
             setWriters(defaultWriters);
-            setActiveWriter(defaultWriters[0]);
+            if (defaultWriters.length > 0) {
+                setActiveWriter(defaultWriters[0]);
+            }
         } finally {
             setIsLoaded(true);
         }
@@ -76,18 +83,21 @@ export function useWriters() {
         }
     }, []);
 
-    const addWriter = (name: string) => {
+    const addWriter = (name: string, email: string, role: UserRole, password?: string) => {
         const newWriter: Writer = {
             id: `writer-${Date.now()}`,
             name,
+            email,
             avatarUrl: DEFAULT_AVATAR,
             dataAiHint: 'writer portrait anonymous',
-            role: 'writer',
-            password: 'password', // Default password, should be changed
+            role,
+            status: 'pending',
+            password: password,
             permissions: { readableSections: [] }
         };
         const newWriters = [...writers, newWriter];
         saveData(newWriters);
+        return newWriter;
     };
 
     const updateWriter = (writerId: string, updatedWriter: Writer) => {
@@ -127,6 +137,10 @@ export function useWriters() {
             }
         }
     };
+    
+    const getWriterByEmail = (email: string) => {
+        return writers.find(w => w.email.toLowerCase() === email.toLowerCase());
+    }
 
     return { 
         isLoaded, 
@@ -136,6 +150,7 @@ export function useWriters() {
         updateWriter,
         updateWriterPassword, 
         deleteWriter, 
-        setActiveWriter: switchActiveWriter
+        setActiveWriter: switchActiveWriter,
+        getWriterByEmail
     };
 }

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -67,18 +66,19 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     try {
       const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
       if (!loggedIn) {
-        router.replace('/login');
+        router.replace('/auth');
       }
     } catch (e) {
-      router.replace('/login');
+      router.replace('/auth');
     }
   }, [router]);
 
   const handleLogout = () => {
     try {
       localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('gotham-active-writer');
     } finally {
-      router.replace('/login');
+      router.replace('/auth');
     }
   };
 
@@ -131,7 +131,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   }
 
 
-  if (!isClient || !writersLoaded) {
+  if (!isClient || !writersLoaded || !activeWriter) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">

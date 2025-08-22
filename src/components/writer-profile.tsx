@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { CheckCircle, Pencil, Plus, Trash2, User, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Label } from "./ui/label";
+import { Badge } from "./ui/badge";
 
 interface WriterProfileProps {
     isOpen: boolean;
@@ -20,6 +21,7 @@ export function WriterProfile({ isOpen, onClose }: WriterProfileProps) {
     const { writers, activeWriter, addWriter, updateWriter, deleteWriter, setActiveWriter } = useWriters();
     const [editingWriter, setEditingWriter] = useState<Writer | null>(null);
     const [newWriterName, setNewWriterName] = useState('');
+    const [newWriterEmail, setNewWriterEmail] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleStartEdit = (writer: Writer) => {
@@ -55,25 +57,26 @@ export function WriterProfile({ isOpen, onClose }: WriterProfileProps) {
     };
 
     const handleAddNewWriter = () => {
-        if (newWriterName.trim()) {
-            addWriter(newWriterName.trim());
+        if (newWriterName.trim() && newWriterEmail.trim()) {
+            addWriter(newWriterName.trim(), newWriterEmail.trim(), 'writer');
             setNewWriterName('');
+            setNewWriterEmail('');
         }
     };
 
-    const canEditRole = activeWriter?.role === 'head-writer';
+    const canManageUsers = activeWriter?.role === 'head-writer';
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent>
+            <DialogContent className="max-w-xl">
                 <DialogHeader>
                     <DialogTitle className="font-headline">Manage Users</DialogTitle>
                     <DialogDescription>
-                        Add, edit, or switch between user profiles. The active user is shown in the sidebar.
+                        {canManageUsers ? "Approve, edit, or switch between user profiles." : "Switch between user profiles."}
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4 py-4">
+                <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
                     <div className="space-y-2">
                         {writers.map(writer => (
                             <div key={writer.id} className="flex items-center gap-4 p-2 rounded-lg hover:bg-accent/50">
@@ -91,7 +94,7 @@ export function WriterProfile({ isOpen, onClose }: WriterProfileProps) {
                                         </div>
                                         <div className="flex-grow space-y-1">
                                             <Input value={editingWriter.name} onChange={e => handleFieldChange('name', e.target.value)} />
-                                            {canEditRole && writer.id !== activeWriter.id && (
+                                            {canManageUsers && writer.id !== activeWriter.id && (
                                                 <Select value={editingWriter.role} onValueChange={(value: UserRole) => handleFieldChange('role', value)}>
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Select role" />
@@ -115,15 +118,16 @@ export function WriterProfile({ isOpen, onClose }: WriterProfileProps) {
                                         </Avatar>
                                         <div className="flex-grow">
                                             <p className="font-semibold">{writer.name}</p>
-                                            <p className="text-xs text-muted-foreground">{writer.role}</p>
+                                            <p className="text-xs text-muted-foreground">{writer.email} ({writer.role})</p>
                                         </div>
-                                         {activeWriter?.id !== writer.id ? (
+                                         {writer.status === 'pending' && <Badge variant="secondary">Pending</Badge>}
+                                         {activeWriter?.id !== writer.id && writer.status === 'approved' ? (
                                             <Button variant="outline" size="sm" onClick={() => setActiveWriter(writer.id)}>Set Active</Button>
-                                        ) : <div className="text-xs text-primary font-bold pr-2">ACTIVE</div> }
-                                        {canEditRole && (
+                                        ) : writer.status === 'approved' && <Badge variant="default">ACTIVE</Badge> }
+                                        {canManageUsers && (
                                             <Button size="icon" variant="ghost" onClick={() => handleStartEdit(writer)}><Pencil/></Button>
                                         )}
-                                        {canEditRole && writer.id !== activeWriter.id && (
+                                        {canManageUsers && writer.id !== activeWriter.id && (
                                             <Button size="icon" variant="ghost" onClick={() => deleteWriter(writer.id)} disabled={writers.length <= 1}><Trash2 className="text-destructive"/></Button>
                                         )}
                                     </>
@@ -132,15 +136,22 @@ export function WriterProfile({ isOpen, onClose }: WriterProfileProps) {
                         ))}
                     </div>
 
-                    {canEditRole && (
-                        <div className="flex items-center gap-2 pt-4 border-t">
-                            <Input 
-                                placeholder="New user name..."
-                                value={newWriterName}
-                                onChange={(e) => setNewWriterName(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleAddNewWriter()}
-                            />
-                            <Button onClick={handleAddNewWriter} disabled={!newWriterName.trim()}><Plus className="mr-2"/> Add User</Button>
+                    {canManageUsers && (
+                        <div className="pt-4 border-t">
+                            <h4 className="font-headline mb-2">Add New User</h4>
+                            <div className="flex items-center gap-2">
+                                <Input 
+                                    placeholder="New user name..."
+                                    value={newWriterName}
+                                    onChange={(e) => setNewWriterName(e.target.value)}
+                                />
+                                 <Input 
+                                    placeholder="New user email..."
+                                    value={newWriterEmail}
+                                    onChange={(e) => setNewWriterEmail(e.target.value)}
+                                />
+                                <Button onClick={handleAddNewWriter} disabled={!newWriterName.trim() || !newWriterEmail.trim()}><Plus /></Button>
+                            </div>
                         </div>
                     )}
                 </div>
