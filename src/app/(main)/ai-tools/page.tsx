@@ -322,7 +322,7 @@ export default function AiToolsPage() {
                  </div>
                   {codeLanguage === 'CSS' && 
                     <p className="text-xs text-muted-foreground pt-2">
-                      After copying, ask me to "apply this CSS" in the chat to make it permanent.
+                      After copying, go to the <Link href="/nyxen" className="underline font-bold">Nyxen Chat</Link> and ask me to "apply this CSS" to make it permanent.
                     </p>
                   }
               </div>
