@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { Input } from "./ui/input"
 import { Button } from "./ui/button"
 
-interface PasswordInputProps extends React.ComponentProps<"input"> {
+interface PasswordInputProps extends Omit<React.ComponentProps<"input">, "type"> {
   showTick?: boolean;
 }
 
@@ -32,6 +32,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
           className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground"
           onClick={togglePasswordVisibility}
           aria-label={showPassword ? "Hide password" : "Show password"}
+          tabIndex={-1}
         >
           {showPassword ? <EyeOff /> : <Eye />}
         </Button>
