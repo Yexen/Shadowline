@@ -139,7 +139,7 @@ export function useWriters() {
     };
     
     const getWriterByEmail = (email: string) => {
-        return writers.find(w => w.email.toLowerCase() === email.toLowerCase());
+        return writers.find(w => w && w.email && w.email.toLowerCase() === email.toLowerCase());
     }
 
     return { 
