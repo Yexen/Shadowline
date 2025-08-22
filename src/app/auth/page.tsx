@@ -66,7 +66,7 @@ export default function AuthPage() {
             onClick={handleHeadWriterAccess} 
             variant="destructive"
             className="w-full font-headline h-14 text-lg bg-primary/20 text-primary hover:bg-primary/30 border border-primary"
-            disabled={isLoading}
+            disabled={isLoading || !isLoaded}
           >
             {isLoading ? "ACCESSING..." : "Head Writer Access"}
           </Button>
