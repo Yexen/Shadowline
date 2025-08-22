@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ImagePlus, Trash2, GripVertical, BookOpen } from 'lucide-react';
+import { ImagePlus, Trash2, GripVertical, BookOpen, PlusCircle } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { useModalStore } from '@/hooks/use-modal-store';
@@ -18,9 +18,10 @@ interface VolumeEditorProps {
   onSave: (volume: Volume) => void;
   onClose: () => void;
   onDeleteChapter: (volumeId: string, chapterId: string) => void;
+  onAddChapter: (volumeId: string) => void;
 }
 
-export function VolumeEditor({ volume, onSave, onClose, onDeleteChapter }: VolumeEditorProps) {
+export function VolumeEditor({ volume, onSave, onClose, onDeleteChapter, onAddChapter }: VolumeEditorProps) {
   const [currentVolume, setCurrentVolume] = useState<Volume | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { openModal } = useModalStore();
@@ -62,6 +63,15 @@ export function VolumeEditor({ volume, onSave, onClose, onDeleteChapter }: Volum
       onClose();
     }
   };
+  
+  const handleAddChapter = () => {
+    if (currentVolume) {
+        onAddChapter(currentVolume.id);
+        // We need to re-sync state after adding a chapter. A simple way is to refetch or just close and reopen.
+        // For a better UX, the useVolumes hook should return the updated volume or we should update local state.
+        // For now, let's assume the parent component will handle the state update.
+    }
+  }
 
   if (!currentVolume) return null;
 
@@ -118,7 +128,10 @@ export function VolumeEditor({ volume, onSave, onClose, onDeleteChapter }: Volum
 
           {/* Right Column: Chapters */}
           <div className="md:col-span-2 flex flex-col">
-            <h3 className="font-bold mb-2">Chapters</h3>
+            <div className="flex justify-between items-center mb-2">
+                <h3 className="font-bold">Chapters</h3>
+                <Button variant="outline" size="sm" onClick={handleAddChapter}><PlusCircle className="mr-2"/> Add Chapter</Button>
+            </div>
             <ScrollArea className="flex-grow border rounded-md p-2 bg-muted/50">
               {currentVolume.chapters.length > 0 ? (
                 <ul className="space-y-2">

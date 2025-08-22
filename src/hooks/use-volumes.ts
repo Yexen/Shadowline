@@ -107,8 +107,12 @@ export function useVolumes() {
     saveData(newVolumes);
   };
 
-  const addChapterToVolume = (volumeId: string, title: string, content: string) => {
-    const newChapter: Chapter = { id: `chap-${Date.now()}`, title, content };
+  const addChapterToVolume = (volumeId: string, title?: string, content?: string) => {
+    const newChapter: Chapter = { 
+        id: `chap-${Date.now()}`, 
+        title: title || "New Chapter", 
+        content: content || "" 
+    };
     const newVolumes = volumes.map(v => {
       if (v.id === volumeId) {
         return { ...v, chapters: [...v.chapters, newChapter] };

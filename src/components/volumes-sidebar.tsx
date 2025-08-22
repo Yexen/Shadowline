@@ -46,6 +46,7 @@ export function VolumesSidebar({ open, onOpenChange }: VolumesSidebarProps) {
         addVolume, 
         updateVolume, 
         deleteChapter,
+        addChapterToVolume,
         updateVolumeOverview, 
         updateVolumeResources 
     } = useVolumes();
@@ -161,6 +162,7 @@ export function VolumesSidebar({ open, onOpenChange }: VolumesSidebarProps) {
                 onSave={updateVolume}
                 onClose={closeModal}
                 onDeleteChapter={deleteChapter}
+                onAddChapter={addChapterToVolume}
             />
             <OverviewEditor 
                 volume={overviewVolume || null}
