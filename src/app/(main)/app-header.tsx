@@ -11,14 +11,17 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { useRef, useState } from "react";
 import { ImagePlus } from "lucide-react";
-import { SidebarTrigger } from "./ui/sidebar";
+import { BatLogo } from "@/components/bat-logo";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const pathToTitle: { [key: string]: string } = {
     '/home': "Welcome, Writer",
+    '/search': "Universal Search",
     '/editor': "The Editor",
     '/drafts': "Unfinished Business",
     '/ai-tools': "Oracle AI Tools",
     '/gallery': "Visual Archives",
+    '/maps': "Cartography",
     '/organization': "Mission Control",
     '/about': "Project Intel",
     '/nyxen': "Nyxen Chat"
@@ -98,7 +101,9 @@ export function AppHeader() {
                 </Dialog>
             </div>
             <div className="absolute bottom-0 left-0 p-6 flex items-center gap-2">
-                 <SidebarTrigger className="md:hidden" />
+                 <SidebarTrigger className="md:hidden">
+                    <BatLogo className="w-6 h-3 text-white" />
+                 </SidebarTrigger>
                 <h1 className="font-headline text-3xl md:text-4xl font-bold uppercase tracking-wider text-white drop-shadow-lg">
                     {title}
                 </h1>
