@@ -16,7 +16,7 @@ import {
 import { BatLogo } from '@/components/bat-logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Home, PenSquare, BrainCircuit, Info, LogOut, FileText, Images, Settings, BookCopy, BookOpenCheck, ClipboardList, Bot, Map as MapIcon, Search } from 'lucide-react';
+import { Home, PenSquare, BrainCircuit, Info, LogOut, FileText, Images, Settings, BookCopy, BookOpenCheck, ClipboardList, Map as MapIcon, Search } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -40,7 +40,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
 
   const { isLoaded: bibleLoaded, bibleData, addCategory, addOrUpdateEntry } = useBible();
-  const { isLoaded: writersLoaded, activeWriter, logout } = useWriters();
+  const { activeWriter } = useWriters();
   const { updateChapter } = useVolumes();
   const { modalType, modalData, closeModal } = useModalStore();
 
@@ -49,17 +49,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [newCategory, setNewCategory] = useState('');
   const [writerProfileOpen, setWriterProfileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-  
-  useEffect(() => {
-    if (isClient && writersLoaded && !activeWriter) {
-      router.replace('/auth');
-    }
-  }, [isClient, writersLoaded, activeWriter, router]);
 
   useEffect(() => {
     if (modalType === 'bible' && modalData?.bible) {
@@ -69,11 +58,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     }
   }, [modalType, modalData]);
 
-
-  const handleLogout = () => {
-    logout();
-    router.replace('/auth');
-  };
 
   const menuItems = [
     { href: '/home', label: 'Home', icon: Home },
@@ -125,14 +109,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     closeModal();
   }
   
-  if (!isClient || !writersLoaded || !activeWriter) {
-     return (
-        <div className="flex h-screen w-full items-center justify-center bg-background">
-          <BatLogo className="w-24 h-12 animate-pulse text-primary" />
-        </div>
-      );
-  }
-
   return (
     <SidebarProvider>
       <Sidebar>
@@ -159,19 +135,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 ))}
-                 <SidebarMenuItem>
-                    <Sheet>
-                        <SidebarMenuButton asChild tooltip={{ children: "Volumes", side: "right", align: "center" }}>
-                            <SheetTrigger asChild>
-                                 <button className="flex w-full items-center gap-2">
-                                    <BookOpenCheck />
-                                    <span>Volumes</span>
-                                 </button>
-                             </SheetTrigger>
-                        </SidebarMenuButton>
-                        <VolumesSidebar isOpen={true} onClose={() => {}} />
-                    </Sheet>
-                </SidebarMenuItem>
+                <VolumesSidebar />
+
                 <SidebarMenuItem>
                     <Sheet>
                         <SidebarMenuButton asChild tooltip={{ children: "Bible", side: "right", align: "center" }}>
@@ -255,7 +220,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         <span className="text-sm font-semibold group-data-[state=collapsed]:hidden">{activeWriter?.name || 'The Writer'}</span>
                     </div>
                      <div className="opacity-0 group-hover:opacity-100 group-data-[state=collapsed]:hidden ml-auto">
-                        <LogOut onClick={(e) => { e.stopPropagation(); handleLogout(); }}/>
+                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); /* handleLogout(); */ }}><LogOut/></Button>
                     </div>
                 </button>
             </div>
