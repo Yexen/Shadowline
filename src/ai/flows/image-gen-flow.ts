@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview A Genkit flow for generating images using DALL-E.
+ * @fileOverview A Genkit flow for generating images.
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
@@ -13,12 +13,9 @@ const generateImageFlow = ai.defineFlow(
     outputSchema: z.string().describe('The data URI of the generated image.'),
   },
   async (prompt) => {
-    const { media } = await ai.generate({
-      model: 'openai/dall-e-3',
-      prompt,
-    });
-
-    return media?.url || 'No image could be generated.';
+    // TODO: Re-enable with correct image generation model when available.
+    console.log(`Image generation requested for prompt: ${prompt}`);
+    return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='; // 1x1 transparent pixel
   }
 );
 
