@@ -33,6 +33,8 @@ import { SettingsDialog } from '@/components/settings-dialog';
 import { VolumesSidebar } from '@/components/volumes-sidebar';
 import { PlusCircle } from 'lucide-react';
 import { useModalStore } from '@/hooks/use-modal-store';
+import { useVolumes, type Chapter } from '@/hooks/use-volumes';
+import { ChapterEditor } from '@/components/chapter-editor';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -41,21 +43,23 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const { isLoaded: bibleLoaded, bibleData, addCategory, addOrUpdateEntry } = useBible();
   const { writers, activeWriter, isLoaded: writersLoaded } = useWriters();
-
+  const { updateChapter } = useVolumes();
   const { modalType, modalData, closeModal } = useModalStore();
-  const isBibleModalOpen = modalType === 'bible' && !!modalData?.bible;
-  
+
   const [editingEntry, setEditingEntry] = useState<{ category: string; entry: BibleEntry } | null>(null);
+  const [editingChapter, setEditingChapter] = useState<{ volumeId: string; chapter: Chapter} | null>(null);
   const [newCategory, setNewCategory] = useState('');
   const [writerProfileOpen, setWriterProfileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [volumesOpen, setVolumesOpen] = useState(false);
-  
+
   useEffect(() => {
-    if(isBibleModalOpen) {
-        setEditingEntry(modalData.bible);
+    if (modalType === 'bible' && modalData?.bible) {
+      setEditingEntry(modalData.bible);
+    } else if (modalType === 'chapter' && modalData?.chapter) {
+      setEditingChapter(modalData.chapter);
     }
-  }, [isBibleModalOpen, modalData?.bible])
+  }, [modalType, modalData]);
 
 
   useEffect(() => {
@@ -110,6 +114,19 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const handleCloseEditor = () => {
     setEditingEntry(null);
+    closeModal();
+  }
+
+  const handleSaveChapter = (chapter: Chapter) => {
+    if (editingChapter) {
+        updateChapter(editingChapter.volumeId, chapter.id, chapter.title, chapter.content);
+        setEditingChapter(null);
+        closeModal();
+    }
+  };
+  
+  const handleCloseChapterEditor = () => {
+    setEditingChapter(null);
     closeModal();
   }
 
@@ -256,6 +273,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         onClose={handleCloseEditor}
         onSave={handleSaveEntry}
       />
+      
+      {editingChapter && (
+        <ChapterEditor 
+            chapter={editingChapter.chapter}
+            onSave={handleSaveChapter}
+            onClose={handleCloseChapterEditor}
+        />
+      )}
 
       <WriterProfile 
         isOpen={writerProfileOpen}

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { PlusCircle, FileText, Trash2, Edit, ListTree, Book } from 'lucide-react';
 import { useVolumes, Volume, Chapter } from '@/hooks/use-volumes';
 import { Skeleton } from './ui/skeleton';
-import { ChapterEditor } from './chapter-editor';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { ScrollArea } from './ui/scroll-area';
 import { VolumeEditor } from './volume-editor';
@@ -24,40 +24,21 @@ interface VolumesSidebarProps {
 type VolumesView = 'by-volume' | 'all';
 
 export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
-  const { isLoaded, volumes, addVolume, updateVolume, deleteVolume, addChapter, deleteChapter, updateChapter } = useVolumes();
+  const { isLoaded, volumes, addVolume, updateVolume, deleteVolume, addChapter, deleteChapter } = useVolumes();
   const [newVolumeName, setNewVolumeName] = useState('');
-  const [editingChapter, setEditingChapter] = useState<Chapter | null>(null);
-  const [activeVolumeIdForChapter, setActiveVolumeIdForChapter] = useState<string>('');
   
   const [view, setView] = useState<VolumesView>('by-volume');
   const [selectedVolume, setSelectedVolume] = useState<Volume | null>(null);
-
   const [openAccordions, setOpenAccordions] = useState<string[]>([]);
   
-  const { modalType, modalData, closeModal } = useModalStore();
-  const isChapterModalOpen = modalType === 'chapter' && !!modalData?.chapter;
-
-  useEffect(() => {
-    if (isChapterModalOpen) {
-        handleEditChapter(modalData.chapter.volumeId, modalData.chapter.chapter);
-    }
-  }, [isChapterModalOpen, modalData?.chapter])
+  const { openModal } = useModalStore();
 
   // When volumes data is loaded, open the first volume by default
   useEffect(() => {
-    if (isLoaded && volumes.length > 0) {
+    if (isLoaded && volumes.length > 0 && openAccordions.length === 0) {
       setOpenAccordions([volumes[0].id]);
     }
-  }, [isLoaded, volumes]);
-
-  const handleSaveChapter = (chapter: Chapter) => {
-    if (activeVolumeIdForChapter) {
-        updateChapter(activeVolumeIdForChapter, chapter.id, chapter.title, chapter.content);
-        setEditingChapter(null);
-        setActiveVolumeIdForChapter('');
-        closeModal();
-    }
-  };
+  }, [isLoaded, volumes, openAccordions.length]);
 
   const handleAddNewVolume = () => {
     if (newVolumeName.trim()) {
@@ -69,14 +50,7 @@ export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
   };
 
   const handleEditChapter = (volumeId: string, chapter: Chapter) => {
-    setActiveVolumeIdForChapter(volumeId);
-    setEditingChapter(chapter);
-  }
-  
-  const handleCloseChapterEditor = () => {
-    setEditingChapter(null);
-    setActiveVolumeIdForChapter('');
-    closeModal();
+    openModal('chapter', { volumeId, chapter });
   }
   
   const currentSelectedVolume = volumes.find(v => v.id === selectedVolume?.id) || null;
@@ -206,14 +180,6 @@ export function VolumesSidebar({ isOpen, onClose }: VolumesSidebarProps) {
         </SheetContent>
       </Sheet>
       
-      {editingChapter && (
-        <ChapterEditor 
-            chapter={editingChapter}
-            onSave={handleSaveChapter}
-            onClose={handleCloseChapterEditor}
-        />
-      )}
-
       {selectedVolume && (
         <VolumeEditor
           volume={currentSelectedVolume}
