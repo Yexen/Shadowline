@@ -3,11 +3,11 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import type { ChatMessage as NyxenChatMessage } from '@/ai/flows/nyxen-chat-flow';
+import type { ChatMessage } from '@/ai/types';
 import { BatLogo } from './bat-logo';
 
 interface ChatMessageProps {
-  message: NyxenChatMessage;
+  message: ChatMessage;
 }
 
 export function ChatMessage({ message }: ChatMessageProps) {

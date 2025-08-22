@@ -8,7 +8,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, Send } from 'lucide-react';
 import { ChatMessage } from '@/components/chat-message';
-import { runNyxenChat, type ChatMessage as NyxenChatMessage } from '@/ai/flows/nyxen-chat-flow';
+import { runNyxenChat } from '@/ai/flows/nyxen-chat-flow';
+import type { ChatMessage as NyxenChatMessage } from '@/ai/types';
 
 export default function NyxenChatPage() {
   const [messages, setMessages] = useState<NyxenChatMessage[]>([]);

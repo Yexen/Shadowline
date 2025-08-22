@@ -7,11 +7,12 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Send, Save, Trash2, Sparkles, X } from 'lucide-react';
 import { ChatMessage } from '@/components/chat-message';
-import { runOracleChat, OracleChatMessage } from '@/ai/flows/oracle-chat-flow';
+import { runOracleChat } from '@/ai/flows/oracle-chat-flow';
 import { useOracleChat, OracleChatSession } from '@/hooks/use-oracle-chat';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import type { ChatMessage as OracleChatMessage } from '@/ai/types';
 
 export function OracleChatTool() {
   const [messages, setMessages] = useState<OracleChatMessage[]>([]);

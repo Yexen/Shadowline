@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import type { OracleChatMessage } from '@/ai/flows/oracle-chat-flow';
+import type { ChatMessage as OracleChatMessage } from '@/ai/types';
 
 export interface OracleChatSession {
   id: string;

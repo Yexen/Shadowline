@@ -4,6 +4,7 @@
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import { ChatMessageSchema, type ChatMessage } from '@/ai/types';
 
 // This is a placeholder for a real database lookup.
 // In a real app, this would be a database call.
@@ -23,14 +24,7 @@ async function getFullBibleText() {
     ]);
 }
 
-export const OracleChatMessageSchema = z.object({
-  role: z.enum(['user', 'model']),
-  content: z.string(),
-});
-export type OracleChatMessage = z.infer<typeof OracleChatMessageSchema>;
-
-
-const OracleChatInputSchema = z.array(OracleChatMessageSchema);
+const OracleChatInputSchema = z.array(ChatMessageSchema);
 
 const oracleChatFlow = ai.defineFlow(
   {
@@ -62,6 +56,6 @@ const oracleChatFlow = ai.defineFlow(
   }
 );
 
-export async function runOracleChat(messages: OracleChatMessage[]): Promise<string> {
+export async function runOracleChat(messages: ChatMessage[]): Promise<string> {
     return oracleChatFlow(messages);
 }
