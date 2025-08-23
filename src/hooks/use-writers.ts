@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -177,6 +178,23 @@ export function useWriters() {
     await updateDoc(userDocRef, { role });
     fetchAllUsers();
   };
+  
+  const updateWriterAvatar = async (writerId: string, avatarUrl: string) => {
+    // If head writer is managing, no need for auth check here.
+    if(activeWriter?.id === 'head-writer-001') {
+      const updatedWriter = {...activeWriter, avatarUrl};
+      localStorage.setItem('gotham-bypassed-user', JSON.stringify(updatedWriter));
+      setActiveWriter(updatedWriter);
+      return;
+    }
+
+    const userDocRef = doc(db, "users", writerId);
+    await updateDoc(userDocRef, { avatarUrl });
+    if(activeWriter && activeWriter.id === writerId) {
+        setActiveWriter({...activeWriter, avatarUrl});
+    }
+    fetchAllUsers();
+  }
 
   const deleteWriter = async (writerId: string) => {
     const userDocRef = doc(db, "users", writerId);
@@ -200,7 +218,8 @@ export function useWriters() {
     loginAsHeadWriter,
     logout, 
     updateWriterStatus, 
-    updateWriterRole, 
+    updateWriterRole,
+    updateWriterAvatar,
     deleteWriter 
   };
 }

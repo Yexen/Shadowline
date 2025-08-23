@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useWriters } from '@/hooks/use-writers';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,10 +9,13 @@ import { BatLogo } from '@/components/bat-logo';
 import { useWatchlist, type Video } from '@/hooks/use-watchlist';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { PlayCircle, Trash2 } from 'lucide-react';
+import { PlayCircle, Trash2, Camera } from 'lucide-react';
 import { PasswordInput } from '@/components/password-input';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 function WatchlistSection() {
     const { videos, removeVideo, isLoaded } = useWatchlist();
@@ -106,7 +109,11 @@ function ChangePasswordSection() {
 }
 
 export default function ProfilePage() {
-    const { activeWriter, isLoaded } = useWriters();
+    const { activeWriter, isLoaded, updateWriterAvatar } = useWriters();
+    const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
+    const [newAvatarUrl, setNewAvatarUrl] = useState('');
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const { toast } = useToast();
 
     if (!isLoaded || !activeWriter) {
         return (
@@ -115,14 +122,80 @@ export default function ProfilePage() {
             </div>
         );
     }
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (loadEvent) => {
+                setNewAvatarUrl(loadEvent.target?.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleAvatarSave = async () => {
+        if (newAvatarUrl) {
+            try {
+                await updateWriterAvatar(activeWriter.id, newAvatarUrl);
+                toast({ title: 'Avatar updated successfully' });
+                setAvatarDialogOpen(false);
+            } catch (error) {
+                toast({ variant: 'destructive', title: 'Error', description: 'Failed to update avatar.' });
+            }
+        }
+    };
     
   return (
     <div className="space-y-8">
         <div className="flex items-center gap-6">
-            <Avatar className="h-24 w-24 border-4 border-primary/50">
-                <AvatarImage src={activeWriter.avatarUrl} />
-                <AvatarFallback className="text-3xl">{activeWriter.name.charAt(0)}</AvatarFallback>
-            </Avatar>
+            <Dialog open={avatarDialogOpen} onOpenChange={setAvatarDialogOpen}>
+                <DialogTrigger asChild>
+                    <div className="relative group cursor-pointer">
+                        <Avatar className="h-24 w-24 border-4 border-primary/50">
+                            <AvatarImage src={activeWriter.avatarUrl} />
+                            <AvatarFallback className="text-3xl">{activeWriter.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Camera className="h-8 w-8 text-white" />
+                        </div>
+                    </div>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Change Profile Picture</DialogTitle>
+                    </DialogHeader>
+                     <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="avatar-url">Image URL</Label>
+                            <Input 
+                                id="avatar-url" 
+                                value={newAvatarUrl} 
+                                onChange={(e) => setNewAvatarUrl(e.target.value)} 
+                                placeholder="Paste image URL here"
+                            />
+                        </div>
+                        <div className="text-center text-sm text-muted-foreground">OR</div>
+                         <div className="space-y-2">
+                            <Label>Upload from device</Label>
+                            <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileSelect} />
+                            <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>Browse Device</Button>
+                        </div>
+                        {newAvatarUrl && (
+                            <div className="flex justify-center">
+                                <Avatar className="h-32 w-32">
+                                    <AvatarImage src={newAvatarUrl} />
+                                    <AvatarFallback>Preview</AvatarFallback>
+                                </Avatar>
+                            </div>
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setAvatarDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleAvatarSave}>Save</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
             <div>
                 <h1 className="text-4xl font-headline font-bold">{activeWriter.name}</h1>
                 <p className="text-lg text-muted-foreground">{activeWriter.email}</p>
