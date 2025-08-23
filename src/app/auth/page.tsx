@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -35,7 +36,7 @@ const translations = {
     accessing: "در حال دسترسی...",
     currentLanguage: "فارسی"
   }
-};
+} satisfies Record<Language, any>;
 
 export default function AuthPage() {
   const router = useRouter();
@@ -67,12 +68,8 @@ export default function AuthPage() {
             </Button>
         </div>
         <div className="w-full max-w-md space-y-8 text-center">
-          <div>
-            <div className="w-24 h-24 mx-auto rounded-full flex items-center justify-center bg-primary/10 border border-primary/20">
-                <BatLogo className="w-16 h-16 text-primary" />
-            </div>
-            <h1 className="font-headline text-4xl font-bold mt-4 tracking-wider">SHADOWLINE</h1>
-            <p className="text-muted-foreground text-lg">{t.protocol}</p>
+          <div className="w-48 h-36 mx-auto">
+              <BatLogo />
           </div>
 
           <div className="space-y-4">

@@ -4,9 +4,39 @@
 import { useState, useEffect, useCallback } from 'react';
 
 const LOGO_STORAGE_KEY = 'gotham-app-logo';
-// This is now just the bat symbol part of the logo, without the ellipse
-const DEFAULT_LOGO_SVG_TEXT = `<svg viewBox="0 0 512 254.3" xmlns="http://www.w3.org/2000/svg"><path d="m256 12.3-37.4 39.5c-4.3 4.5-5.3 11.1-2.6 16.5l23.5 48.6-67.4 12.7c-7.1 1.3-12.4 7.6-12.4 14.9v57.8c0 5.4 4.4 9.8 9.8 9.8h172.9c5.4 0 9.8-4.4 9.8-9.8v-57.8c0-7.3-5.3-13.6-12.4-14.9l-67.4-12.7 23.5-48.6c2.7-5.5 1.7-12-2.6-16.5L256 12.3z"/></svg>`;
-const DEFAULT_LOGO_URL = `data:image/svg+xml;base64,${typeof window !== 'undefined' ? window.btoa(DEFAULT_LOGO_SVG_TEXT) : ''}`;
+
+const NEW_LOGO_SVG_TEXT = `
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="grad1" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:rgb(250,250,240);stop-opacity:1" />
+            <stop offset="100%" style="stop-color:rgb(220,220,210);stop-opacity:1" />
+        </linearGradient>
+        <filter id="glow">
+            <feGaussianBlur stdDeviation="3.5" result="coloredBlur"/>
+            <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+    </defs>
+    <!-- Bat Symbol -->
+    <path fill="url(#grad1)" filter="url(#glow)" d="M200,30 C150,30 100,80 100,150 C100,220 150,270 200,270 C250,270 300,220 300,150 C300,80 250,30 200,30 Z M200,50 C238.66,50 270,76.27 280,110 L260,110 C255,87 230,70 200,70 C170,70 145,87 140,110 L120,110 C130,76.27 161.34,50 200,50 Z M125,120 C135,140 150,150 165,150 L140,190 C130,210 120,220 120,220 C110,190 115,150 125,120 Z M275,120 C285,150 290,190 280,220 C280,220 270,210 260,190 L235,150 C250,150 265,140 275,120 Z M200,160 L225,180 L200,240 L175,180 L200,160 Z"/>
+    <!-- Swords -->
+    <g transform="translate(200, 160) rotate(45) scale(0.6)">
+        <path fill="#B0C4DE" stroke="#4682B4" stroke-width="3" d="M -5 -100 L 5 -100 L 5 0 L 15 10 L 15 20 L -15 20 L -15 10 L -5 0 Z" />
+        <path fill="#708090" d="M -12 12 L 12 12 L 12 18 L -12 18 Z" />
+    </g>
+    <g transform="translate(200, 160) rotate(-45) scale(0.6)">
+        <path fill="#B0C4DE" stroke="#4682B4" stroke-width="3" d="M -5 -100 L 5 -100 L 5 0 L 15 10 L 15 20 L -15 20 L -15 10 L -5 0 Z" />
+        <path fill="#708090" d="M -12 12 L 12 12 L 12 18 L -12 18 Z" />
+    </g>
+    <!-- Text -->
+    <text x="200" y="270" font-family="Orbitron, sans-serif" font-size="24" fill="#EAEAEA" text-anchor="middle" letter-spacing="2">SHADOWS OF GOTHAM</text>
+</svg>
+`;
+
+const DEFAULT_LOGO_URL = `data:image/svg+xml;base64,${typeof window !== 'undefined' ? window.btoa(NEW_LOGO_SVG_TEXT) : ''}`;
 
 
 export function useLogo() {
@@ -16,7 +46,7 @@ export function useLogo() {
   useEffect(() => {
     // btoa is not available on server, so we re-set the state on client mount
     if (typeof window !== 'undefined' && !logoUrl.startsWith('data:')) {
-        setLogoUrl(`data:image/svg+xml;base64,${window.btoa(DEFAULT_LOGO_SVG_TEXT)}`);
+        setLogoUrl(`data:image/svg+xml;base64,${window.btoa(NEW_LOGO_SVG_TEXT)}`);
     }
 
     try {
@@ -24,14 +54,15 @@ export function useLogo() {
       if (storedLogo) {
         setLogoUrl(storedLogo);
       } else {
-        localStorage.setItem(LOGO_STORAGE_KEY, logoUrl);
+        localStorage.setItem(LOGO_STORAGE_KEY, DEFAULT_LOGO_URL);
+        setLogoUrl(DEFAULT_LOGO_URL);
       }
     } catch (error) {
       console.error("Failed to access localStorage for logo", error);
     } finally {
         setIsLoaded(true);
     }
-  }, [logoUrl]);
+  }, []);
 
   const saveLogo = useCallback((newLogoDataUrl: string) => {
     try {
