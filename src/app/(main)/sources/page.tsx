@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Book, Link as LinkIcon, PlusCircle, Trash2 } from 'lucide-react';
+import { Book, Film, Link as LinkIcon, PlusCircle, Trash2 } from 'lucide-react';
 import { useSources } from '@/hooks/use-sources';
 import { useRouter } from 'next/navigation';
 import { Separator } from '@/components/ui/separator';
@@ -35,18 +35,32 @@ export default function SourcesPage() {
           Your central repository for research, inspiration, and canonical sources.
         </p>
       </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="bg-card hover:border-primary/50 transition-colors cursor-pointer" onClick={() => router.push('/sources/comics')}>
+          <CardHeader>
+            <CardTitle className="font-headline flex items-center gap-3"><Book /> Comics Database</CardTitle>
+            <CardDescription>
+              Browse, search, and track your reading of essential Batman comics. An interactive library of canon.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+              <Button>Explore Comics</Button>
+          </CardContent>
+        </Card>
+        <Card className="bg-card hover:border-primary/50 transition-colors cursor-pointer" onClick={() => router.push('/sources/media')}>
+          <CardHeader>
+            <CardTitle className="font-headline flex items-center gap-3"><Film /> Media Database</CardTitle>
+            <CardDescription>
+              Explore the rich history of Batman in film and television, from the classics to modern masterpieces.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+              <Button>Explore Media</Button>
+          </CardContent>
+        </Card>
+      </div>
 
-      <Card className="bg-card hover:border-primary/50 transition-colors cursor-pointer" onClick={() => router.push('/sources/comics')}>
-        <CardHeader>
-          <CardTitle className="font-headline flex items-center gap-3"><Book /> Batman Comics Database</CardTitle>
-          <CardDescription>
-            Browse, search, and track your reading of essential Batman comics. An interactive library of canon.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-            <Button>Explore Database</Button>
-        </CardContent>
-      </Card>
 
       <Separator />
 

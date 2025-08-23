@@ -24,6 +24,7 @@ const pathToTitle: { [key: string]: string } = {
     '/organization': "Mission Control",
     '/messages': "Secure Comms",
     '/sources/comics': "Comics Database",
+    '/sources/media': "Media Database",
     '/sources': "Intel",
     '/about': "Project Intel",
     '/nyxen': "Nyxen Chat"
@@ -42,6 +43,8 @@ export function AppHeader() {
         title = "The Editor";
     } else if (pathname === '/sources/comics') {
         title = "Comics Database";
+    } else if (pathname === '/sources/media') {
+        title = "Media Database";
     } else if (pathname.startsWith('/sources')) {
         title = "Intel";
     }
