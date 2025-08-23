@@ -545,7 +545,7 @@ export default function BatmanMediaDatabase() {
             />
           </div>
           
-          <Select onValueChange={setSelectedType} defaultValue="All">
+          <Select onValueChange={(value) => setSelectedType(value)} defaultValue="All">
             <SelectTrigger className="w-full lg:w-[200px]">
                 <div className="flex items-center gap-2"><Film className="w-5 h-5 text-muted-foreground" /><SelectValue placeholder="All Types" /></div>
             </SelectTrigger>
@@ -556,7 +556,7 @@ export default function BatmanMediaDatabase() {
             </SelectContent>
           </Select>
 
-          <Select onValueChange={setSelectedCategory} defaultValue="All">
+          <Select onValueChange={(value) => setSelectedCategory(value)} defaultValue="All">
             <SelectTrigger className="w-full lg:w-[200px]">
               <div className="flex items-center gap-2"><Filter className="w-5 h-5 text-muted-foreground" /><SelectValue placeholder="Filter by category" /></div>
             </SelectTrigger>
