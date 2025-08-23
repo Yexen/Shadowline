@@ -126,6 +126,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
+          <div className="flex items-center justify-center w-full p-2 h-24">
+              <BatLogo className="w-20 h-20" />
+          </div>
         </SidebarHeader>
         <SidebarContent>
             <SidebarMenu>

@@ -68,9 +68,13 @@ export default function AuthPage() {
             </Button>
         </div>
         <div className="w-full max-w-md space-y-8 text-center">
-          <div className="w-48 h-36 mx-auto">
-              <BatLogo />
+          <div className="flex flex-col items-center justify-center">
+            <div className="w-24 h-24 mx-auto mb-4">
+                <BatLogo />
+            </div>
+            <h1 className="font-headline text-2xl font-bold text-primary">{t.protocol}</h1>
           </div>
+
 
           <div className="space-y-4">
              <Button 
