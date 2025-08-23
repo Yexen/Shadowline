@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { useWriters } from '@/hooks/use-writers';
 import { BatLogo } from '@/components/bat-logo';
 import Link from 'next/link';
-import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { LoginDialog } from '@/components/login-dialog';
@@ -121,4 +120,3 @@ export default function AuthPage() {
     </>
   );
 }
-
