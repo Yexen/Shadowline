@@ -43,14 +43,16 @@ export default function AuthPage() {
   const [dialogRole, setDialogRole] = useState<Role | null>(null);
   const [language, setLanguage] = useState<Language>('en');
 
-  const t = translations[language];
-
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'fa' : 'en';
     setLanguage(newLang);
-    document.documentElement.dir = newLang === 'fa' ? 'rtl' : 'ltr';
-    document.documentElement.lang = newLang;
+    if (typeof document !== 'undefined') {
+      document.documentElement.dir = newLang === 'fa' ? 'rtl' : 'ltr';
+      document.documentElement.lang = newLang;
+    }
   };
+
+  const t = translations[language];
 
   return (
     <>
