@@ -79,9 +79,9 @@ export async function getIntel({ limit = 12 } = {}): Promise<IntelItem[]> {
     return true;
   });
 
-  // sort newest first, keep only “Batman/Arkham/Gotham” to stay on theme
+  // sort newest first, keep only “Batman” to stay on theme
   const themed = deduped.filter(a =>
-    /bat(man)?|gotham|arkham|wayne/i.test(a.title + ' ' + a.snippet)
+    /\b(batman)\b/i.test(a.title + ' ' + a.snippet)
   );
 
   return themed
