@@ -20,7 +20,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'www.dc.com' },
       { protocol: 'https', hostname: 'www.gamespot.com' },
       { protocol: 'https', hostname: 'static1.srcdn.com' },
-      { protocol: 'httpss', hostname: 'www.cbr.com' },
+      { protocol: 'https', hostname: 'www.cbr.com' },
       { protocol: 'https', hostname: 'cdn.vox-cdn.com' },
       { protocol: 'https', hostname: '**.akamaized.net' },
       { protocol: 'https', hostname: '**.cloudfront.net' },
