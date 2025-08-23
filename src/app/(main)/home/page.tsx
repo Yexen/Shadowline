@@ -1,7 +1,3 @@
-
-'use client';
-
-import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import Image from "next/image";
 import { Youtube, Newspaper, PlayCircle } from "lucide-react";
@@ -29,38 +25,58 @@ interface NewsArticle {
     url: string;
 }
 
-export default function HomePage() {
-    const [videos, setVideos] = useState<Video[]>([]);
-    const [news, setNews] = useState<NewsArticle[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+async function getBatmanVideos(): Promise<Video[]> {
+  const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
-    useEffect(() => {
-        const fetchData = async () => {
-            setIsLoading(true);
-            try {
-                if (window.FirebaseHelper) {
-                    const videoRes = await window.FirebaseHelper.getBatmanVideos();
-                    const newsRes = await window.FirebaseHelper.getBatmanNews();
+  if (!YOUTUBE_API_KEY) {
+    console.error("YouTube API Key is not configured.");
+    return [];
+  }
 
-                    if (videoRes.ok) setVideos(videoRes.data);
-                    if (newsRes.ok) setNews(newsRes.data);
-                }
-            } catch (error) {
-                console.error("Failed to fetch homepage data:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
+  const YOUTUBE_API_URL = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=batman&type=video&order=viewCount&maxResults=6&key=${YOUTUBE_API_KEY}`;
+  
+  try {
+    const response = await fetch(YOUTUBE_API_URL, {
+        next: { revalidate: 3600 } // Revalidate every hour
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json();
+        console.error("YouTube API Error:", errorData);
+        return [];
+    }
+    
+    const data = await response.json();
 
-        // Ensure FirebaseHelper is loaded before fetching
-        if (window.FirebaseHelper) {
-            fetchData();
-        } else {
-            // If the script hasn't loaded yet, wait for it.
-            window.addEventListener('load', fetchData);
-            return () => window.removeEventListener('load', fetchData);
-        }
-    }, []);
+    const mappedVideos: Video[] = data.items.map((item: any) => ({
+      id: item.id.videoId,
+      title: item.snippet.title,
+      uploader: item.snippet.channelTitle,
+      views: 'Trending',
+      thumbnail: item.snippet.thumbnails.high.url,
+      dataAiHint: 'batman video game',
+      url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+    }));
+
+    return mappedVideos;
+
+  } catch (error) {
+    console.error("Failed to fetch videos:", error);
+    return [];
+  }
+}
+
+async function getBatmanNews(): Promise<NewsArticle[]> {
+    // This will return an empty array as per the user's request.
+    // In the future, this could fetch from a real news API.
+    return [];
+}
+
+
+export default async function HomePage() {
+    const videos = await getBatmanVideos();
+    const news = await getBatmanNews();
+    const isLoading = false; // Data is pre-fetched on the server
 
   return (
     <div className="space-y-8">
@@ -77,20 +93,7 @@ export default function HomePage() {
             Surveillance Footage
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {isLoading ? (
-            Array.from({ length: 3 }).map((_, index) => (
-                <Card key={index} className="overflow-hidden bg-card">
-                    <CardContent className="p-0">
-                        <Skeleton className="w-full aspect-video" />
-                        <div className="p-4 space-y-2">
-                            <Skeleton className="h-5 w-3/4" />
-                            <Skeleton className="h-4 w-1/2" />
-                            <Skeleton className="h-3 w-1/4" />
-                        </div>
-                    </CardContent>
-                </Card>
-            ))
-          ) : (
+          {videos.length > 0 ? (
             videos.map(video => (
               <a href={video.url} key={video.id} target="_blank" rel="noopener noreferrer" className="block group overflow-hidden bg-card hover:border-primary/50 transition-colors rounded-lg">
                 <Card className="border-0 shadow-none h-full">
@@ -110,6 +113,19 @@ export default function HomePage() {
                 </Card>
               </a>
             ))
+          ) : (
+             Array.from({ length: 3 }).map((_, index) => (
+                <Card key={index} className="overflow-hidden bg-card">
+                    <CardContent className="p-0">
+                        <Skeleton className="w-full aspect-video" />
+                        <div className="p-4 space-y-2">
+                            <Skeleton className="h-5 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                            <Skeleton className="h-3 w-1/4" />
+                        </div>
+                    </CardContent>
+                </Card>
+            ))
           )}
         </div>
       </section>
@@ -120,7 +136,25 @@ export default function HomePage() {
             Latest Intel
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {isLoading && news.length === 0 ? (
+            {news.length > 0 ? (
+                news.map(news => (
+                    <a href={news.url} key={news.id} target="_blank" rel="noopener noreferrer" className="block bg-card hover:border-primary/50 transition-colors rounded-lg">
+                      <Card className="flex flex-col border-0 shadow-none h-full">
+                          <CardHeader>
+                              <Image src={news.image} alt={news.title} width={600} height={400} className="aspect-video object-cover rounded-t-lg -mt-6 -mx-6" data-ai-hint={news.dataAiHint} />
+                              <CardTitle className="font-headline pt-4">{news.title}</CardTitle>
+                              <CardDescription>{news.source} - {news.date}</CardDescription>
+                          </CardHeader>
+                          <CardContent className="flex-grow">
+                              <p className="text-muted-foreground">{news.snippet}</p>
+                          </CardContent>
+                          <div className="p-6 pt-0">
+                              <span className="text-primary font-bold">Read More &rarr;</span>
+                          </div>
+                      </Card>
+                    </a>
+                ))
+            ) : (
                 Array.from({ length: 3 }).map((_, index) => (
                     <Card key={index} className="flex flex-col bg-card">
                         <CardHeader>
@@ -139,24 +173,6 @@ export default function HomePage() {
                             <Skeleton className="h-5 w-24" />
                         </div>
                     </Card>
-                ))
-            ) : (
-                news.map(news => (
-                    <a href={news.url} key={news.id} target="_blank" rel="noopener noreferrer" className="block bg-card hover:border-primary/50 transition-colors rounded-lg">
-                      <Card className="flex flex-col border-0 shadow-none h-full">
-                          <CardHeader>
-                              <Image src={news.image} alt={news.title} width={600} height={400} className="aspect-video object-cover rounded-t-lg -mt-6 -mx-6" data-ai-hint={news.dataAiHint} />
-                              <CardTitle className="font-headline pt-4">{news.title}</CardTitle>
-                              <CardDescription>{news.source} - {news.date}</CardDescription>
-                          </CardHeader>
-                          <CardContent className="flex-grow">
-                              <p className="text-muted-foreground">{news.snippet}</p>
-                          </CardContent>
-                          <div className="p-6 pt-0">
-                              <span className="text-primary font-bold">Read More &rarr;</span>
-                          </div>
-                      </Card>
-                    </a>
                 ))
             )}
         </div>
