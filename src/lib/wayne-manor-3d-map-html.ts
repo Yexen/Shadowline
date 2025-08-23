@@ -653,7 +653,7 @@ export const wayneManor3DMapHtml = `
 
         // Initialize the game
         init();
-    <\/script>
+    </script>
 </body>
 </html>
-`
+`;

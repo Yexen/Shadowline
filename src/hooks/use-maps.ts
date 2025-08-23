@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { mapHtml as gothamHtml } from "@/lib/gotham-map-html";
 import { dcMapHtml } from "@/lib/dc-map-html";
 import { gotham3DMapHtml } from '@/lib/gotham-3d-map-html';
+import { wayneManor3DMapHtml } from '@/lib/wayne-manor-3d-map-html';
 
 export interface MapData {
   id: string;
@@ -42,6 +43,14 @@ const defaultMapsData: MapData[] = [
         mapHtml: gotham3DMapHtml,
         dataAiHint: 'gotham 3d map'
     },
+    {
+        id: 'map-wayne-manor-3d',
+        title: 'Wayne Manor (3D Walkthrough)',
+        description: 'Explore the halls of Wayne Manor and uncover its secrets in this interactive 3D experience.',
+        imageUrl: 'https://placehold.co/600x400.png',
+        mapHtml: wayneManor3DMapHtml,
+        dataAiHint: 'gothic mansion interior'
+    },
 ];
 
 export function useMaps() {
@@ -53,14 +62,23 @@ export function useMaps() {
       const storedData = localStorage.getItem(MAPS_STORAGE_KEY);
       if (storedData) {
         const storedMaps = JSON.parse(storedData);
-        // Add new 3D map if it doesn't exist in storage
+        
+        const mapsToAdd = [];
         if (!storedMaps.find((m: MapData) => m.id === 'map-gotham-3d')) {
             const newMap = defaultMapsData.find(m => m.id === 'map-gotham-3d');
-            if (newMap) {
-                storedMaps.push(newMap);
-            }
+            if (newMap) mapsToAdd.push(newMap);
         }
-        setMaps(storedMaps);
+        if (!storedMaps.find((m: MapData) => m.id === 'map-wayne-manor-3d')) {
+            const newMap = defaultMapsData.find(m => m.id === 'map-wayne-manor-3d');
+            if (newMap) mapsToAdd.push(newMap);
+        }
+
+        if (mapsToAdd.length > 0) {
+            setMaps([...storedMaps, ...mapsToAdd]);
+        } else {
+            setMaps(storedMaps);
+        }
+
       } else {
         setMaps(defaultMapsData);
         localStorage.setItem(MAPS_STORAGE_KEY, JSON.stringify(defaultMapsData));
