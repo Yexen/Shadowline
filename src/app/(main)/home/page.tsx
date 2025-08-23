@@ -14,7 +14,7 @@ async function getBatmanVideos(): Promise<Video[]> {
   const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
   if (!YOUTUBE_API_KEY) {
-    console.error("YouTube API Key is not configured.");
+    console.warn("YouTube API Key is not configured. Skipping video fetch.");
     return [];
   }
   
@@ -27,7 +27,7 @@ async function getBatmanVideos(): Promise<Video[]> {
   try {
     const videoPromises = searchQueries.map(query => 
         fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&videoDuration=medium&maxResults=5&key=${YOUTUBE_API_KEY}`, {
-            cache: 'no-store'
+            next: { revalidate: 3600 } // Revalidate every hour
         }).then(res => {
             if (!res.ok) {
                 throw new Error(`HTTP error! status: ${res.status}`);
