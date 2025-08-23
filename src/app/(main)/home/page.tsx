@@ -1,7 +1,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import Image from "next/image";
 import { Youtube, Newspaper, PlayCircle, AlertTriangle, BadgeHelp } from "lucide-react";
@@ -12,8 +12,6 @@ import type { Video } from "@/hooks/use-watchlist";
 import type { NewsArticle } from "@/hooks/use-readlist";
 import { ReadlistButton } from "@/components/readlist-button";
 import { VideoModal } from '@/components/video-modal';
-import { GET as getNewsRoute } from '@/app/api/news/route';
-import { GET as getVideosRoute } from '@/app/api/videos/route';
 
 const fallbackVideos: Video[] = [
     {
@@ -42,12 +40,56 @@ const fallbackVideos: Video[] = [
     },
 ];
 
-type Intel = NewsArticle & { alive: boolean; };
+type Intel = NewsArticle & { alive: boolean };
 
-function HomePageClient({ initialVideos, initialNews, videoError, newsError }: { initialVideos: Video[], initialNews: Intel[], videoError?: string, newsError?: string }) {
+export default function HomePage() {
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [news, setNews] = useState<Intel[]>([]);
+  const [videoError, setVideoError] = useState<string | undefined>();
+  const [newsError, setNewsError] = useState<string | undefined>();
+  const [isLoading, setIsLoading] = useState(true);
+
   const [open, setOpen] = React.useState(false);
   const [active, setActive] = React.useState<{ id: string; title: string } | null>(null);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+
+      // Fetch videos
+      try {
+        const videoResponse = await fetch('/api/videos');
+        if (!videoResponse.ok) {
+          const errorData = await videoResponse.json();
+          throw new Error(errorData.error || `HTTP ${videoResponse.status}`);
+        }
+        const videoData = await videoResponse.json();
+        setVideos(videoData);
+      } catch (e: any) {
+        setVideoError(e.message);
+        setVideos(fallbackVideos);
+      }
+
+      // Fetch news
+      try {
+        const newsResponse = await fetch('/api/news');
+        if (!newsResponse.ok) {
+          const errorData = await newsResponse.json();
+          throw new Error(errorData.error || `HTTP ${newsResponse.status}`);
+        }
+        const newsData = await newsResponse.json();
+        setNews(newsData);
+      } catch (e: any) {
+        setNewsError(e.message);
+        setNews([]);
+      }
+
+      setIsLoading(false);
+    };
+
+    fetchData();
+  }, []);
+  
   const openVideo = (id: string, title: string) => {
     setActive({ id, title });
     setOpen(true);
@@ -73,7 +115,7 @@ function HomePageClient({ initialVideos, initialNews, videoError, newsError }: {
             Surveillance Footage
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {videoError && (
+          {videoError && !isLoading && (
              <Card className="col-span-full bg-destructive/10 border-destructive/50">
                 <CardHeader className="flex-row items-center gap-4">
                     <AlertTriangle className="w-10 h-10 text-destructive" />
@@ -84,8 +126,21 @@ function HomePageClient({ initialVideos, initialNews, videoError, newsError }: {
                 </CardHeader>
             </Card>
           )}
-          {initialVideos.length > 0 ? (
-            initialVideos.map(video => (
+          {isLoading ? (
+             Array.from({ length: 6 }).map((_, index) => (
+                <Card key={`skeleton-vid-${index}`} className="overflow-hidden bg-card">
+                    <CardContent className="p-0">
+                        <Skeleton className="w-full aspect-video" />
+                        <div className="p-4 space-y-2">
+                            <Skeleton className="h-5 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                            <Skeleton className="h-3 w-1/4" />
+                        </div>
+                    </CardContent>
+                </Card>
+            ))
+          ) : (
+            videos.map(video => (
               <Card key={video.id} className="group overflow-hidden bg-card hover:border-primary/50 transition-colors flex flex-col">
                 <button
                   type="button"
@@ -124,19 +179,6 @@ function HomePageClient({ initialVideos, initialNews, videoError, newsError }: {
                 </div>
               </Card>
             ))
-          ) : (
-             !videoError && Array.from({ length: 6 }).map((_, index) => (
-                <Card key={`skeleton-${index}`} className="overflow-hidden bg-card">
-                    <CardContent className="p-0">
-                        <Skeleton className="w-full aspect-video" />
-                        <div className="p-4 space-y-2">
-                            <Skeleton className="h-5 w-3/4" />
-                            <Skeleton className="h-4 w-1/2" />
-                            <Skeleton className="h-3 w-1/4" />
-                        </div>
-                    </CardContent>
-                </Card>
-            ))
           )}
         </div>
       </section>
@@ -147,7 +189,7 @@ function HomePageClient({ initialVideos, initialNews, videoError, newsError }: {
             Latest Intel
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {newsError && (
+            {newsError && !isLoading && (
               <Card className="col-span-full bg-destructive/10 border-destructive/50">
                   <CardHeader className="flex-row items-center gap-4">
                       <AlertTriangle className="w-10 h-10 text-destructive" />
@@ -158,7 +200,21 @@ function HomePageClient({ initialVideos, initialNews, videoError, newsError }: {
                   </CardHeader>
               </Card>
             )}
-            {initialNews.map((article: any) => (
+             {isLoading ? (
+                Array.from({ length: 3 }).map((_, index) => (
+                    <Card key={`skeleton-news-${index}`} className="overflow-hidden bg-card">
+                        <CardContent className="p-0">
+                            <Skeleton className="w-full aspect-video" />
+                            <div className="p-4 space-y-2">
+                                <Skeleton className="h-5 w-full" />
+                                <Skeleton className="h-4 w-1/3" />
+                                <Skeleton className="h-4 w-5/6" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))
+            ) : news.length > 0 ? (
+            news.map((article: Intel) => (
               <Card key={article.id} className="group overflow-hidden bg-card hover:border-primary/50 transition-colors flex flex-col">
                 <a href={article.url} target="_blank" rel="noopener noreferrer">
                   <div className="relative aspect-video">
@@ -189,17 +245,19 @@ function HomePageClient({ initialVideos, initialNews, videoError, newsError }: {
                   <ReadlistButton article={article} />
                 </div>
               </Card>
-            ))}
-            {!newsError && initialNews.length === 0 && (
-                 <Card className="col-span-full bg-card/50">
-                    <CardHeader className="flex-row items-center gap-4">
-                        <BadgeHelp className="w-10 h-10 text-muted-foreground" />
-                        <div>
-                            <CardTitle>No Intel Found</CardTitle>
-                            <CardDescription>Could not find any recent Batman-related news. The city is quiet... too quiet.</CardDescription>
-                        </div>
-                    </CardHeader>
-                </Card>
+            ))
+            ) : (
+                 !newsError && !isLoading && (
+                     <Card className="col-span-full bg-card/50">
+                        <CardHeader className="flex-row items-center gap-4">
+                            <BadgeHelp className="w-10 h-10 text-muted-foreground" />
+                            <div>
+                                <CardTitle>No Intel Found</CardTitle>
+                                <CardDescription>Could not find any recent Batman-related news. The city is quiet... too quiet.</CardDescription>
+                            </div>
+                        </CardHeader>
+                    </Card>
+                )
             )}
           </div>
         </section>
@@ -211,48 +269,5 @@ function HomePageClient({ initialVideos, initialNews, videoError, newsError }: {
           title={active?.title}
         />
     </div>
-  );
-}
-
-// This is the main export, a Server Component that fetches data.
-export default async function HomePage() {
-  let videos: Video[] = [];
-  let news: Intel[] = [];
-  let videoError: string | undefined;
-  let newsError: string | undefined;
-
-  try {
-    const videoResponse = await getVideosRoute();
-    if (!videoResponse.ok) {
-      const errorData = await videoResponse.json();
-      videoError = errorData.error || "An unknown error occurred while fetching videos.";
-      videos = fallbackVideos;
-    } else {
-      videos = await videoResponse.json();
-    }
-  } catch (error) {
-    videoError = "The video surveillance system is currently offline.";
-    videos = fallbackVideos;
-  }
-
-  try {
-    const newsResponse = await getNewsRoute();
-    if (!newsResponse.ok) {
-      const errorData = await newsResponse.json();
-      newsError = errorData.error || 'Could not fetch the latest intel from the network.';
-    } else {
-      news = await newsResponse.json();
-    }
-  } catch (error) {
-    newsError = 'The intel network is currently unreachable.';
-  }
-
-  return (
-    <HomePageClient 
-      initialVideos={videos}
-      initialNews={news}
-      videoError={videoError}
-      newsError={newsError}
-    />
   );
 }
