@@ -2,10 +2,8 @@
 'use client';
 
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
 
-const firebaseConfig = {
+export const firebaseConfig = {
   "projectId": "shadows-of-gotham",
   "appId": "1:711722841714:web:b43b5de58e834df2c6f4eb",
   "storageBucket": "shadows-of-gotham.appspot.com",
@@ -16,8 +14,4 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase more robustly
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-export { app, auth, db };
+export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
