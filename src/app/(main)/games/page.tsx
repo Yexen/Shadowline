@@ -1,14 +1,41 @@
+
 'use client';
 
 import { useState } from 'react';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { BatmobileRunnerGame } from '@/components/batmobile-runner-game';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
+function GameModalButton({
+  title,
+  slug,
+}: {
+  title: string;
+  slug: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button onClick={() => setOpen(true)} variant="secondary">Play Simulation</Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-6xl w-[95vw] h-[90vh] p-0 border-primary bg-black">
+          <DialogHeader className="sr-only">
+            <DialogTitle>{title}</DialogTitle>
+          </DialogHeader>
+          <iframe
+            src={`/games/${slug}/index.html`}
+            className="w-full h-full rounded-lg"
+            allow="fullscreen; gamepad; accelerometer; autoplay"
+          />
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 
 export default function GamesPage() {
-  const [activeGame, setActiveGame] = useState<string | null>(null);
 
   const games = [
     {
@@ -32,9 +59,8 @@ export default function GamesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {games.map((game) => (
             <Card 
-              key={game.title} 
-              className="bg-card hover:border-primary/50 transition-colors flex flex-col group cursor-pointer"
-              onClick={() => setActiveGame(game.id)}
+              key={game.id} 
+              className="bg-card hover:border-primary/50 transition-colors flex flex-col group"
             >
               <CardHeader>
                 <CardTitle className="font-headline">{game.title}</CardTitle>
@@ -49,19 +75,15 @@ export default function GamesPage() {
                       data-ai-hint={game.dataAiHint}
                  />
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Button variant="secondary">Play Simulation</Button>
+                      <GameModalButton title={game.title} slug={game.id} />
                   </div>
               </CardContent>
             </Card>
           ))}
         </div>
       </div>
-
-      <Dialog open={!!activeGame} onOpenChange={() => setActiveGame(null)}>
-        <DialogContent className="w-[95vw] h-[90vh] max-w-none p-0 overflow-hidden bg-black border-primary">
-          {activeGame === 'batmobile-runner' && <BatmobileRunnerGame />}
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
+
+    
