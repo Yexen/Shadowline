@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -18,6 +19,10 @@ const signupSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
   email: z.string().email({ message: "Invalid email address" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  confirmPassword: z.string().min(6, { message: "Password must be at least 6 characters" })
+}).refine(data => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
 });
 
 type SignupFormValues = z.infer<typeof signupSchema>;
@@ -96,6 +101,11 @@ export default function SignupPage() {
                 <Label htmlFor="password">Password</Label>
                 <PasswordInput id="password" {...register('password')} disabled={isLoading} />
                 {errors.password && <p className="text-destructive text-sm">{errors.password.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <PasswordInput id="confirmPassword" {...register('confirmPassword')} disabled={isLoading} />
+                {errors.confirmPassword && <p className="text-destructive text-sm">{errors.confirmPassword.message}</p>}
               </div>
               {error && <p className="text-destructive text-sm">{error}</p>}
               <Button type="submit" className="w-full" disabled={isLoading}>
