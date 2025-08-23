@@ -1,82 +1,43 @@
 
-'use client';
+import { Suspense } from 'react';
+import { MessagesPageClient } from '@/components/messages-page-client';
+import { Skeleton } from '@/components/ui/skeleton';
 
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { useWriters } from '@/hooks/use-writers';
-import { useMessages } from '@/hooks/use-messages';
-import { MessageSidebar } from '@/components/message-sidebar';
-import { MessageThread } from '@/components/message-thread';
-import { Writer } from '@/hooks/use-writers';
+function MessagesLoading() {
+    return (
+        <div className="flex h-[calc(100vh-14rem)] border rounded-lg bg-card">
+            <div className="w-1/3 border-r h-full flex flex-col">
+                <div className="p-4 border-b">
+                    <Skeleton className="h-8 w-3/4" />
+                </div>
+                <div className="flex-grow p-3 space-y-3">
+                    <div className="flex items-start gap-3">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <div className="space-y-2 flex-grow">
+                            <Skeleton className="h-4 w-4/5" />
+                            <Skeleton className="h-4 w-3/5" />
+                        </div>
+                    </div>
+                     <div className="flex items-start gap-3">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <div className="space-y-2 flex-grow">
+                            <Skeleton className="h-4 w-4/5" />
+                            <Skeleton className="h-4 w-3/5" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div className="flex-grow flex items-center justify-center">
+                 <p className="text-muted-foreground">Loading Messages...</p>
+            </div>
+        </div>
+    )
+}
 
 export default function MessagesPage() {
-  const { writers, activeWriter, isLoaded: writersLoaded } = useWriters();
-  const { threads, sendMessage } = useMessages();
-  const searchParams = useSearchParams();
-  
-  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (writersLoaded && activeWriter) {
-      const newChatTargetId = searchParams.get('new');
-      if (newChatTargetId) {
-        // Find if a thread already exists with this user
-        const existingThread = threads.find(t => 
-            t.participants.length === 2 && 
-            t.participants.includes(activeWriter.id) &&
-            t.participants.includes(newChatTargetId)
-        );
-        if (existingThread) {
-            setSelectedThreadId(existingThread.id);
-        } else {
-            // Create a temporary new thread ID. The hook will create a real one on first message.
-            setSelectedThreadId(`new-${newChatTargetId}`);
-        }
-      } else if (threads.length > 0) {
-        setSelectedThreadId(threads[0].id);
-      }
-    }
-  }, [searchParams, threads, activeWriter, writersLoaded]);
-
-  if (!writersLoaded || !activeWriter) {
-    return <div>Loading...</div>;
-  }
-
-  const otherWriters = writers.filter(w => w.id !== activeWriter.id);
-
-  const handleSendMessage = (threadId: string, content: string, recipientIds: string[]) => {
-    sendMessage(content, recipientIds);
-    // If it was a new thread, the ID will now be updated in the store.
-    // We need to find the new real thread ID to keep it selected.
-    if (threadId.startsWith('new-')) {
-        const newThread = threads.find(t => 
-            t.participants.length === 2 &&
-            t.participants.includes(recipientIds[0]) &&
-            t.participants.includes(activeWriter.id)
-        );
-        if (newThread) {
-            setSelectedThreadId(newThread.id);
-        }
-    }
-  };
-
   return (
-    <div className="flex h-[calc(100vh-14rem)] border rounded-lg bg-card">
-      <MessageSidebar
-        threads={threads}
-        writers={writers}
-        activeWriterId={activeWriter.id}
-        selectedThreadId={selectedThreadId}
-        onSelectThread={setSelectedThreadId}
-        otherWriters={otherWriters}
-      />
-      <MessageThread
-        threadId={selectedThreadId}
-        threads={threads}
-        writers={writers}
-        activeWriter={activeWriter}
-        onSendMessage={handleSendMessage}
-      />
-    </div>
+    <Suspense fallback={<MessagesLoading />}>
+      <MessagesPageClient />
+    </Suspense>
   );
 }
