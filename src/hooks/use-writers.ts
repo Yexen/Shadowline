@@ -70,6 +70,14 @@ export function useWriters() {
   }, [activeWriter]);
 
   useEffect(() => {
+    // If a bypassed user is already set, don't run Firebase auth listener
+    const bypassedUser = localStorage.getItem('gotham-bypassed-user');
+    if (bypassedUser) {
+        setActiveWriter(JSON.parse(bypassedUser));
+        setIsLoaded(true);
+        return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
       if (user) {
         const userDocRef = doc(db, "users", user.uid);
@@ -154,36 +162,18 @@ export function useWriters() {
   };
 
   const loginAsHeadWriter = async () => {
-    try {
-      await signInWithEmailAndPassword(auth, headWriterDefault.email, headWriterDefault.password);
-    } catch (error: any) {
-      // If user does not exist, create it
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-        try {
-          const userCredential = await createUserWithEmailAndPassword(auth, headWriterDefault.email, headWriterDefault.password);
-          const user = userCredential.user;
-          const headWriterProfile: Omit<Writer, 'id'> = {
-            name: headWriterDefault.name,
-            email: headWriterDefault.email,
-            avatarUrl: headWriterDefault.avatarUrl,
-            dataAiHint: headWriterDefault.dataAiHint,
-            role: headWriterDefault.role,
-            status: headWriterDefault.status,
-          };
-          await setDoc(doc(db, "users", user.uid), headWriterProfile);
-          // The onAuthStateChanged listener will now pick up the new user and log them in.
-        } catch (creationError: any) {
-          // This might happen if the auth user exists but the Firestore doc doesn't, or a race condition.
-          // In a production app, this would need more robust error handling.
-          console.error("Failed to create head writer:", creationError);
-          throw new Error("Automatic Head Writer setup failed.");
-        }
-      } else {
-        // For other errors (wrong password for existing account, network issues), re-throw them.
-        console.error("Head writer login failed:", error);
-        throw error;
-      }
-    }
+    // Quick Bypass Solution as requested
+    const headWriterSession = {
+        id: headWriterDefault.id,
+        name: headWriterDefault.name,
+        email: headWriterDefault.email,
+        avatarUrl: headWriterDefault.avatarUrl,
+        dataAiHint: headWriterDefault.dataAiHint,
+        role: headWriterDefault.role,
+        status: headWriterDefault.status,
+    };
+    localStorage.setItem('gotham-bypassed-user', JSON.stringify(headWriterSession));
+    setActiveWriter(headWriterSession);
   };
 
   const updateWriterStatus = async (writerId: string, status: UserStatus) => {
@@ -207,7 +197,10 @@ export function useWriters() {
   };
 
   const logout = async () => {
+    // Clear the bypass user from local storage
+    localStorage.removeItem('gotham-bypassed-user');
     await signOut(auth);
+    setActiveWriter(null); // Explicitly clear active user
     router.push('/auth');
   };
 
