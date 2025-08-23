@@ -16,7 +16,7 @@ import {
 import { BatLogo } from '@/components/bat-logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Home, PenSquare, BrainCircuit, Info, LogOut, FileText, Images, Settings, BookCopy, BookOpenCheck, ClipboardList, Map as MapIcon, Search, Library, Book, MessageSquare, User } from 'lucide-react';
+import { Home, PenSquare, BrainCircuit, Info, LogOut, FileText, Images, Settings, BookCopy, BookOpenCheck, ClipboardList, Map as MapIcon, Search, Library, Book, MessageSquare } from 'lucide-react';
 import { useRouter, usePathname, redirect } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -71,7 +71,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const menuItems = [
     { href: '/home', label: 'Home', icon: Home },
-    { href: '/profile', label: 'Profile', icon: User },
     { href: '/search', label: 'Search', icon: Search },
     { href: '/editor', label: 'Editor', icon: PenSquare },
     { href: '/drafts', label: 'Drafts', icon: FileText },
@@ -234,7 +233,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <div role="button" className="flex items-center p-2 rounded-md hover:bg-accent w-full group cursor-pointer" onClick={() => setWriterProfileOpen(true)}>
                     <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">
-                            <AvatarImage src={activeWriter?.avatarUrl} alt={activeWriter?.name} data-ai-hint={activeWriter?.dataAiHint} />
+                            <AvatarImage src={activeWriter?.avatarUrl} alt={activeWriter?.name} data-ai-hint={activeWriter?.dataAiHint} key={activeWriter?.avatarUrl} />
                             <AvatarFallback>{activeWriter?.name.charAt(0) || 'W'}</AvatarFallback>
                         </Avatar>
                         <span className="text-sm font-semibold group-data-[state=collapsed]:hidden">{activeWriter?.name || 'The Writer'}</span>
