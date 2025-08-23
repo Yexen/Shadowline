@@ -83,7 +83,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { href: '/organization', label: 'Organization', icon: ClipboardList },
     { href: '/messages', label: 'Messages', icon: MessageSquare },
     { href: '/sources', label: 'Sources', icon: Book },
-    { href: '/about', label: 'About', icon: Info },
   ];
   
   const handleSaveEntry = (category: string, entry: BibleEntry) => {
@@ -139,7 +138,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 {menuItems.filter(i => !['/nyxen'].includes(i.href)).map((item) => (
                 <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
-                        onClick={() => item.action ? item.action() : router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href)}
+                        onClick={() => router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href)}
                         isActive={pathname.startsWith(item.href)}
                         tooltip={{ children: item.label, side: "right", align: "center" }}
                     >
@@ -212,6 +211,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     <SidebarMenuButton onClick={() => setVolumesSidebarOpen(true)} tooltip={{ children: "Volumes", side: "right", align: "center" }}>
                         <Library />
                         <span>Volumes</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                        onClick={() => router.push('/about')}
+                        isActive={pathname.startsWith('/about')}
+                        tooltip={{ children: 'About', side: "right", align: "center" }}
+                    >
+                        <Info />
+                        <span>About</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
 
