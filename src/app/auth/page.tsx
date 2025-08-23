@@ -56,13 +56,14 @@ export default function AuthPage() {
   };
 
   const t = translations[language];
+  const nextLangLabel = language === 'en' ? 'فارسی' : 'English';
 
   return (
     <>
       <div className="min-h-screen flex items-center justify-center bg-background p-4 relative">
         <div className="absolute top-4 right-4">
             <Button variant="ghost" onClick={toggleLanguage}>
-                <Globe className="mr-2"/> {language === 'en' ? 'فارسی' : 'English'}
+                <Globe className="mr-2"/> {nextLangLabel}
             </Button>
         </div>
         <div className="w-full max-w-md space-y-8 text-center">
