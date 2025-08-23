@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useWriters } from '@/hooks/use-writers';
 import { BatLogo } from '@/components/bat-logo';
 import Link from 'next/link';
@@ -43,13 +43,16 @@ export default function AuthPage() {
   const [dialogRole, setDialogRole] = useState<Role | null>(null);
   const [language, setLanguage] = useState<Language>('en');
 
-  const toggleLanguage = () => {
-    const newLang = language === 'en' ? 'fa' : 'en';
-    setLanguage(newLang);
+  // Keep document dir/lang in sync with selected language
+  useEffect(() => {
     if (typeof document !== 'undefined') {
-      document.documentElement.dir = newLang === 'fa' ? 'rtl' : 'ltr';
-      document.documentElement.lang = newLang;
+      document.documentElement.dir = language === 'fa' ? 'rtl' : 'ltr';
+      document.documentElement.lang = language;
     }
+  }, [language]);
+
+  const toggleLanguage = () => {
+    setLanguage(prev => (prev === 'en' ? 'fa' : 'en'));
   };
 
   const t = translations[language];
