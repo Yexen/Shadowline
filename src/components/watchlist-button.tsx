@@ -11,7 +11,7 @@ interface WatchlistButtonProps {
 }
 
 export function WatchlistButton({ video }: WatchlistButtonProps) {
-  const { addVideo, hasVideo, isLoaded } = useWatchlist();
+  const { toggleVideo, hasVideo, isLoaded } = useWatchlist();
   const [isBookmarked, setIsBookmarked] = useState(false);
 
   useEffect(() => {
@@ -23,8 +23,8 @@ export function WatchlistButton({ video }: WatchlistButtonProps) {
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addVideo(video);
-    setIsBookmarked(true);
+    toggleVideo(video);
+    setIsBookmarked(!isBookmarked);
   };
   
   if (!isLoaded) {
@@ -33,7 +33,7 @@ export function WatchlistButton({ video }: WatchlistButtonProps) {
 
   if (isBookmarked) {
     return (
-        <Button variant="secondary" size="sm" disabled>
+        <Button variant="secondary" size="sm" onClick={handleClick}>
             <BookmarkCheck className="mr-2" />
             Added
         </Button>

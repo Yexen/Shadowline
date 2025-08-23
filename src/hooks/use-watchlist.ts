@@ -17,7 +17,7 @@ export interface Video {
 interface WatchlistState {
   videos: Video[];
   isLoaded: boolean;
-  addVideo: (video: Video) => void;
+  toggleVideo: (video: Video) => void;
   removeVideo: (videoId: string) => void;
   hasVideo: (videoId: string) => boolean;
 }
@@ -27,20 +27,23 @@ export const useWatchlist = create<WatchlistState>()(
     (set, get) => ({
       videos: [],
       isLoaded: false,
-      addVideo: (video) => {
+      toggleVideo: (video) => {
         const existing = get().videos.find(v => v.id === video.id);
         if (existing) {
+            // Remove video
+            set((state) => ({ videos: state.videos.filter((v) => v.id !== video.id) }));
             toast({
-                title: "Already in Watchlist",
-                description: "This video is already in your watchlist.",
+                title: "Removed from Watchlist",
+                variant: "destructive"
             });
-            return;
+        } else {
+            // Add video
+            set((state) => ({ videos: [video, ...state.videos] }));
+            toast({
+                title: "Added to Watchlist",
+                description: `"${video.title}" has been added.`,
+            });
         }
-        set((state) => ({ videos: [video, ...state.videos] }));
-        toast({
-            title: "Added to Watchlist",
-            description: `"${video.title}" has been added.`,
-        });
       },
       removeVideo: (videoId) => {
         set((state) => ({ videos: state.videos.filter((v) => v.id !== videoId) }));
