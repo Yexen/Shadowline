@@ -104,13 +104,20 @@ export function useWriters() {
   const addWriter = async (name: string, email: string, password?: string) => {
     if (!password) throw new Error("Password is required for signup.");
     
-    // Check if user already exists in Firestore by email (case-insensitive for robustness)
     const usersRef = collection(db, "users");
-    const q = query(usersRef, where("email", "==", email.toLowerCase()));
-    const querySnapshot = await getDocs(q);
 
-    if (!querySnapshot.empty) {
+    // Check if email already exists
+    const emailQuery = query(usersRef, where("email", "==", email.toLowerCase()));
+    const emailSnapshot = await getDocs(emailQuery);
+    if (!emailSnapshot.empty) {
         throw new Error("A user with this email already exists.");
+    }
+
+    // Check if name already exists
+    const nameQuery = query(usersRef, where("name", "==", name));
+    const nameSnapshot = await getDocs(nameQuery);
+    if (!nameSnapshot.empty) {
+        throw new Error("A user with this name already exists. Please choose a different name.");
     }
 
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
