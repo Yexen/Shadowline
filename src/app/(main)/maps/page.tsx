@@ -53,7 +53,7 @@ export default function MapsPage() {
           isOpen={!!activeMap} 
           onClose={handleCloseMap} 
           mapHtml={activeMap.mapHtml} 
-          title={\`Interactive \${activeMap.title} Map\`} 
+          title={'Interactive ' + activeMap.title + ' Map'}
         />
       )}
     </>
