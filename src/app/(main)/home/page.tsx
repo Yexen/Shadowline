@@ -214,6 +214,7 @@ function HomePageClient({ initialVideos, initialNews, videoError, newsError }: {
   );
 }
 
+// This is the main export, a Server Component that fetches data.
 export default async function HomePage() {
   let videos: Video[] = [];
   let news: Intel[] = [];
