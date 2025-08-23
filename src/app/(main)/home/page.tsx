@@ -1,7 +1,5 @@
 
-'use client';
-
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import Image from "next/image";
 import { Youtube, Newspaper, PlayCircle, AlertTriangle, BadgeHelp } from "lucide-react";
@@ -12,84 +10,74 @@ import type { Video } from "@/hooks/use-watchlist";
 import type { NewsArticle } from "@/hooks/use-readlist";
 import { ReadlistButton } from "@/components/readlist-button";
 import { VideoModal } from '@/components/video-modal';
+import { getIntel } from '@/lib/intel'; // Use the new intel helper
+import { HomePageClient } from '@/components/home-page-client'; // Use the client component
 
-const fallbackVideos: Video[] = [
-    {
-        id: "C-p32MOfn2c",
-        title: "Batman's ENTIRE History in the DC Animated Universe (DCAU)",
-        uploader: "Comicstorian",
-        thumbnail: "https://i.ytimg.com/vi/C-p32MOfn2c/hqdefault.jpg",
-        url: "https://www.youtube.com/watch?v=C-p32MOfn2c",
-        publishedAt: "2022-03-10T00:00:00Z"
-    },
-    {
-        id: "5-a4h5x4X8U",
-        title: "The Philosophy of The Joker",
-        uploader: "Wisecrack",
-        thumbnail: "https://i.ytimg.com/vi/5-a4h5x4X8U/hqdefault.jpg",
-        url: "https://www.youtube.com/watch?v=5-a4h5x4X8U",
-        publishedAt: "2017-08-01T00:00:00Z"
-    },
-    {
-        id: "pG_NKNX0g-Q",
-        title: "The Complete History of Red Hood",
-        uploader: "VariantComics",
-        thumbnail: "https://i.ytimg.com/vi/pG_NKNX0g-Q/hqdefault.jpg",
-        url: "https://www.youtube.com/watch?v=pG_NKNX0g-Q",
-        publishedAt: "2018-10-23T00:00:00Z"
-    },
-];
+// Data fetching happens here, in the Server Component
+export default async function HomePage() {
+  const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+  let videos: Video[] = [];
+  let videoError: string | undefined;
+  let news: NewsArticle[] = [];
+  let newsError: string | undefined;
 
-type Intel = NewsArticle & { alive: boolean };
+  // Fetch Videos
+  if (!YOUTUBE_API_KEY || YOUTUBE_API_KEY === 'YOUR_API_KEY_HERE') {
+    videoError = "YouTube API key not configured on the server.";
+    videos = []; // You could add fallback videos here if you want
+  } else {
+    try {
+      const searchQuery = 'batman lore deep dive';
+      const YOUTUBE_API_URL = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchQuery)}&type=video&videoDuration=medium&maxResults=10&key=${YOUTUBE_API_KEY}`;
+      const response = await fetch(YOUTUBE_API_URL, { next: { revalidate: 3600 } });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`YouTube API error: ${errorData.error.message}`);
+      }
+      const data = await response.json();
+      videos = (data.items || [])
+        .map((item: any) => ({
+          id: item.id.videoId,
+          title: item.snippet.title,
+          uploader: item.snippet.channelTitle,
+          thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || 'https://placehold.co/480x360.png',
+          url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+          publishedAt: item.snippet.publishedAt,
+        }))
+        .filter((video: Video) => video.id && video.title && video.thumbnail)
+        .slice(0, 6);
+    } catch (e: any) {
+      videoError = e.message;
+    }
+  }
 
-export default function HomePage() {
-  const [videos, setVideos] = useState<Video[]>([]);
-  const [news, setNews] = useState<Intel[]>([]);
-  const [videoError, setVideoError] = useState<string | undefined>();
-  const [newsError, setNewsError] = useState<string | undefined>();
-  const [isLoading, setIsLoading] = useState(true);
+  // Fetch News using the new robust helper
+  try {
+    news = await getIntel({ limit: 9 });
+  } catch (e: any) {
+    newsError = "Failed to load news feed.";
+    news = [];
+  }
 
+  // Pass data to the client component for rendering
+  return (
+    <HomePageClient 
+        initialVideos={videos} 
+        initialNews={news} 
+        videoError={videoError} 
+        newsError={newsError}
+    />
+  );
+}
+
+// We need a client component to handle the modal state
+function HomePageClient({ initialVideos, initialNews, videoError, newsError }: { initialVideos: Video[], initialNews: NewsArticle[], videoError?: string, newsError?: string }) {
+  const [videos, setVideos] = React.useState(initialVideos);
+  const [news, setNews] = React.useState(initialNews);
+  
   const [open, setOpen] = React.useState(false);
   const [active, setActive] = React.useState<{ id: string; title: string } | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-
-      // Fetch videos
-      try {
-        const videoResponse = await fetch('/api/videos');
-        if (!videoResponse.ok) {
-          const errorData = await videoResponse.json();
-          throw new Error(errorData.error || `HTTP ${videoResponse.status}`);
-        }
-        const videoData = await videoResponse.json();
-        setVideos(videoData);
-      } catch (e: any) {
-        setVideoError(e.message);
-        setVideos(fallbackVideos);
-      }
-
-      // Fetch news
-      try {
-        const newsResponse = await fetch('/api/news');
-        if (!newsResponse.ok) {
-          const errorData = await newsResponse.json();
-          throw new Error(errorData.error || `HTTP ${newsResponse.status}`);
-        }
-        const newsData = await newsResponse.json();
-        setNews(newsData);
-      } catch (e: any) {
-        setNewsError(e.message);
-        setNews([]);
-      }
-
-      setIsLoading(false);
-    };
-
-    fetchData();
-  }, []);
-  
   const openVideo = (id: string, title: string) => {
     setActive({ id, title });
     setOpen(true);
@@ -115,7 +103,7 @@ export default function HomePage() {
             Surveillance Footage
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {videoError && !isLoading && (
+          {videoError && (
              <Card className="col-span-full bg-destructive/10 border-destructive/50">
                 <CardHeader className="flex-row items-center gap-4">
                     <AlertTriangle className="w-10 h-10 text-destructive" />
@@ -126,7 +114,7 @@ export default function HomePage() {
                 </CardHeader>
             </Card>
           )}
-          {isLoading ? (
+          {videos.length === 0 && !videoError ? (
              Array.from({ length: 6 }).map((_, index) => (
                 <Card key={`skeleton-vid-${index}`} className="overflow-hidden bg-card">
                     <CardContent className="p-0">
@@ -189,7 +177,7 @@ export default function HomePage() {
             Latest Intel
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {newsError && !isLoading && (
+            {newsError ? (
               <Card className="col-span-full bg-destructive/10 border-destructive/50">
                   <CardHeader className="flex-row items-center gap-4">
                       <AlertTriangle className="w-10 h-10 text-destructive" />
@@ -199,22 +187,8 @@ export default function HomePage() {
                       </div>
                   </CardHeader>
               </Card>
-            )}
-             {isLoading ? (
-                Array.from({ length: 3 }).map((_, index) => (
-                    <Card key={`skeleton-news-${index}`} className="overflow-hidden bg-card">
-                        <CardContent className="p-0">
-                            <Skeleton className="w-full aspect-video" />
-                            <div className="p-4 space-y-2">
-                                <Skeleton className="h-5 w-full" />
-                                <Skeleton className="h-4 w-1/3" />
-                                <Skeleton className="h-4 w-5/6" />
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))
             ) : news.length > 0 ? (
-            news.map((article: Intel) => (
+            news.map((article: NewsArticle) => (
               <Card key={article.id} className="group overflow-hidden bg-card hover:border-primary/50 transition-colors flex flex-col">
                 <a href={article.url} target="_blank" rel="noopener noreferrer">
                   <div className="relative aspect-video">
@@ -225,15 +199,10 @@ export default function HomePage() {
                       className="object-cover w-full h-full"
                       sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     />
-                     {!article.alive && (
-                        <div className="absolute top-2 right-2 text-xs bg-destructive/90 text-white px-2 py-1 rounded">
-                            Offline
-                        </div>
-                    )}
                   </div>
                 </a>
                 <CardHeader>
-                  <a href={article.url} target="_blank" rel="noopener noreferrer" className={!article.alive ? 'pointer-events-none' : ''}>
+                  <a href={article.url} target="_blank" rel="noopener noreferrer">
                     <CardTitle className="font-headline group-hover:text-primary transition-colors">{article.title}</CardTitle>
                     <CardDescription>{article.source} — {new Date(article.date).toLocaleDateString()}</CardDescription>
                   </a>
@@ -247,17 +216,15 @@ export default function HomePage() {
               </Card>
             ))
             ) : (
-                 !newsError && !isLoading && (
-                     <Card className="col-span-full bg-card/50">
-                        <CardHeader className="flex-row items-center gap-4">
-                            <BadgeHelp className="w-10 h-10 text-muted-foreground" />
-                            <div>
-                                <CardTitle>No Intel Found</CardTitle>
-                                <CardDescription>Could not find any recent Batman-related news. The city is quiet... too quiet.</CardDescription>
-                            </div>
-                        </CardHeader>
-                    </Card>
-                )
+                 <Card className="col-span-full bg-card/50">
+                    <CardHeader className="flex-row items-center gap-4">
+                        <BadgeHelp className="w-10 h-10 text-muted-foreground" />
+                        <div>
+                            <CardTitle>A Quiet Night in Gotham</CardTitle>
+                            <CardDescription>Could not find any recent Batman-related news. The city is quiet... too quiet.</CardDescription>
+                        </div>
+                    </CardHeader>
+                </Card>
             )}
           </div>
         </section>
