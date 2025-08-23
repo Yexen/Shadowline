@@ -15,6 +15,7 @@ export type IntelItem = {
 const FEEDS = [
   // Official DC Comics feed
   'https://www.dc.com/blog/rss.xml',
+  'https://batman-news.com/feed/',
   // Other big games/comics sites that often cover Batman
   'https://feeds.ign.com/ign/all',                   // IGN
   'https://www.gamespot.com/feeds/mashup/',          // GameSpot
