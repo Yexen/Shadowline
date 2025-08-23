@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -6,12 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, CheckSquare, Clipboard, Plus, Trash2, Lightbulb, X, Clock, Timer, Bell, Play, Pause, RotateCcw } from "lucide-react";
+import { Calendar as CalendarIcon, CheckSquare, Clipboard, Plus, Trash2, Lightbulb, X, Clock, Timer, Bell, Play, Pause, RotateCcw } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useTimer } from '@/hooks/use-timer';
 import { useToast } from '@/hooks/use-toast';
+import { Calendar } from "@/components/ui/calendar";
 
 interface Task {
   id: number;
@@ -115,6 +115,7 @@ function FocusTimer() {
 
 export default function OrganizationPage() {
   const { sessionTime } = useTimer();
+  const [date, setDate] = useState<Date | undefined>(new Date());
 
   const [tasks, setTasks] = useState<Task[]>([
     { id: 1, text: "Outline Chapter 3", completed: false },
@@ -210,6 +211,20 @@ export default function OrganizationPage() {
                     <span>Session Time: {formatTime(sessionTime)}</span>
                 </div>
               </CardContent>
+            </Card>
+
+            <Card className="bg-card">
+                <CardHeader>
+                    <CardTitle className="font-headline flex items-center gap-2"><CalendarIcon /> Schedule</CardTitle>
+                </CardHeader>
+                <CardContent className="flex justify-center">
+                    <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={setDate}
+                        className="rounded-md border"
+                    />
+                </CardContent>
             </Card>
 
             <FocusTimer />
