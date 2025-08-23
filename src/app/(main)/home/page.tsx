@@ -30,7 +30,8 @@ async function getBatmanVideos(): Promise<Video[]> {
             next: { revalidate: 3600 } // Revalidate every hour
         }).then(res => {
             if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
+                // Don't throw, just return null to filter out later
+                return null;
             }
             return res.json();
         })
@@ -38,16 +39,18 @@ async function getBatmanVideos(): Promise<Video[]> {
 
     const results = await Promise.all(videoPromises);
 
-    const allVideos: Video[] = results.flatMap(result => 
-        result.items?.map((item: any) => ({
-            id: item.id.videoId,
-            title: item.snippet.title,
-            uploader: item.snippet.channelTitle,
-            thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || 'https://placehold.co/480x360.png',
-            url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-            publishedAt: item.snippet.publishedAt,
-        })) || []
-    );
+    const allVideos: Video[] = results
+        .filter(result => result !== null) // Filter out failed requests
+        .flatMap(result => 
+            result.items?.map((item: any) => ({
+                id: item.id.videoId,
+                title: item.snippet.title,
+                uploader: item.snippet.channelTitle,
+                thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || 'https://placehold.co/480x360.png',
+                url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+                publishedAt: item.snippet.publishedAt,
+            })) || []
+        );
 
     // Sort all videos by publish date and take the most recent 6
     return allVideos
@@ -56,7 +59,7 @@ async function getBatmanVideos(): Promise<Video[]> {
         .slice(0, 6);
 
   } catch (error) {
-    console.error("Failed to fetch videos:", error);
+    console.error("Failed to fetch videos due to an unhandled error:", error);
     return [];
   }
 }
