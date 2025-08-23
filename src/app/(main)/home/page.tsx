@@ -86,6 +86,36 @@ function getBatmanNews(): NewsArticle[] {
       dataAiHint: 'gotham city characters',
       url: "#",
     },
+    {
+      id: 4,
+      title: "New 'Arkham' Game Rumored to be in Development",
+      source: "GameSpot",
+      date: new Date(Date.now() - 259200000).toLocaleDateString(),
+      snippet: "Leaks suggest a new entry in the acclaimed Arkham series is in early stages, focusing on a younger Batman.",
+      image: 'https://placehold.co/600x400.png',
+      dataAiHint: 'video game art',
+      url: "#",
+    },
+    {
+      id: 5,
+      title: "Top 10 Most Underrated Batman Villains",
+      source: "ScreenRant",
+      date: new Date(Date.now() - 345600000).toLocaleDateString(),
+      snippet: "Beyond the Joker and Penguin lies a rich gallery of rogues. We explore the villains who deserve more spotlight.",
+      image: 'https://placehold.co/600x400.png',
+      dataAiHint: 'gotham villains comic',
+      url: "#",
+    },
+    {
+      id: 6,
+      title: "The Architectural History of Gotham City",
+      source: "ArchDigest",
+      date: new Date(Date.now() - 432000000).toLocaleDateString(),
+      snippet: "From its gothic spires to its art deco skyscrapers, an in-depth look at the architectural styles that define Gotham.",
+      image: 'https://placehold.co/600x400.png',
+      dataAiHint: 'gothic architecture city',
+      url: "#",
+    },
   ];
 }
 
