@@ -18,12 +18,15 @@ export function WatchlistButton({ video }: WatchlistButtonProps) {
     if (isLoaded) {
       setIsBookmarked(hasVideo(video.id));
     }
+    // By adding `video.id` to the dependency array, this effect will re-run
+    // whenever the video prop changes, ensuring the state is always fresh.
   }, [isLoaded, hasVideo, video.id]);
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     toggleVideo(video);
+    // Optimistically update the UI state immediately.
     setIsBookmarked(!isBookmarked);
   };
   
