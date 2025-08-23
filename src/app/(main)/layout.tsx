@@ -16,7 +16,7 @@ import {
 import { BatLogo } from '@/components/bat-logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Home, PenSquare, BrainCircuit, Info, LogOut, FileText, Images, Settings, BookCopy, BookOpenCheck, ClipboardList, Map as MapIcon, Search, Library, Book, MessageSquare } from 'lucide-react';
+import { Home, PenSquare, BrainCircuit, Info, LogOut, FileText, Images, Settings, BookCopy, BookOpenCheck, ClipboardList, Map as MapIcon, Search, Library, Book, MessageSquare, Globe, User } from 'lucide-react';
 import { useRouter, usePathname, redirect } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -34,6 +34,7 @@ import { useModalStore } from '@/hooks/use-modal-store';
 import { VolumesSidebar } from '@/components/volumes-sidebar';
 import { useVolumes } from '@/hooks/use-volumes';
 import { ChapterEditor } from '@/components/chapter-editor';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
 
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -230,18 +231,52 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </SidebarContent>
         <SidebarFooter>
             <div className="p-2 border-t border-sidebar-border">
-                <div role="button" className="flex items-center p-2 rounded-md hover:bg-accent w-full group cursor-pointer" onClick={() => setWriterProfileOpen(true)}>
-                    <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                            <AvatarImage src={activeWriter?.avatarUrl} alt={activeWriter?.name} data-ai-hint={activeWriter?.dataAiHint} key={activeWriter?.avatarUrl} />
-                            <AvatarFallback>{activeWriter?.name.charAt(0) || 'W'}</AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm font-semibold group-data-[state=collapsed]:hidden">{activeWriter?.name || 'The Writer'}</span>
-                    </div>
-                     <div className="opacity-0 group-hover:opacity-100 group-data-[state=collapsed]:hidden ml-auto">
-                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); logout(); }}><LogOut/></Button>
-                    </div>
-                </div>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <div role="button" className="flex items-center p-2 rounded-md hover:bg-accent w-full group cursor-pointer">
+                            <div className="flex items-center gap-2">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src={activeWriter?.avatarUrl} alt={activeWriter?.name} data-ai-hint={activeWriter?.dataAiHint} key={activeWriter?.avatarUrl} />
+                                    <AvatarFallback>{activeWriter?.name.charAt(0) || 'W'}</AvatarFallback>
+                                </Avatar>
+                                <span className="text-sm font-semibold group-data-[state=collapsed]:hidden">{activeWriter?.name || 'The Writer'}</span>
+                            </div>
+                        </div>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56" align="end" forceMount>
+                        <DropdownMenuLabel className="font-normal">
+                          <div className="flex flex-col space-y-1">
+                            <p className="text-sm font-medium leading-none">{activeWriter.name}</p>
+                            <p className="text-xs leading-none text-muted-foreground">
+                              {activeWriter.email}
+                            </p>
+                          </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setWriterProfileOpen(true)}>
+                            <User className="mr-2"/>
+                            Profile & Settings
+                        </DropdownMenuItem>
+                        <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>
+                                <Globe className="mr-2"/>
+                                Language
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuPortal>
+                                <DropdownMenuSubContent>
+                                    <DropdownMenuItem>English</DropdownMenuItem>
+                                    <DropdownMenuItem>Français (French)</DropdownMenuItem>
+                                    <DropdownMenuItem>فارسی (Farsi)</DropdownMenuItem>
+                                </DropdownMenuSubContent>
+                            </DropdownMenuPortal>
+                        </DropdownMenuSub>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={logout}>
+                             <LogOut className="mr-2"/>
+                             Logout
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
         </SidebarFooter>
       </Sidebar>
