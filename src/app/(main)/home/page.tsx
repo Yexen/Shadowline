@@ -65,6 +65,30 @@ const fallbackVideos: Video[] = [
     },
 ];
 
+const fallbackIntel: Intel[] = [
+    {
+        id: 'fallback-1',
+        title: 'The Batman 2 Release Date, Cast, Plot, And Everything We Know',
+        source: 'ScreenRant',
+        date: '2024-08-22T00:00:00Z',
+        snippet: 'The sequel to The Batman is highly anticipated. Here is everything we know about the cast, plot, and potential release date for the next chapter in Matt Reeves\' saga.',
+        url: '#',
+        image: 'https://placehold.co/800x450.png',
+        alive: true,
+    },
+    {
+        id: 'fallback-2',
+        title: 'New "Batman: Arkham Shadow" Trailer Reveals More Gameplay',
+        source: 'IGN',
+        date: '2024-08-21T00:00:00Z',
+        snippet: 'The latest trailer for the upcoming VR game "Batman: Arkham Shadow" showcases new gameplay mechanics, traversal, and a deeper look at the game\'s villains.',
+        url: '#',
+        image: 'https://placehold.co/800x450.png',
+        alive: true,
+    }
+];
+
+
 async function getBatmanVideos(): Promise<{ videos: Video[], error?: string }> {
   try {
     const response = await getVideosRoute();
@@ -95,15 +119,20 @@ async function getIntel(): Promise<{ news: Intel[], error?: string }> {
         const response = await getNewsRoute();
 
         if (!response.ok) {
-            return { news: [], error: 'Could not fetch the latest intel from the network.' };
+            return { news: fallbackIntel, error: 'Could not fetch the latest intel from the network. Displaying fallback articles.' };
         }
         
         const news = await response.json();
+
+        if (!news || news.length === 0) {
+             return { news: fallbackIntel, error: 'The intel network is quiet. Displaying fallback articles.' };
+        }
+
         return { news };
 
     } catch (error) {
         console.error('Failed to fetch intel:', error);
-        return { news: [], error: 'The intel network is currently unreachable.' };
+        return { news: fallbackIntel, error: 'The intel network is currently unreachable. Displaying fallback articles.' };
     }
 }
 
@@ -219,7 +248,7 @@ export default async function HomePage() {
                 <a href={article.url} target="_blank" rel="noopener noreferrer">
                   <div className="relative aspect-video">
                     <Image
-                      src={article.image}
+                      src={article.image || "https://placehold.co/800x450.png?text=Batman+News"}
                       alt={`Image for ${article.title}`}
                       fill
                       className="object-cover w-full h-full"
