@@ -3,30 +3,63 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Youtube, Newspaper } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import Link from "next/link";
+
+// Define TypeScript types for our data
+interface Video {
+    id: number;
+    title: string;
+    uploader: string;
+    views: string;
+    thumbnail: string;
+    dataAiHint: string;
+    url: string;
+}
+
+interface NewsArticle {
+    id: number;
+    title: string;
+    source: string;
+    date: string;
+    snippet: string;
+    image: string;
+    dataAiHint: string;
+    url: string;
+}
 
 export default function HomePage() {
+    const [videos, setVideos] = useState<Video[]>([]);
+    const [news, setNews] = useState<NewsArticle[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const surveillanceFootage = [
-        {id: 1, title: 'Top 10 Batmobile Gadgets You Never Knew!', uploader: 'Bat-Fans United', views: '2.1M', thumbnail: 'https://placehold.co/600x400.png', dataAiHint: 'batmobile gadgets', url: 'https://youtube.com'},
-        {id: 2, title: 'Arkham Asylum: A Deep Dive into its Architecture', uploader: 'Gotham Historian', views: '870K', thumbnail: 'https://placehold.co/600x400.png', dataAiHint: 'gothic architecture asylum', url: 'https://youtube.com'},
-        {id: 3, title: 'Ranking Every Robin: From Best to Worst', uploader: 'Comic Geek', views: '1.5M', thumbnail: 'https://placehold.co/600x400.png', dataAiHint: 'superhero sidekick', url: 'https://youtube.com'},
-    ];
-
-    const latestIntel = [
-        {id: 1, title: 'Wayne Enterprises Announces New Tech Initiative', source: 'The Gotham Gazette', date: '4 hours ago', snippet: 'Wayne Enterprises has pledged to revitalize Burnley with a new technology center, promising jobs and innovation.', image: 'https://placehold.co/600x400.png', dataAiHint: 'modern cityscape', url: 'https://google.com/news'},
-        {id: 2, title: 'Riddler Strikes Again With City-Wide Puzzle', source: 'Channel 52 News', date: '1 day ago', snippet: 'The enigmatic Riddler has challenged Gotham\'s finest with a series of complex puzzles, threatening to release sensitive city data.', image: 'https://placehold.co/600x400.png', dataAiHint: 'question mark neon', url: 'https://google.com/news'},
-        {id: 3, title: 'The Penguin\'s Iceberg Lounge Under Investigation', source: 'Gotham PD Press', date: '3 days ago', snippet: 'Sources confirm the GCPD is building a case against Oswald Cobblepot, owner of the popular Iceberg Lounge.', image: 'https://placehold.co/600x400.png', dataAiHint: 'crime investigation board', url: 'https://google.com/news'},
-    ];
-
     useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 1000);
-        return () => clearTimeout(timer);
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                if (window.FirebaseHelper) {
+                    const videoRes = await window.FirebaseHelper.getBatmanVideos();
+                    const newsRes = await window.FirebaseHelper.getBatmanNews();
+
+                    if (videoRes.ok) setVideos(videoRes.data);
+                    if (newsRes.ok) setNews(newsRes.data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch homepage data:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        // Ensure FirebaseHelper is loaded before fetching
+        if (window.FirebaseHelper) {
+            fetchData();
+        } else {
+            // If the script hasn't loaded yet, wait for it.
+            window.addEventListener('load', fetchData);
+            return () => window.removeEventListener('load', fetchData);
+        }
     }, []);
 
   return (
@@ -58,7 +91,7 @@ export default function HomePage() {
                 </Card>
             ))
           ) : (
-            surveillanceFootage.map(video => (
+            videos.map(video => (
               <a href={video.url} key={video.id} target="_blank" rel="noopener noreferrer" className="block overflow-hidden bg-card hover:border-primary/50 transition-colors rounded-lg">
                 <Card className="border-0 shadow-none h-full">
                   <CardContent className="p-0">
@@ -103,7 +136,7 @@ export default function HomePage() {
                     </Card>
                 ))
             ) : (
-                latestIntel.map(news => (
+                news.map(news => (
                     <a href={news.url} key={news.id} target="_blank" rel="noopener noreferrer" className="block bg-card hover:border-primary/50 transition-colors rounded-lg">
                       <Card className="flex flex-col border-0 shadow-none h-full">
                           <CardHeader>
