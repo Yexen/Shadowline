@@ -1,8 +1,8 @@
-
 'use client';
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { useWriters } from './use-writers';
 
 export interface Message {
   id: string;
@@ -35,7 +35,12 @@ export const useMessages = create<MessagesState>()(
       threads: [],
       isLoaded: false,
       sendMessage: (content, recipientIds) => {
-        const activeWriterId = 'head-writer-001'; // FIXME: This should come from useWriters()
+        const activeWriterId = useWriters.getState().activeWriter?.id;
+        if (!activeWriterId) {
+            console.error("No active writer found. Cannot send message.");
+            return;
+        }
+
         const participants = [activeWriterId, ...recipientIds];
         const threadId = getThreadId(participants);
 

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -142,20 +141,30 @@ export function useWriters() {
     try {
         await login(headWriterDefault.email, headWriterDefault.password);
     } catch (error: any) {
-        if (error.code === 'auth/user-not-found') {
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
             // First time login for head writer, create account
-             const userCredential = await createUserWithEmailAndPassword(auth, headWriterDefault.email, headWriterDefault.password);
-             const user = userCredential.user;
-             const headWriterProfile: Omit<Writer, 'id'> = {
-                name: headWriterDefault.name,
-                email: headWriterDefault.email,
-                avatarUrl: headWriterDefault.avatarUrl,
-                dataAiHint: headWriterDefault.dataAiHint,
-                role: headWriterDefault.role,
-                status: headWriterDefault.status,
-             };
-             await setDoc(doc(db, "users", user.uid), headWriterProfile);
-             // onAuthStateChanged will handle setting active user
+             try {
+                const userCredential = await createUserWithEmailAndPassword(auth, headWriterDefault.email, headWriterDefault.password);
+                const user = userCredential.user;
+                const headWriterProfile: Omit<Writer, 'id'> = {
+                    name: headWriterDefault.name,
+                    email: headWriterDefault.email,
+                    avatarUrl: headWriterDefault.avatarUrl,
+                    dataAiHint: headWriterDefault.dataAiHint,
+                    role: headWriterDefault.role,
+                    status: headWriterDefault.status,
+                };
+                await setDoc(doc(db, "users", user.uid), headWriterProfile);
+             } catch (creationError: any) {
+                if (creationError.code !== 'auth/email-already-in-use') {
+                    throw creationError;
+                }
+                // If email is in use, it means auth user exists but maybe firestore doc doesn't.
+                // Just proceed to login, which will get caught by onAuthStateChanged.
+             }
+             // After creation or if already exists, try logging in again
+             await login(headWriterDefault.email, headWriterDefault.password);
+
         } else {
             console.error("Head writer login failed:", error);
             throw error;
