@@ -29,7 +29,7 @@ export default function MapsPage() {
         </div>
         
         {isLoaded ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {maps.map(map => (
               <MapCard 
                 key={map.id} 
@@ -40,7 +40,8 @@ export default function MapsPage() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <Skeleton className="h-80" />
             <Skeleton className="h-80" />
             <Skeleton className="h-80" />
           </div>
@@ -52,7 +53,7 @@ export default function MapsPage() {
           isOpen={!!activeMap} 
           onClose={handleCloseMap} 
           mapHtml={activeMap.mapHtml} 
-          title={`Interactive ${activeMap.title} Map`} 
+          title={\`Interactive \${activeMap.title} Map\`} 
         />
       )}
     </>
