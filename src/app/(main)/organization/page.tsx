@@ -1,16 +1,17 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, CheckSquare, Clipboard, Plus, Trash2, Lightbulb, X } from "lucide-react";
+import { CalendarDays, CheckSquare, Clipboard, Plus, Trash2, Lightbulb, X, Clock, Timer, Bell, Play, Pause, RotateCcw } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { useTimer } from '@/hooks/use-timer';
+import { useToast } from '@/hooks/use-toast';
 
 interface Task {
   id: number;
@@ -29,9 +30,92 @@ interface Idea {
     content: string;
 }
 
+const formatTime = (totalSeconds: number) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return [hours, minutes, seconds]
+        .map(v => v.toString().padStart(2, '0'))
+        .join(':');
+};
+
+function MissionClock() {
+    const [time, setTime] = useState(new Date());
+
+    useEffect(() => {
+        const interval = setInterval(() => setTime(new Date()), 1000);
+        return () => clearInterval(interval);
+    }, []);
+
+    return <p className="text-4xl font-bold font-mono tracking-wider">{time.toLocaleTimeString()}</p>;
+}
+
+function FocusTimer() {
+    const { 
+        focusTime, 
+        focusTimeLeft, 
+        isFocusTimerRunning, 
+        setFocusTime, 
+        toggleFocusTimer, 
+        resetFocusTimer 
+    } = useTimer();
+    const { toast } = useToast();
+
+    const handleSetTime = (minutes: number) => {
+        setFocusTime(minutes * 60);
+    };
+    
+    const handleToggle = async () => {
+        if (Notification.permission === 'default') {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                toast({
+                    variant: 'destructive',
+                    title: 'Permission Denied',
+                    description: 'Notifications are required for the alarm to work.',
+                });
+                return;
+            }
+        } else if (Notification.permission === 'denied') {
+             toast({
+                variant: 'destructive',
+                title: 'Permission Denied',
+                description: 'Please enable notifications in your browser settings.',
+            });
+            return;
+        }
+        toggleFocusTimer();
+    };
+
+    return (
+        <Card className="bg-card">
+            <CardHeader>
+                <CardTitle className="font-headline flex items-center gap-2"><Bell/> Focus Timer</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+                 <p className="text-5xl font-bold font-mono tracking-wider mb-4">{formatTime(focusTimeLeft)}</p>
+                 {!isFocusTimerRunning ? (
+                    <div className="flex gap-2 justify-center mb-4">
+                        <Button variant="outline" size="sm" onClick={() => handleSetTime(15)}>15 min</Button>
+                        <Button variant="outline" size="sm" onClick={() => handleSetTime(25)}>25 min</Button>
+                        <Button variant="outline" size="sm" onClick={() => handleSetTime(45)}>45 min</Button>
+                    </div>
+                 ) : null}
+                 <div className="flex gap-2 justify-center">
+                    <Button onClick={handleToggle} disabled={focusTime === 0}>
+                        {isFocusTimerRunning ? <Pause className="mr-2"/> : <Play className="mr-2"/>}
+                        {isFocusTimerRunning ? 'Pause' : 'Start'}
+                    </Button>
+                    <Button variant="secondary" onClick={resetFocusTimer}><RotateCcw className="mr-2"/> Reset</Button>
+                 </div>
+            </CardContent>
+        </Card>
+    )
+}
+
 export default function OrganizationPage() {
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  
+  const { sessionTime } = useTimer();
+
   const [tasks, setTasks] = useState<Task[]>([
     { id: 1, text: "Outline Chapter 3", completed: false },
     { id: 2, text: "Research Arkham's history", completed: true },
@@ -117,17 +201,19 @@ export default function OrganizationPage() {
         <div className="lg:col-span-1 space-y-8">
             <Card className="bg-card">
               <CardHeader>
-                <CardTitle className="font-headline flex items-center gap-2"><CalendarDays/> Mission Calendar</CardTitle>
+                <CardTitle className="font-headline flex items-center gap-2"><Clock/> Mission Clock</CardTitle>
               </CardHeader>
-              <CardContent className="flex justify-center">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  className="rounded-md"
-                />
+              <CardContent className="flex flex-col items-center justify-center">
+                <MissionClock />
+                <div className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                    <Timer size={14}/>
+                    <span>Session Time: {formatTime(sessionTime)}</span>
+                </div>
               </CardContent>
             </Card>
+
+            <FocusTimer />
+            
              <Card className="bg-card">
                 <CardHeader>
                     <CardTitle className="font-headline flex items-center gap-2"><Lightbulb /> Field Ideas</CardTitle>

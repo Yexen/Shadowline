@@ -35,11 +35,13 @@ import { VolumesSidebar } from '@/components/volumes-sidebar';
 import { useVolumes } from '@/hooks/use-volumes';
 import { ChapterEditor } from '@/components/chapter-editor';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
+import { useTimer } from '@/hooks/use-timer';
 
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  useTimer(); // Initialize the timer hook to start tracking time.
 
   const { isLoaded: bibleLoaded, bibleData, addCategory, addOrUpdateEntry } = useBible();
   const { activeWriter, isLoaded: authLoaded, logout } = useWriters();
