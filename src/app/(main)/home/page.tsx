@@ -8,7 +8,9 @@ import { WatchlistButton } from "@/components/watchlist-button";
 import type { Video } from "@/hooks/use-watchlist";
 import { ReadlistButton } from "@/components/readlist-button";
 import type { NewsArticle } from "@/hooks/use-readlist";
-import Link from 'next/link';
+import { checkUrl, type UrlStatus } from "@/lib/checkUrl";
+
+type Intel = NewsArticle & { status: UrlStatus };
 
 const fallbackVideos: Video[] = [
     {
@@ -159,8 +161,11 @@ function getBatmanNews(): NewsArticle[] {
 
 export default async function HomePage() {
     const { videos, error: videoError } = await getBatmanVideos();
-    const news = getBatmanNews();
-    const isExternal = (url?: string) => !!url && /^https?:\/\//i.test(url);
+    const baseNews = getBatmanNews();
+    
+    const news: Intel[] = await Promise.all(
+      baseNews.map(async (a) => ({ ...a, status: await checkUrl(a.url) }))
+    );
 
   return (
     <div className="space-y-8">
@@ -255,42 +260,64 @@ export default async function HomePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {news.map(article => (
                 <Card key={article.id} className="group overflow-hidden bg-card hover:border-primary/50 transition-colors flex flex-col">
-                  {isExternal(article.url) ? (
-                    <a href={article.url} target="_blank" rel="noopener noreferrer" className="block" aria-label={`Read ${article.title}`}>
-                      <div className="relative aspect-video">
-                          <Image src={article.image} alt={`Image for ${article.title}`} fill className="object-cover w-full h-full" data-ai-hint={article.dataAiHint} sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw" />
+                  {/* Image */}
+                  <div className="relative aspect-video">
+                    <Image
+                      src={article.image}
+                      alt={`Image for ${article.title}`}
+                      fill
+                      className="object-cover w-full h-full"
+                      data-ai-hint={article.dataAiHint}
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    />
+                    {!article.status.ok && (
+                      <div className="absolute top-2 right-2 text-xs bg-destructive/90 text-white px-2 py-1 rounded">
+                        Offline
                       </div>
-                    </a>
-                  ) : (
-                    <div className="relative aspect-video pointer-events-none opacity-90">
-                       <Image src={article.image} alt={`Image for ${article.title}`} fill className="object-cover w-full h-full" data-ai-hint={article.dataAiHint} sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw" />
-                    </div>
-                  )}
+                    )}
+                  </div>
 
                   <CardHeader>
-                    {isExternal(article.url) ? (
-                       <a href={article.url} target="_blank" rel="noopener noreferrer">
-                         <CardTitle className="font-headline">{article.title}</CardTitle>
-                         <CardDescription>{article.source} - {article.date}</CardDescription>
-                       </a>
+                    {article.status.ok ? (
+                      <a href={article.status.finalUrl ?? article.url} target="_blank" rel="noopener noreferrer">
+                        <CardTitle className="font-headline">{article.title}</CardTitle>
+                        <CardDescription>{article.source} — {article.date}</CardDescription>
+                      </a>
                     ) : (
-                       <div>
-                         <CardTitle className="font-headline">{article.title}</CardTitle>
-                         <CardDescription>{article.source} - {article.date}</CardDescription>
-                       </div>
+                      <div title={article.status.reason ?? "Unavailable"}>
+                        <CardTitle className="font-headline">{article.title}</CardTitle>
+                        <CardDescription>{article.source} — {article.date}</CardDescription>
+                      </div>
                     )}
                   </CardHeader>
 
                   <CardContent className="flex-grow">
-                      <p className="text-muted-foreground">{article.snippet}</p>
+                    <p className="text-muted-foreground">{article.snippet}</p>
                   </CardContent>
+
                   <div className="p-6 pt-0 flex justify-between items-center">
-                    {isExternal(article.url) ? (
-                      <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-primary font-bold hover:underline">
-                        Read More &rarr;
+                    {article.status.ok ? (
+                      <a
+                        href={article.status.finalUrl ?? article.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary font-bold hover:underline"
+                      >
+                        Read More →
                       </a>
-                    ) : <span />}
-                      <ReadlistButton article={article} />
+                    ) : (
+                      article.status.archiveUrl ? (
+                        <a
+                          href={article.status.archiveUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:underline"
+                        >
+                          View on Web Archive →
+                        </a>
+                      ) : <span />
+                    )}
+                    <ReadlistButton article={article} />
                   </div>
                 </Card>
             ))}
