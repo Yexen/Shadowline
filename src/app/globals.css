@@ -127,3 +127,41 @@ div[data-radix-scroll-area-viewport] > div > [data-radix-scroll-area-scrollbar] 
 [data-radix-scroll-area-thumb]:hover {
   background-color: rgba(255, 255, 255, 0.2) !important;
 }
+
+/* Tiptap Editor Styles */
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+  height: 0;
+}
+
+.tiptap {
+    @apply prose prose-invert max-w-full;
+}
+
+.tiptap:focus {
+    @apply outline-none;
+}
+
+.tiptap h1, .tiptap h2, .tiptap h3 {
+    @apply font-headline;
+}
+
+.tiptap p {
+    @apply font-body;
+}
+
+.tiptap pre {
+    background: #0D0D0D;
+    border-radius: 0.5rem;
+    color: #FFF;
+    font-family: 'JetBrainsMono', monospace;
+    padding: 0.75rem 1rem;
+}
+
+.tiptap blockquote {
+    border-left-color: hsl(var(--primary));
+    padding-left: 1rem;
+}

@@ -19,6 +19,16 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
+function extractTextFromHtml(html: string): string {
+    if (typeof window === 'undefined') {
+        // Fallback for SSR
+        return html.replace(/<[^>]*>?/gm, '');
+    }
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    return div.textContent || div.innerText || '';
+}
+
 export default function DraftsPage() {
   const router = useRouter();
   const { drafts, deleteDraft, isLoaded } = useDrafts();
@@ -59,42 +69,45 @@ export default function DraftsPage() {
 
       {drafts.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {drafts.map(draft => (
-            <Card key={draft.id} className="flex flex-col bg-card hover:border-primary/50 transition-colors">
-              <CardHeader className="cursor-pointer flex-grow" onClick={() => router.push(`/editor/${draft.id}`)}>
-                <CardTitle className="font-headline">{draft.title || 'Untitled Draft'}</CardTitle>
-                <CardDescription>
-                  Last modified: {new Date(draft.lastModified).toLocaleDateString()}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="cursor-pointer flex-grow" onClick={() => router.push(`/editor/${draft.id}`)}>
-                <p className="text-muted-foreground line-clamp-3">
-                  {draft.content ? draft.content.substring(0, 100) + '...' : 'No content yet...'}
-                </p>
-              </CardContent>
-              <CardFooter className="flex justify-end">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="icon">
-                      <Trash2 />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the draft titled "{draft.title || 'Untitled Draft'}".
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => deleteDraft(draft.id)}>Delete Draft</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </CardFooter>
-            </Card>
-          ))}
+          {drafts.map(draft => {
+            const snippet = extractTextFromHtml(draft.content).substring(0, 100) + '...';
+            return (
+                <Card key={draft.id} className="flex flex-col bg-card hover:border-primary/50 transition-colors">
+                <CardHeader className="cursor-pointer flex-grow" onClick={() => router.push(`/editor/${draft.id}`)}>
+                    <CardTitle className="font-headline">{draft.title || 'Untitled Draft'}</CardTitle>
+                    <CardDescription>
+                    Last modified: {new Date(draft.lastModified).toLocaleDateString()}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="cursor-pointer flex-grow" onClick={() => router.push(`/editor/${draft.id}`)}>
+                    <p className="text-muted-foreground line-clamp-3">
+                    {snippet || 'No content yet...'}
+                    </p>
+                </CardContent>
+                <CardFooter className="flex justify-end">
+                    <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="icon">
+                        <Trash2 />
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the draft titled "{draft.title || 'Untitled Draft'}".
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => deleteDraft(draft.id)}>Delete Draft</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                    </AlertDialog>
+                </CardFooter>
+                </Card>
+            )
+          })}
         </div>
       ) : (
         <div className="text-center py-16 border-2 border-dashed border-border rounded-lg">

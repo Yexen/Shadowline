@@ -23,7 +23,7 @@ export function useDrafts() {
       if (storedData) {
         const parsedData = JSON.parse(storedData);
         // Make sure dates are correctly parsed
-        const draftsWithDates = parsedData.map((d: Draft) => ({ ...d, lastModified: new Date(d.lastModified) }));
+        const draftsWithDates = parsedData.map((d: any) => ({ ...d, lastModified: new Date(d.lastModified) }));
         setDrafts(draftsWithDates);
       } else {
         setDrafts([]);
@@ -77,5 +77,3 @@ export function useDrafts() {
 
   return { isLoaded, drafts, addDraft, updateDraft, deleteDraft, getDraft };
 }
-
-    

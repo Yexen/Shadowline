@@ -4,7 +4,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Save, Eye, EyeOff, Download, FileText, FileCode, Sparkles, PenLine, Library, BookPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -19,33 +18,31 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Label } from '@/components/ui/label';
-import { useBible } from '@/hooks/use-bible';
 import { useDrafts, type Draft } from '@/hooks/use-drafts';
 import { useVolumes } from '@/hooks/use-volumes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useGallery } from '@/hooks/use-gallery';
-import { useWriters } from '@/hooks/use-writers';
 import { AskOracleDialog } from '@/components/ask-oracle-dialog';
 import { SceneGenDialog } from '@/components/scene-gen-dialog';
-
+import { RichTextEditor } from '@/components/rich-text-editor';
+import { useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Placeholder from '@tiptap/extension-placeholder';
 
 export default function EditorPage() {
   const params = useParams();
   const router = useRouter();
   const draftId = params.draftId as string;
   
-  const { getDraft, addDraft, updateDraft, drafts } = useDrafts();
+  const { getDraft, addDraft, updateDraft } = useDrafts();
   
   const [content, setContent] = useState('');
   const [title, setTitle] = useState('Untitled Draft');
   const [isLoaded, setIsLoaded] = useState(false);
   const [currentDraft, setCurrentDraft] = useState<Draft | null>(null);
 
-  const [showPreview, setShowPreview] = useState(true);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const statusRef = useRef<HTMLParagraphElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
   
   const { volumes, addChapterToVolume } = useVolumes();
@@ -56,6 +53,26 @@ export default function EditorPage() {
   const [sceneGenOpen, setSceneGenOpen] = useState(false);
   const [selection, setSelection] = useState('');
 
+  const editor = useEditor({
+    extensions: [
+        StarterKit.configure({
+            bulletList: { keepMarks: true, keepAttributes: true },
+            orderedList: { keepMarks: true, keepAttributes: true },
+        }),
+        Placeholder.configure({
+            placeholder: "The darkness of Gotham is a canvas. Paint your story...",
+        }),
+    ],
+    content: content,
+    onUpdate: ({ editor }) => {
+        setContent(editor.getHTML());
+    },
+    editorProps: {
+        attributes: {
+            class: "prose prose-invert prose-p:font-body prose-headings:font-headline focus:outline-none w-full max-w-full",
+        },
+    },
+  });
 
   useEffect(() => {
     if (draftId === 'new') {
@@ -68,18 +85,25 @@ export default function EditorPage() {
         setCurrentDraft(draft);
         setTitle(draft.title);
         setContent(draft.content);
-        setLastSaved(draft.lastModified ? new Date(draft.lastModified) : null);
+        setLastSaved(draft.lastModified ? new Date(d.lastModified) : null);
       } else {
-        // If draft not found, redirect to a new one
         router.replace('/editor/new');
       }
       setIsLoaded(true);
     }
   }, [draftId, getDraft, router]);
+  
+  useEffect(() => {
+      if (editor && content !== editor.getHTML()) {
+          editor.commands.setContent(content);
+      }
+  }, [content, editor]);
 
   const wordCount = useMemo(() => {
-    return content.trim().split(/\s+/).filter(Boolean).length;
-  }, [content]);
+    if (!editor) return 0;
+    const text = editor.state.doc.textContent;
+    return text.trim().split(/\s+/).filter(Boolean).length;
+  }, [content, editor]);
 
   const handleSave = () => {
     setIsSaving(true);
@@ -106,7 +130,8 @@ export default function EditorPage() {
   };
   
   const handleExport = (format: 'txt' | 'md') => {
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const textToExport = format === 'txt' ? editor?.getText() || '' : content;
+    const blob = new Blob([textToExport], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -130,29 +155,19 @@ export default function EditorPage() {
   };
 
   const handleOpenOracle = () => {
-    const text = window.getSelection()?.toString() || content;
-    setSelection(text);
+    const selectedText = editor?.state.selection.content().content.textBetween(0, editor.state.selection.content().size) || '';
+    setSelection(selectedText || content);
     setOracleOpen(true);
   };
 
   const handleInsertText = (text: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const newContent = content.substring(0, start) + text + content.substring(end);
-    
-    setContent(newContent);
-    setSceneGenOpen(false);
-
-    // Move cursor to the end of the inserted text
-    setTimeout(() => {
-        textarea.focus();
-        textarea.setSelectionRange(start + text.length, start + text.length);
-    }, 0);
+    if (editor) {
+        editor.chain().focus().insertContent(text).run();
+        setSceneGenOpen(false);
+    }
 };
 
+  if (!editor) return null;
 
   return (
     <>
@@ -209,10 +224,6 @@ export default function EditorPage() {
             </DialogContent>
            </Dialog>
 
-          <Button variant="ghost" size="sm" onClick={() => setShowPreview(!showPreview)}>
-            {showPreview ? <EyeOff /> : <Eye />}
-            {showPreview ? 'Hide Preview' : 'Show Preview'}
-          </Button>
           <Button variant="ghost" size="sm" onClick={handleSave} disabled={isSaving}>
             <Save />
             Save Draft
@@ -228,27 +239,8 @@ export default function EditorPage() {
         </div>
       </header>
 
-      <div className={cn("grid gap-4 flex-1", showPreview ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1")}>
-        <Textarea
-          ref={textareaRef}
-          placeholder="The darkness of Gotham is a canvas. Paint your story..."
-          className="h-full w-full resize-none bg-card p-6 font-code text-base leading-relaxed"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          aria-label="Draft content"
-          disabled={!isLoaded}
-        />
-        {showPreview && (
-          <Card className="h-full overflow-y-auto bg-card">
-            <CardContent className="p-6">
-              <div className="prose prose-invert prose-p:font-body prose-headings:font-headline">
-                {content.split('\n').map((line, i) => (
-                    <p key={i}>{line || <>&nbsp;</>}</p>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+      <div className="grid gap-4 flex-1">
+        <RichTextEditor editor={editor} />
       </div>
 
       <footer className="mt-4 text-sm text-muted-foreground flex justify-between items-center">
