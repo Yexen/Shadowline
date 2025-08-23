@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState } from 'react';
 import { useWriters } from '@/hooks/use-writers';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +10,9 @@ import { useWatchlist, type Video } from '@/hooks/use-watchlist';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { PlayCircle, Trash2 } from 'lucide-react';
+import { PasswordInput } from '@/components/password-input';
+import { useToast } from '@/hooks/use-toast';
+import { Separator } from '@/components/ui/separator';
 
 function WatchlistSection() {
     const { videos, removeVideo, isLoaded } = useWatchlist();
@@ -61,6 +65,46 @@ function WatchlistSection() {
     );
 }
 
+function ChangePasswordSection() {
+    const { toast } = useToast();
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+
+    const handleChangePassword = async () => {
+        // This is a placeholder for real auth. In a real app, this would be an API call.
+        if (newPassword !== confirmPassword) {
+            toast({ variant: 'destructive', title: 'Error', description: 'New passwords do not match.' });
+            return;
+        }
+        if (newPassword.length < 6) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Password must be at least 6 characters.' });
+            return;
+        }
+        // Simulate success
+        toast({ title: 'Success', description: 'Your password has been changed.' });
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+    }
+
+    return (
+         <Card>
+            <CardHeader>
+                <CardTitle>Change Password</CardTitle>
+                <CardDescription>Update your login credentials.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <PasswordInput placeholder="Current Password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} autoComplete="current-password" />
+                <Separator />
+                <PasswordInput placeholder="New Password" value={newPassword} onChange={e => setNewPassword(e.target.value)} autoComplete="new-password"/>
+                <PasswordInput placeholder="Confirm New Password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password"/>
+                <Button onClick={handleChangePassword} className="w-full">Update Password</Button>
+            </CardContent>
+        </Card>
+    )
+}
+
 export default function ProfilePage() {
     const { activeWriter, isLoaded } = useWriters();
 
@@ -87,6 +131,7 @@ export default function ProfilePage() {
         </div>
 
        <WatchlistSection />
+       <ChangePasswordSection />
     </div>
   );
 }

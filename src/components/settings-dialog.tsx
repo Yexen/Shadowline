@@ -25,10 +25,7 @@ export function SettingsDialog({ isOpen, onClose, onOpenUserManagement }: Settin
     const { activeWriter } = useWriters();
     const { toast } = useToast();
     const { openAiApiKey, setOpenAiApiKey, isLoaded } = useAiProvider();
-
-    const [currentPassword, setCurrentPassword] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
+    
     const [apiKey, setApiKey] = useState('');
     
     useEffect(() => {
@@ -76,23 +73,6 @@ export function SettingsDialog({ isOpen, onClose, onOpenUserManagement }: Settin
         URL.revokeObjectURL(url);
     };
 
-    const handleChangePassword = async () => {
-        // This is a placeholder for real auth. In a real app, this would be an API call.
-        if (newPassword !== confirmPassword) {
-            toast({ variant: 'destructive', title: 'Error', description: 'New passwords do not match.' });
-            return;
-        }
-        if (newPassword.length < 6) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Password must be at least 6 characters.' });
-            return;
-        }
-        // Simulate success
-        toast({ title: 'Success', description: 'Your password has been changed.' });
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-    }
-
     const handleSaveAiSettings = () => {
         setOpenAiApiKey(apiKey);
         toast({ title: "AI Settings Saved", description: "Your API key has been updated." });
@@ -137,18 +117,6 @@ export function SettingsDialog({ isOpen, onClose, onOpenUserManagement }: Settin
                     
                     <Separator />
                     
-                    <div>
-                        <h3 className="font-bold">Change Password</h3>
-                        <div className="space-y-2 mt-2">
-                             <PasswordInput placeholder="Current Password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} autoComplete="current-password" />
-                             <PasswordInput placeholder="New Password" value={newPassword} onChange={e => setNewPassword(e.target.value)} autoComplete="new-password"/>
-                             <PasswordInput placeholder="Confirm New Password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password"/>
-                             <Button onClick={handleChangePassword} className="w-full">Update Password</Button>
-                        </div>
-                    </div>
-                    
-                    <Separator />
-
                     <div>
                         <h3 className="font-bold">Change Logo</h3>
                         <p className="text-sm text-muted-foreground">
