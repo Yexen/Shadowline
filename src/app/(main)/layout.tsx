@@ -126,9 +126,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-            <div className="flex items-center group-data-[state=expanded]:justify-start group-data-[state=collapsed]:justify-center w-full p-2">
+            <div className="flex items-center group-data-[state=expanded]:justify-center group-data-[state=collapsed]:justify-center w-full p-2">
                  <SidebarTrigger asChild>
-                    <div className="w-20 h-16 rounded-full flex items-center justify-center cursor-pointer hover:bg-accent/50">
+                    <div className="group-data-[state=expanded]:w-32 group-data-[state=expanded]:h-20 group-data-[state=collapsed]:w-6 group-data-[state=collapsed]:h-3 cursor-pointer">
                         <BatLogo />
                     </div>
                  </SidebarTrigger>
