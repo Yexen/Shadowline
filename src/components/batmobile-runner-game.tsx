@@ -692,9 +692,9 @@ const gameHtml = `
 </html>
 `;
 
-export default function BatmobileRunnerPage() {
+export function BatmobileRunnerGame() {
   return (
-    <div className="w-full h-[calc(100vh-14rem)] bg-black rounded-lg overflow-hidden">
+    <div className="w-full h-full bg-black rounded-lg overflow-hidden">
       <iframe
         srcDoc={gameHtml}
         className="w-full h-full border-0"
