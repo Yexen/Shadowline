@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -15,7 +16,7 @@ import {
 import { BatLogo } from '@/components/bat-logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Home, PenSquare, BrainCircuit, Info, LogOut, FileText, Images, Settings, BookCopy, BookOpenCheck, ClipboardList, Map as MapIcon, Search, Library, Book, MessageSquare } from 'lucide-react';
+import { Home, PenSquare, BrainCircuit, Info, LogOut, FileText, Images, Settings, BookCopy, BookOpenCheck, ClipboardList, Map as MapIcon, Search, Library, Book, MessageSquare, User } from 'lucide-react';
 import { useRouter, usePathname, redirect } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -70,6 +71,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const menuItems = [
     { href: '/home', label: 'Home', icon: Home },
+    { href: '/profile', label: 'Profile', icon: User },
     { href: '/search', label: 'Search', icon: Search },
     { href: '/editor', label: 'Editor', icon: PenSquare },
     { href: '/drafts', label: 'Drafts', icon: FileText },
@@ -134,7 +136,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </SidebarHeader>
         <SidebarContent>
             <SidebarMenu>
-                {menuItems.filter(i => !['/nyxen'].includes(i.href)).slice(0, 9).map((item) => (
+                {menuItems.filter(i => !['/nyxen'].includes(i.href)).slice(0, 10).map((item) => (
                 <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                         onClick={() => item.action ? item.action() : router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href)}
@@ -213,7 +215,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 
-                {menuItems.filter(i => !['/nyxen'].includes(i.href)).slice(9).map((item) => (
+                {menuItems.filter(i => !['/nyxen'].includes(i.href)).slice(10).map((item) => (
                 <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                         onClick={() => item.action ? item.action() : router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href)}

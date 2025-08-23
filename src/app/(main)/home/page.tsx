@@ -4,17 +4,8 @@ import Image from "next/image";
 import { Youtube, Newspaper, PlayCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshButton } from "@/components/refresh-button";
-
-interface Video {
-    id: string;
-    title: string;
-    uploader: string;
-    views: string;
-    thumbnail: string;
-    dataAiHint: string;
-    url: string;
-    publishedAt: string;
-}
+import { WatchlistButton } from "@/components/watchlist-button";
+import type { Video } from "@/hooks/use-watchlist";
 
 interface NewsArticle {
     id: number;
@@ -55,9 +46,7 @@ async function getBatmanVideos(): Promise<Video[]> {
             id: item.id.videoId,
             title: item.snippet.title,
             uploader: item.snippet.channelTitle,
-            views: 'Latest',
             thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,
-            dataAiHint: 'batman video',
             url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
             publishedAt: item.snippet.publishedAt,
         })) || []
@@ -130,36 +119,36 @@ export default async function HomePage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {videos.length > 0 ? (
             videos.map(video => (
-              <a 
-                href={video.url} 
-                key={video.id} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="block group overflow-hidden bg-card hover:border-primary/50 transition-colors rounded-lg"
-                aria-label={`Watch ${video.title} by ${video.uploader}`}
-              >
-                <Card className="border-0 shadow-none h-full">
+              <Card key={video.id} className="group overflow-hidden bg-card hover:border-primary/50 transition-colors flex flex-col">
+                <a 
+                  href={video.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                  aria-label={`Watch ${video.title} by ${video.uploader}`}
+                >
                   <CardContent className="p-0">
                     <div className="relative aspect-video overflow-hidden rounded-t-lg">
                         <Image 
                           src={video.thumbnail} 
                           alt={`Thumbnail for ${video.title}`} 
                           fill
-                          className="object-cover w-full h-full" 
-                          data-ai-hint={video.dataAiHint} 
+                          className="object-cover w-full h-full"
                         />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <PlayCircle className="w-16 h-16 text-white/80" />
                         </div>
                     </div>
-                    <div className="p-4">
-                        <h3 className="font-bold font-headline line-clamp-2">{video.title}</h3>
-                        <p className="text-sm text-muted-foreground truncate">{video.uploader}</p>
-                        <p className="text-xs text-muted-foreground">{video.views}</p>
-                    </div>
                   </CardContent>
-                </Card>
-              </a>
+                </a>
+                <div className="p-4 flex flex-col flex-grow">
+                    <h3 className="font-bold font-headline line-clamp-2 flex-grow">{video.title}</h3>
+                    <p className="text-sm text-muted-foreground truncate">{video.uploader}</p>
+                    <div className="flex justify-end mt-2">
+                        <WatchlistButton video={video} />
+                    </div>
+                </div>
+              </Card>
             ))
           ) : (
              Array.from({ length: 6 }).map((_, index) => (
