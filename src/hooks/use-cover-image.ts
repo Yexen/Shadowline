@@ -8,11 +8,16 @@ import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storag
 
 const COVER_IMAGE_STORAGE_KEY = 'gotham-cover-image-url';
 const COVER_IMAGE_HINT_KEY = 'gotham-cover-image-hint';
-const DEFAULT_COVER_IMAGE = 'https://placehold.co/1600x400.png';
-const DEFAULT_AI_HINT = 'gotham city batman';
+const DEFAULT_COVER_IMAGE = 'https://storage.googleapis.com/gcp-kms-prod-tokens-studio-uploads-us-central1/users%2F-MQ2SW0sC2oGZl62Lp5I%2Fprompt-images%2F624e5a07153f3e9c7a2b992176d65b75.png';
+const DEFAULT_AI_HINT = 'batman rooftop';
 
 // Helper function to upload image and get URL
 const uploadCoverImage = async (dataUrl: string): Promise<string> => {
+    // Client-side size check before upload to prevent large files from being processed
+    // 2MB limit
+    if (dataUrl.length > 2 * 1024 * 1024) {
+        throw new Error('Image size exceeds 2MB limit.');
+    }
     const storageRef = ref(storage, `covers/cover-${Date.now()}`);
     const snapshot = await uploadString(storageRef, dataUrl, 'data_url');
     return getDownloadURL(snapshot.ref);
@@ -78,7 +83,7 @@ export function useCoverImage() {
       toast({
             variant: 'destructive',
             title: 'Upload Failed',
-            description: 'Could not save the new cover image. Please try again.',
+            description: (error as Error).message || 'Could not save the new cover image. Please try again.',
         });
     }
   }, []);
