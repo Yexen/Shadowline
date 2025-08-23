@@ -38,7 +38,7 @@ async function getBatmanVideos(): Promise<Video[]> {
   
   try {
     const response = await fetch(YOUTUBE_API_URL, {
-        next: { revalidate: 3600 }
+        cache: 'no-store'
     });
     
     if (!response.ok) {
