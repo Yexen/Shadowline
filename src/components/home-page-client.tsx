@@ -4,7 +4,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import Image from "next/image";
-import { Youtube, Newspaper, PlayCircle, AlertTriangle, BadgeHelp } from "lucide-react";
+import { Youtube, Newspaper, PlayCircle, AlertTriangle, BadgeHelp, ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshButton } from "@/components/refresh-button";
 import { WatchlistButton } from "@/components/watchlist-button";
@@ -12,6 +12,8 @@ import type { Video } from "@/hooks/use-watchlist";
 import type { NewsArticle } from "@/hooks/use-readlist";
 import { ReadlistButton } from "@/components/readlist-button";
 import { VideoModal } from '@/components/video-modal';
+import { IntelViewer } from '@/components/intel-viewer';
+import { Button } from './ui/button';
 
 interface HomePageClientProps {
     initialVideos: Video[],
@@ -25,18 +27,11 @@ export function HomePageClient({ initialVideos, initialNews, videoError, newsErr
   const [videos, setVideos] = React.useState(initialVideos);
   const [news, setNews] = React.useState(initialNews);
   
-  const [open, setOpen] = React.useState(false);
-  const [active, setActive] = React.useState<{ id: string; title: string } | null>(null);
+  const [activeVideo, setActiveVideo] = React.useState<{ id: string; title: string } | null>(null);
+  const [activeArticle, setActiveArticle] = React.useState<{ url: string; title: string } | null>(null);
 
-  const openVideo = (id: string, title: string) => {
-    setActive({ id, title });
-    setOpen(true);
-  };
-
-  const closeVideo = () => {
-    setOpen(false);
-    setActive(null);
-  };
+  const openVideo = (id: string, title: string) => setActiveVideo({ id, title });
+  const openArticle = (url: string, title: string) => setActiveArticle({ url, title });
 
   return (
     <div className="space-y-8">
@@ -83,7 +78,7 @@ export function HomePageClient({ initialVideos, initialNews, videoError, newsErr
                 <button
                   type="button"
                   onClick={() => openVideo(video.id, video.title)}
-                  className="block text-left"
+                  className="block text-left cursor-pointer"
                   aria-label={`Play ${video.title}`}
                 >
                   <CardContent className="p-0">
@@ -106,7 +101,7 @@ export function HomePageClient({ initialVideos, initialNews, videoError, newsErr
                   <button 
                     type="button"
                     onClick={() => openVideo(video.id, video.title)}
-                    className="text-left flex-grow"
+                    className="text-left flex-grow cursor-pointer"
                   >
                     <h3 className="font-bold font-headline line-clamp-2">{video.title}</h3>
                     <p className="text-sm text-muted-foreground truncate">{video.uploader}</p>
@@ -140,7 +135,7 @@ export function HomePageClient({ initialVideos, initialNews, videoError, newsErr
             ) : news.length > 0 ? (
             news.map((article: NewsArticle) => (
               <Card key={article.id} className="group overflow-hidden bg-card hover:border-primary/50 transition-colors flex flex-col">
-                <a href={article.url} target="_blank" rel="noopener noreferrer">
+                <button onClick={() => openArticle(article.url, article.title)} className="block text-left cursor-pointer w-full">
                   <div className="relative aspect-video">
                     {article.image ? (
                         <Image
@@ -155,18 +150,26 @@ export function HomePageClient({ initialVideos, initialNews, videoError, newsErr
                             <Newspaper className="w-12 h-12 text-muted-foreground" />
                         </div>
                     )}
+                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <PlayCircle className="w-16 h-16 text-white/80" />
+                    </div>
                   </div>
-                </a>
+                </button>
                 <CardHeader>
-                  <a href={article.url} target="_blank" rel="noopener noreferrer">
-                    <CardTitle className="font-headline group-hover:text-primary transition-colors">{article.title}</CardTitle>
-                    <CardDescription>{article.source} — {new Date(article.date).toLocaleDateString()}</CardDescription>
-                  </a>
+                    <button onClick={() => openArticle(article.url, article.title)} className="block text-left cursor-pointer w-full">
+                        <CardTitle className="font-headline group-hover:text-primary transition-colors">{article.title}</CardTitle>
+                        <CardDescription>{article.source} — {new Date(article.date).toLocaleDateString()}</CardDescription>
+                    </button>
                 </CardHeader>
                 <CardContent className="flex-grow">
                   <p className="text-muted-foreground text-sm line-clamp-3">{article.snippet}</p>
                 </CardContent>
-                <div className="p-4 pt-0 flex justify-end items-center">
+                <div className="p-4 pt-0 flex justify-between items-center">
+                  <Button variant="ghost" size="sm" asChild>
+                    <a href={article.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                        <ExternalLink className="mr-2"/> Open Externally
+                    </a>
+                  </Button>
                   <ReadlistButton article={article} />
                 </div>
               </Card>
@@ -186,10 +189,17 @@ export function HomePageClient({ initialVideos, initialNews, videoError, newsErr
         </section>
 
         <VideoModal
-          open={open}
-          onClose={closeVideo}
-          videoId={active?.id}
-          title={active?.title}
+          open={!!activeVideo}
+          onClose={() => setActiveVideo(null)}
+          videoId={activeVideo?.id}
+          title={activeVideo?.title}
+        />
+
+        <IntelViewer
+          open={!!activeArticle}
+          onClose={() => setActiveArticle(null)}
+          url={activeArticle?.url}
+          title={activeArticle?.title}
         />
     </div>
   );
