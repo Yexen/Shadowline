@@ -35,16 +35,15 @@ async function getBatmanVideos(): Promise<Video[]> {
     return [];
   }
   
-  const channelIds = [
-      'UCiifkYAs_bq1pt_zbNAzYGg', // DC
-      'UCrh61gHBCxO1pG-a5gYd-bA', // Salazar Knight
-      'UCmA-0j6DRVQkR74T4pM9K_Q', // Comicstorian
-      'UCvCaV2P62m2sA3z721eS4wQ', // Fatman Beyond
+  const searchQueries = [
+      'batman philosophy',
+      'redhood',
+      'batman deep dive',
   ];
 
   try {
-    const videoPromises = channelIds.map(channelId => 
-        fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&order=date&type=video&maxResults=5&key=${YOUTUBE_API_KEY}`, {
+    const videoPromises = searchQueries.map(query => 
+        fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=5&key=${YOUTUBE_API_KEY}`, {
             cache: 'no-store'
         }).then(res => res.json())
     );
