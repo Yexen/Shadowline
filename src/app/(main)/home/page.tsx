@@ -9,6 +9,8 @@ import type { Video } from "@/hooks/use-watchlist";
 import type { NewsArticle } from "@/hooks/use-readlist";
 import { ReadlistButton } from "@/components/readlist-button";
 import { Badge } from "@/components/ui/badge";
+import { GET as getNewsRoute } from '@/app/api/news/route';
+import { GET as getVideosRoute } from '@/app/api/videos/route';
 
 type Intel = NewsArticle & { alive: boolean; };
 
@@ -64,12 +66,8 @@ const fallbackVideos: Video[] = [
 ];
 
 async function getBatmanVideos(): Promise<{ videos: Video[], error?: string }> {
-  const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000';
-
   try {
-    const response = await fetch(`${baseUrl}/api/videos`, {
-      next: { revalidate: 3600 } 
-    });
+    const response = await getVideosRoute();
     
     if (!response.ok) {
         const errorData = await response.json();
@@ -93,11 +91,8 @@ async function getBatmanVideos(): Promise<{ videos: Video[], error?: string }> {
 }
 
 async function getIntel(): Promise<{ news: Intel[], error?: string }> {
-    const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000';
     try {
-        const response = await fetch(`${baseUrl}/api/news`, {
-            next: { revalidate: 3600 }
-        });
+        const response = await getNewsRoute();
 
         if (!response.ok) {
             return { news: [], error: 'Could not fetch the latest intel from the network.' };
