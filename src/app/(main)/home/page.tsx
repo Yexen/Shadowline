@@ -10,11 +10,62 @@ import { ReadlistButton } from "@/components/readlist-button";
 import type { NewsArticle } from "@/hooks/use-readlist";
 import Link from 'next/link';
 
+const fallbackVideos: Video[] = [
+    {
+        id: "C-p32MOfn2c",
+        title: "Batman's ENTIRE History in the DC Animated Universe (DCAU)",
+        uploader: "Comicstorian",
+        thumbnail: "https://i.ytimg.com/vi/C-p32MOfn2c/hqdefault.jpg",
+        url: "https://www.youtube.com/watch?v=C-p32MOfn2c",
+        publishedAt: "2022-03-10T00:00:00Z"
+    },
+    {
+        id: "5-a4h5x4X8U",
+        title: "The Philosophy of The Joker",
+        uploader: "Wisecrack",
+        thumbnail: "https://i.ytimg.com/vi/5-a4h5x4X8U/hqdefault.jpg",
+        url: "https://www.youtube.com/watch?v=5-a4h5x4X8U",
+        publishedAt: "2017-08-01T00:00:00Z"
+    },
+    {
+        id: "pG_NKNX0g-Q",
+        title: "The Complete History of Red Hood",
+        uploader: "VariantComics",
+        thumbnail: "https://i.ytimg.com/vi/pG_NKNX0g-Q/hqdefault.jpg",
+        url: "https://www.youtube.com/watch?v=pG_NKNX0g-Q",
+        publishedAt: "2018-10-23T00:00:00Z"
+    },
+    {
+        id: "9MFJk4Xm3A4",
+        title: "What You Never Knew About The Batcave",
+        uploader: "CBR",
+        thumbnail: "https://i.ytimg.com/vi/9MFJk4Xm3A4/hqdefault.jpg",
+        url: "https://www.youtube.com/watch?v=9MFJk4Xm3A4",
+        publishedAt: "2021-05-15T00:00:00Z"
+    },
+    {
+        id: "D8eS2gY2i_w",
+        title: "How Batman's Villains Represent Stages of Grief",
+        uploader: "The Imaginary Axis",
+        thumbnail: "https://i.ytimg.com/vi/D8eS2gY2i_w/hqdefault.jpg",
+        url: "https://www.youtube.com/watch?v=D8eS2gY2i_w",
+        publishedAt: "2020-09-20T00:00:00Z"
+    },
+    {
+        id: "T7d64R2n4d4",
+        title: "The Long Halloween: A Complete History",
+        uploader: "Comics Explained",
+        thumbnail: "https://i.ytimg.com/vi/T7d64R2n4d4/hqdefault.jpg",
+        url: "https://www.youtube.com/watch?v=T7d64R2n4d4",
+        publishedAt: "2021-06-25T00:00:00Z"
+    },
+];
+
 async function getBatmanVideos(): Promise<{ videos: Video[], error?: string }> {
   const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
   if (!YOUTUBE_API_KEY || YOUTUBE_API_KEY === "YOUR_API_KEY_HERE") {
-    return { videos: [], error: "YouTube API Key is not configured." };
+    return { videos: fallbackVideos, error: "YouTube API Key is not configured. Showing fallback videos." };
   }
   
   const searchQuery = 'batman lore deep dive';
@@ -28,7 +79,7 @@ async function getBatmanVideos(): Promise<{ videos: Video[], error?: string }> {
         const err = await response.json();
         const errorMessage = err.error.message || "An unknown error occurred with the YouTube API.";
         console.error(`YouTube API Error for query "${searchQuery}":`, errorMessage);
-        return { videos: [], error: errorMessage };
+        return { videos: fallbackVideos, error: errorMessage };
     }
 
     const result = await response.json();
@@ -49,7 +100,7 @@ async function getBatmanVideos(): Promise<{ videos: Video[], error?: string }> {
 
   } catch (error) {
     console.error("Failed to fetch videos due to an unhandled error:", error);
-    return { videos: [], error: "An unexpected error occurred while fetching videos." };
+    return { videos: fallbackVideos, error: "An unexpected error occurred while fetching videos." };
   }
 }
 
@@ -138,17 +189,18 @@ export default async function HomePage() {
             Surveillance Footage
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {videoError ? (
+          {videoError && (
              <Card className="col-span-full bg-destructive/10 border-destructive/50">
                 <CardHeader className="flex-row items-center gap-4">
                     <AlertTriangle className="w-10 h-10 text-destructive" />
                     <div>
                         <CardTitle className="text-destructive">YouTube Feed Error</CardTitle>
-                        <CardDescription className="text-destructive/80">{videoError} Please add your key to the .env file.</CardDescription>
+                        <CardDescription className="text-destructive/80">{videoError} Please add your key to the .env.local file.</CardDescription>
                     </div>
                 </CardHeader>
             </Card>
-          ) : videos.length > 0 ? (
+          )}
+          {videos.length > 0 ? (
             videos.map(video => (
               <Card key={video.id} className="group overflow-hidden bg-card hover:border-primary/50 transition-colors flex flex-col">
                 <a 
