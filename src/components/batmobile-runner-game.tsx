@@ -1,4 +1,3 @@
-
 'use client';
 
 const gameHtml = `
@@ -620,7 +619,7 @@ const gameHtml = `
             // Lives
             ctx.fillStyle = '#d4af37';
             ctx.font = '20px Courier New';
-            ctx.fillText(\`Lives: \${'❤️'.repeat(lives)}\`, 20, canvas.height - 40);
+            ctx.fillText('Lives: ' + '❤️'.repeat(lives), 20, canvas.height - 40);
             
             // Nitro indicator
             if (player.hasNitro) {
@@ -650,7 +649,7 @@ const gameHtml = `
 
         function endGame() {
             gameRunning = false;
-            document.getElementById('finalScore').textContent = \`Final Score: \${score}\`;
+            document.getElementById('finalScore').textContent = 'Final Score: ' + score;
             document.getElementById('gameOver').style.display = 'block';
         }
 
