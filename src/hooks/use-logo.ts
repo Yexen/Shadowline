@@ -36,7 +36,7 @@ const NEW_LOGO_SVG_TEXT = `
 </svg>
 `;
 
-const DEFAULT_LOGO_URL = `data:image/svg+xml;base64,${typeof window !== 'undefined' ? window.btoa(NEW_LOGO_SVG_TEXT) : ''}`;
+const DEFAULT_LOGO_URL = `https://firebasestorage.googleapis.com/v0/b/shadows-of-gotham.firebasestorage.app/o/alimoini_Ultra-wide_comic-book_splash_header_on_a_rain-slick__039016ec-7d75-4c0a-8233-4e1ec46921c4_3.png?alt=media&token=0d9079bb-628f-4ac6-92b3-dbc6419fae47`;
 
 
 export function useLogo() {
@@ -44,11 +44,6 @@ export function useLogo() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    // btoa is not available on server, so we re-set the state on client mount
-    if (typeof window !== 'undefined' && !logoUrl.startsWith('data:')) {
-        setLogoUrl(`data:image/svg+xml;base64,${window.btoa(NEW_LOGO_SVG_TEXT)}`);
-    }
-
     try {
       const storedLogo = localStorage.getItem(LOGO_STORAGE_KEY);
       if (storedLogo) {
