@@ -1,11 +1,16 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import Image from "next/image";
-import { Youtube, Newspaper, PlayCircle, AlertTriangle } from "lucide-react";
+import { Youtube, Newspaper, PlayCircle, AlertTriangle, Link as LinkIcon, BadgeHelp } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshButton } from "@/components/refresh-button";
 import { WatchlistButton } from "@/components/watchlist-button";
 import type { Video } from "@/hooks/use-watchlist";
+import type { NewsArticle } from "@/hooks/use-readlist";
+import { ReadlistButton } from "@/components/readlist-button";
+import { Badge } from "@/components/ui/badge";
+
+type Intel = NewsArticle & { alive: boolean; };
 
 const fallbackVideos: Video[] = [
     {
@@ -59,12 +64,11 @@ const fallbackVideos: Video[] = [
 ];
 
 async function getBatmanVideos(): Promise<{ videos: Video[], error?: string }> {
-  // Use a placeholder for the base URL which will work in both development and production.
   const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000';
 
   try {
     const response = await fetch(`${baseUrl}/api/videos`, {
-      next: { revalidate: 3600 } // This revalidates the fetch from our *own* API route
+      next: { revalidate: 3600 } 
     });
     
     if (!response.ok) {
@@ -76,7 +80,6 @@ async function getBatmanVideos(): Promise<{ videos: Video[], error?: string }> {
 
     const videos = await response.json();
     
-    // If the API returns an empty array for some reason, use the fallback.
     if (!videos || videos.length === 0) {
         return { videos: fallbackVideos, error: "The video feed is currently empty. Showing fallback content." };
     }
@@ -89,8 +92,30 @@ async function getBatmanVideos(): Promise<{ videos: Video[], error?: string }> {
   }
 }
 
+async function getIntel(): Promise<{ news: Intel[], error?: string }> {
+    const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000';
+    try {
+        const response = await fetch(`${baseUrl}/api/news`, {
+            next: { revalidate: 3600 }
+        });
+
+        if (!response.ok) {
+            return { news: [], error: 'Could not fetch the latest intel from the network.' };
+        }
+        
+        const news = await response.json();
+        return { news };
+
+    } catch (error) {
+        console.error('Failed to fetch intel:', error);
+        return { news: [], error: 'The intel network is currently unreachable.' };
+    }
+}
+
+
 export default async function HomePage() {
     const { videos, error: videoError } = await getBatmanVideos();
+    const { news, error: newsError } = await getIntel();
 
   return (
     <div className="space-y-8">
@@ -176,6 +201,69 @@ export default async function HomePage() {
           )}
         </div>
       </section>
+
+      <section>
+          <h2 className="font-headline text-2xl font-bold uppercase flex items-center gap-3 mb-4">
+            <Newspaper className="text-primary" />
+            Latest Intel
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {newsError && (
+              <Card className="col-span-full bg-destructive/10 border-destructive/50">
+                  <CardHeader className="flex-row items-center gap-4">
+                      <AlertTriangle className="w-10 h-10 text-destructive" />
+                      <div>
+                          <CardTitle className="text-destructive">Intel Feed Error</CardTitle>
+                          <CardDescription className="text-destructive/80">{newsError}</CardDescription>
+                      </div>
+                  </CardHeader>
+              </Card>
+            )}
+            {news.map((article: any) => (
+              <Card key={article.id} className="group overflow-hidden bg-card hover:border-primary/50 transition-colors flex flex-col">
+                <a href={article.url} target="_blank" rel="noopener noreferrer">
+                  <div className="relative aspect-video">
+                    <Image
+                      src={article.image}
+                      alt={`Image for ${article.title}`}
+                      fill
+                      className="object-cover w-full h-full"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    />
+                     {!article.alive && (
+                        <div className="absolute top-2 right-2 text-xs bg-destructive/90 text-white px-2 py-1 rounded">
+                            Offline
+                        </div>
+                    )}
+                  </div>
+                </a>
+                <CardHeader>
+                  <a href={article.url} target="_blank" rel="noopener noreferrer" className={!article.alive ? 'pointer-events-none' : ''}>
+                    <CardTitle className="font-headline group-hover:text-primary transition-colors">{article.title}</CardTitle>
+                    <CardDescription>{article.source} — {new Date(article.date).toLocaleDateString()}</CardDescription>
+                  </a>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                  <p className="text-muted-foreground text-sm line-clamp-3">{article.snippet}</p>
+                </CardContent>
+                <div className="p-4 pt-0 flex justify-end items-center">
+                  <ReadlistButton article={article} />
+                </div>
+              </Card>
+            ))}
+            {!newsError && news.length === 0 && (
+                 <Card className="col-span-full bg-card/50">
+                    <CardHeader className="flex-row items-center gap-4">
+                        <BadgeHelp className="w-10 h-10 text-muted-foreground" />
+                        <div>
+                            <CardTitle>No Intel Found</CardTitle>
+                            <CardDescription>Could not find any recent Batman-related news. The city is quiet... too quiet.</CardDescription>
+                        </div>
+                    </CardHeader>
+                </Card>
+            )}
+          </div>
+        </section>
     </div>
   );
 }

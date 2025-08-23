@@ -6,13 +6,12 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { toast } from './use-toast';
 
 export interface NewsArticle {
-  id: number;
+  id: string | number;
   title: string;
   source: string;
   date: string;
   snippet: string;
   image: string;
-  dataAiHint: string;
   url: string;
 }
 
@@ -20,8 +19,8 @@ interface ReadlistState {
   articles: NewsArticle[];
   isLoaded: boolean;
   toggleArticle: (article: NewsArticle) => void;
-  removeArticle: (articleId: number) => void;
-  hasArticle: (articleId: number) => boolean;
+  removeArticle: (articleId: string | number) => void;
+  hasArticle: (articleId: string | number) => boolean;
 }
 
 export const useReadlist = create<ReadlistState>()(
