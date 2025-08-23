@@ -8,8 +8,11 @@ import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storag
 
 const COVER_IMAGE_STORAGE_KEY = 'gotham-cover-image-url';
 const COVER_IMAGE_HINT_KEY = 'gotham-cover-image-hint';
+const COVER_IMAGE_POSITION_KEY = 'gotham-cover-image-position';
+
 const DEFAULT_COVER_IMAGE = 'https://firebasestorage.googleapis.com/v0/b/shadows-of-gotham.firebasestorage.app/o/alimoini_Ultra-wide_comic-book_splash_header_on_a_rain-slick__039016ec-7d75-4c0a-8233-4e1ec46921c4_3.png?alt=media&token=0d9079bb-628f-4ac6-92b3-dbc6419fae47';
 const DEFAULT_AI_HINT = 'gotham city dark';
+const DEFAULT_POSITION = 50; // Center
 
 // Helper function to upload image and get URL
 const uploadCoverImage = async (dataUrl: string): Promise<string> => {
@@ -26,23 +29,29 @@ const uploadCoverImage = async (dataUrl: string): Promise<string> => {
 export function useCoverImage() {
   const [coverImage, setCoverImage] = useState<string>(DEFAULT_COVER_IMAGE);
   const [dataAiHint, setDataAiHint] = useState<string>(DEFAULT_AI_HINT);
+  const [coverImagePosition, setPosition] = useState<number>(DEFAULT_POSITION);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     try {
       const storedUrl = localStorage.getItem(COVER_IMAGE_STORAGE_KEY);
       const storedHint = localStorage.getItem(COVER_IMAGE_HINT_KEY);
+      const storedPosition = localStorage.getItem(COVER_IMAGE_POSITION_KEY);
+
       if (storedUrl) {
         setCoverImage(storedUrl);
         setDataAiHint(storedHint || DEFAULT_AI_HINT);
+        setPosition(storedPosition ? parseInt(storedPosition, 10) : DEFAULT_POSITION);
       } else {
         setCoverImage(DEFAULT_COVER_IMAGE);
         setDataAiHint(DEFAULT_AI_HINT);
+        setPosition(DEFAULT_POSITION);
       }
     } catch (error) {
       console.error("Failed to access localStorage for cover image", error);
       setCoverImage(DEFAULT_COVER_IMAGE);
       setDataAiHint(DEFAULT_AI_HINT);
+      setPosition(DEFAULT_POSITION);
     } finally {
         setIsLoaded(true);
     }
@@ -87,6 +96,20 @@ export function useCoverImage() {
         });
     }
   }, []);
+  
+  const setCoverImagePosition = useCallback((newPosition: number) => {
+    try {
+        localStorage.setItem(COVER_IMAGE_POSITION_KEY, newPosition.toString());
+        setPosition(newPosition);
+    } catch (error) {
+        console.error("Failed to save cover image position", error);
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Could not save image position.',
+        });
+    }
+  }, []);
 
-  return { isLoaded, coverImage, dataAiHint, setCoverImage: saveImage };
+  return { isLoaded, coverImage, dataAiHint, setCoverImage: saveImage, coverImagePosition, setCoverImagePosition };
 }

@@ -8,10 +8,11 @@ import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { ImagePlus } from "lucide-react";
 import { SidebarTrigger } from "./ui/sidebar";
 import { BatLogo } from "./bat-logo";
+import { Slider } from "./ui/slider";
 
 const pathToTitle: { [key: string]: string } = {
     '/home': "welcome Gothamite",
@@ -32,10 +33,18 @@ const pathToTitle: { [key: string]: string } = {
 
 export function AppHeader() {
     const pathname = usePathname();
-    const { coverImage, setCoverImage, dataAiHint } = useCoverImage();
+    const { coverImage, setCoverImage, dataAiHint, coverImagePosition, setCoverImagePosition } = useCoverImage();
     const [dialogOpen, setDialogOpen] = useState(false);
     const [newImageUrl, setNewImageUrl] = useState(coverImage);
+    const [newPosition, setNewPosition] = useState([coverImagePosition]);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (dialogOpen) {
+            setNewImageUrl(coverImage);
+            setNewPosition([coverImagePosition]);
+        }
+    }, [dialogOpen, coverImage, coverImagePosition]);
 
     const pageKey = Object.keys(pathToTitle).find(key => pathname.startsWith(key)) || '/home';
     let title = pathToTitle[pageKey] || "Shadows of Gotham";
@@ -51,7 +60,10 @@ export function AppHeader() {
 
 
     const handleSave = () => {
-        setCoverImage(newImageUrl, 'gotham city batman');
+        if (newImageUrl !== coverImage) {
+            setCoverImage(newImageUrl, 'gotham city batman');
+        }
+        setCoverImagePosition(newPosition[0]);
         setDialogOpen(false);
     }
     
@@ -73,6 +85,7 @@ export function AppHeader() {
                 alt="Gotham City skyline with Bat-signal"
                 fill
                 className="object-cover"
+                style={{ objectPosition: `center ${coverImagePosition}%` }}
                 data-ai-hint={dataAiHint}
                 key={coverImage} // Force re-render on image change
             />
@@ -90,7 +103,19 @@ export function AppHeader() {
                             <DialogTitle>Change Header Image</DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4">
+                            <div className="relative h-32 w-full rounded-md overflow-hidden border">
+                                <Image src={newImageUrl} alt="Cover preview" fill className="object-cover" style={{ objectPosition: `center ${newPosition[0]}%` }} />
+                            </div>
                             <div className="space-y-2">
+                                <Label>Adjust Vertical Position</Label>
+                                <Slider
+                                    value={newPosition}
+                                    onValueChange={setNewPosition}
+                                    max={100}
+                                    step={1}
+                                />
+                            </div>
+                             <div className="space-y-2">
                                 <Label htmlFor="cover-url">Image URL</Label>
                                 <Input 
                                     id="cover-url" 
