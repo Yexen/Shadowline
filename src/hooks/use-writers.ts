@@ -9,8 +9,9 @@ import {
   signInWithEmailAndPassword,
   signOut,
   User,
+  Auth,
 } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, deleteDoc, query, where, Firestore } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 
@@ -28,8 +29,8 @@ export interface Writer {
   status: UserStatus;
 }
 
-const auth = getAuth(app);
-const db = getFirestore(app);
+let auth: Auth;
+let db: Firestore;
 
 const headWriterDefault = {
   id: 'head-writer-001', // Placeholder, will be replaced by actual UID on first signup/login
@@ -48,6 +49,14 @@ export function useWriters() {
   const [activeWriter, setActiveWriter] = useState<Writer | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const router = useRouter();
+
+  // Lazy initialize Firebase services
+  if (!auth) {
+    auth = getAuth(app);
+  }
+  if (!db) {
+    db = getFirestore(app);
+  }
   
   const fetchAllUsers = useCallback(async () => {
     if (activeWriter?.role !== 'head-writer') {
