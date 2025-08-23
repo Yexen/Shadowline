@@ -1,6 +1,7 @@
 
 import "server-only";
 import Parser from 'rss-parser';
+import { extractImageFromArticle } from './extractImage';
 
 export type IntelItem = {
   id: string;
@@ -46,7 +47,7 @@ function firstImageFrom(item: any): string | undefined {
   return m?.[1];
 }
 
-export async function getIntel({ limit = 12 } = {}): Promise<IntelItem[]> {
+export async function getIntel({ limit = 9 } = {}): Promise<IntelItem[]> {
   const all: IntelItem[] = [];
 
   await Promise.allSettled(
@@ -70,7 +71,7 @@ export async function getIntel({ limit = 12 } = {}): Promise<IntelItem[]> {
         }
       } catch (error) {
         // Ignore individual feed errors
-        console.warn(`Failed to parse RSS feed: ${url}`, error);
+        console.warn(`Failed to parse RSS feed: ${url}`);
       }
     })
   );
@@ -88,8 +89,19 @@ export async function getIntel({ limit = 12 } = {}): Promise<IntelItem[]> {
   const themed = deduped.filter(a =>
     /\b(batman)\b/i.test(a.title + ' ' + a.snippet)
   );
+  
+  const sorted = themed.sort((a, b) => +new Date(b.date) - +new Date(a.date));
 
-  return themed
-    .sort((a, b) => +new Date(b.date) - +new Date(a.date))
-    .slice(0, limit);
+  const limited = sorted.slice(0, limit);
+
+  // final pass: try to extract og:image for any articles that are missing one
+  await Promise.all(
+    limited.map(async (article) => {
+      if (!article.image) {
+        article.image = await extractImageFromArticle(article.url);
+      }
+    })
+  );
+
+  return limited;
 }

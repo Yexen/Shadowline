@@ -20,7 +20,7 @@ export default async function HomePage() {
   } else {
     try {
       const searchQuery = 'batman lore deep dive';
-      const YOUTUBE_API_URL = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchQuery)}&type=video&videoDuration=medium&maxResults=10&key=${YOUTUBE_API_KEY}`;
+      const YOUTUBE_API_URL = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchQuery)}&type=video&videoDuration=medium&maxResults=6&key=${YOUTUBE_API_KEY}`;
       const response = await fetch(YOUTUBE_API_URL, { next: { revalidate: 3600 } });
       if (!response.ok) {
         const errorData = await response.json();
@@ -36,10 +36,10 @@ export default async function HomePage() {
           url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
           publishedAt: item.snippet.publishedAt,
         }))
-        .filter((video: Video) => video.id && video.title && video.thumbnail)
-        .slice(0, 6);
+        .filter((video: Video) => video.id && video.title && video.thumbnail);
     } catch (e: any) {
-      videoError = e.message;
+      console.error("Video fetching error:", e);
+      videoError = e.message || "Failed to load videos from YouTube.";
     }
   }
 
@@ -47,6 +47,7 @@ export default async function HomePage() {
   try {
     news = await getIntel({ limit: 9 });
   } catch (e: any) {
+    console.error("News fetching error:", e);
     newsError = "Failed to load news feed.";
     news = [];
   }

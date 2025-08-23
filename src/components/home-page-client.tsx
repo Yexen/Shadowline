@@ -142,13 +142,19 @@ export function HomePageClient({ initialVideos, initialNews, videoError, newsErr
               <Card key={article.id} className="group overflow-hidden bg-card hover:border-primary/50 transition-colors flex flex-col">
                 <a href={article.url} target="_blank" rel="noopener noreferrer">
                   <div className="relative aspect-video">
-                    <Image
-                      src={article.image || "https://placehold.co/800x450.png?text=Batman+News"}
-                      alt={`Image for ${article.title}`}
-                      fill
-                      className="object-cover w-full h-full"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    />
+                    {article.image ? (
+                        <Image
+                            src={article.image}
+                            alt={`Image for ${article.title}`}
+                            fill
+                            className="object-cover w-full h-full"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        />
+                    ) : (
+                        <div className="w-full h-full bg-muted flex items-center justify-center">
+                            <Newspaper className="w-12 h-12 text-muted-foreground" />
+                        </div>
+                    )}
                   </div>
                 </a>
                 <CardHeader>
