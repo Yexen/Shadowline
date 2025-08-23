@@ -23,6 +23,7 @@ const pathToTitle: { [key: string]: string } = {
     '/maps': "Cartography",
     '/organization': "Mission Control",
     '/messages': "Secure Comms",
+    '/sources/comics': "Comics Database",
     '/sources': "Intel",
     '/about': "Project Intel",
     '/nyxen': "Nyxen Chat"
@@ -36,7 +37,15 @@ export function AppHeader() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const pageKey = Object.keys(pathToTitle).find(key => pathname.startsWith(key)) || '/home';
-    const title = pathname.startsWith('/editor/') ? "The Editor" : pathToTitle[pageKey];
+    let title = pathToTitle[pageKey] || "Shadows of Gotham";
+    if (pathname.startsWith('/editor/')) {
+        title = "The Editor";
+    } else if (pathname === '/sources/comics') {
+        title = "Comics Database";
+    } else if (pathname.startsWith('/sources')) {
+        title = "Intel";
+    }
+
 
     const handleSave = () => {
         setCoverImage(newImageUrl, 'gotham city batman');
