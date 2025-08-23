@@ -21,6 +21,7 @@ const pathToTitle: { [key: string]: string } = {
     '/drafts': "Unfinished Business",
     '/ai-tools': "Oracle AI Tools",
     '/gallery': "Visual Archives",
+    '/games': "Arkham Archives",
     '/maps': "Cartography",
     '/organization': "Mission Control",
     '/messages': "Secure Comms",
