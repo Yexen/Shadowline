@@ -13,6 +13,7 @@ interface Video {
     thumbnail: string;
     dataAiHint: string;
     url: string;
+    publishedAt: string;
 }
 
 interface NewsArticle {
@@ -33,31 +34,40 @@ async function getBatmanVideos(): Promise<Video[]> {
     console.error("YouTube API Key is not configured.");
     return [];
   }
-
-  const YOUTUBE_API_URL = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=batman&type=video&order=viewCount&videoDuration=medium&maxResults=6&key=${YOUTUBE_API_KEY}`;
   
-  try {
-    const response = await fetch(YOUTUBE_API_URL, {
-        cache: 'no-store'
-    });
-    
-    if (!response.ok) {
-        const errorData = await response.json();
-        console.error("YouTube API Error:", errorData);
-        return [];
-    }
-    
-    const data = await response.json();
+  const channelIds = [
+      'UCiifkYAs_bq1pt_zbNAzYGg', // DC
+      'UCrh61gHBCxO1pG-a5gYd-bA', // Salazar Knight
+      'UCmA-0j6DRVQkR74T4pM9K_Q', // Comicstorian
+      'UCvCaV2P62m2sA3z721eS4wQ', // Fatman Beyond
+  ];
 
-    return data.items?.map((item: any) => ({
-      id: item.id.videoId,
-      title: item.snippet.title,
-      uploader: item.snippet.channelTitle,
-      views: 'Trending',
-      thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,
-      dataAiHint: 'batman video game',
-      url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-    })) || [];
+  try {
+    const videoPromises = channelIds.map(channelId => 
+        fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&order=date&type=video&maxResults=5&key=${YOUTUBE_API_KEY}`, {
+            cache: 'no-store'
+        }).then(res => res.json())
+    );
+
+    const results = await Promise.all(videoPromises);
+
+    const allVideos: Video[] = results.flatMap(result => 
+        result.items?.map((item: any) => ({
+            id: item.id.videoId,
+            title: item.snippet.title,
+            uploader: item.snippet.channelTitle,
+            views: 'Latest',
+            thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,
+            dataAiHint: 'batman video',
+            url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+            publishedAt: item.snippet.publishedAt,
+        })) || []
+    );
+
+    // Sort all videos by publish date and take the most recent 6
+    return allVideos
+        .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+        .slice(0, 6);
 
   } catch (error) {
     console.error("Failed to fetch videos:", error);
