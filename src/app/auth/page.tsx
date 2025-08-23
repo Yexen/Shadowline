@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -22,7 +21,8 @@ const translations = {
     or: "Or",
     needAccount: "Need an account?",
     requestAccess: "Request Access",
-    accessing: "Accessing..."
+    accessing: "Accessing...",
+    currentLanguage: "English"
   },
   fa: {
     protocol: "پروتکل نویسنده",
@@ -32,7 +32,8 @@ const translations = {
     or: "یا",
     needAccount: "حساب کاربری ندارید؟",
     requestAccess: "درخواست دسترسی",
-    accessing: "در حال دسترسی..."
+    accessing: "در حال دسترسی...",
+    currentLanguage: "فارسی"
   }
 };
 
@@ -56,14 +57,13 @@ export default function AuthPage() {
   };
 
   const t = translations[language];
-  const nextLangLabel = language === 'en' ? 'فارسی' : 'English';
 
   return (
     <>
       <div className="min-h-screen flex items-center justify-center bg-background p-4 relative">
         <div className="absolute top-4 right-4">
             <Button variant="ghost" onClick={toggleLanguage}>
-                <Globe className="mr-2"/> {nextLangLabel}
+                <Globe className="mr-2"/> {t.currentLanguage}
             </Button>
         </div>
         <div className="w-full max-w-md space-y-8 text-center">
