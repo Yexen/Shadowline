@@ -17,47 +17,32 @@ async function getBatmanVideos(): Promise<{ videos: Video[], error?: string }> {
     return { videos: [], error: "YouTube API Key is not configured." };
   }
   
-  const searchQueries = [
-      'batman philosophy',
-      'redhood',
-      'batman deep dive',
-  ];
+  const searchQuery = 'batman lore deep dive';
 
   try {
-    const videoPromises = searchQueries.map(query => 
-        fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&videoDuration=medium&maxResults=5&key=${YOUTUBE_API_KEY}`, {
-            next: { revalidate: 3600 } // Revalidate every hour
-        }).then(res => {
-            if (!res.ok) {
-                // Don't throw, just return null to filter out later
-                return res.json().then(err => {
-                   console.error(`YouTube API Error for query "${query}":`, err.error.message);
-                   return null; 
-                });
-            }
-            return res.json();
-        })
-    );
+    const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchQuery)}&type=video&videoDuration=medium&maxResults=10&key=${YOUTUBE_API_KEY}`, {
+        next: { revalidate: 3600 } // Revalidate every hour
+    });
 
-    const results = await Promise.all(videoPromises);
+    if (!response.ok) {
+        const err = await response.json();
+        const errorMessage = err.error.message || "An unknown error occurred with the YouTube API.";
+        console.error(`YouTube API Error for query "${searchQuery}":`, errorMessage);
+        return { videos: [], error: errorMessage };
+    }
 
-    const allVideos: Video[] = results
-        .filter(result => result !== null && result.items) // Filter out failed requests
-        .flatMap(result => 
-            result.items.map((item: any) => ({
-                id: item.id.videoId,
-                title: item.snippet.title,
-                uploader: item.snippet.channelTitle,
-                thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || 'https://placehold.co/480x360.png',
-                url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-                publishedAt: item.snippet.publishedAt,
-            })) || []
-        );
+    const result = await response.json();
 
-    // Sort all videos by publish date and take the most recent 6
-    const finalVideos = allVideos
-        .filter(video => video.id && video.title && video.thumbnail) // Filter out incomplete videos
-        .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+    const finalVideos: Video[] = (result.items || [])
+        .map((item: any) => ({
+            id: item.id.videoId,
+            title: item.snippet.title,
+            uploader: item.snippet.channelTitle,
+            thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || 'https://placehold.co/480x360.png',
+            url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+            publishedAt: item.snippet.publishedAt,
+        }))
+        .filter((video: Video) => video.id && video.title && video.thumbnail)
         .slice(0, 6);
         
     return { videos: finalVideos };
