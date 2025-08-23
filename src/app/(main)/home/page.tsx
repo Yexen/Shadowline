@@ -43,7 +43,7 @@ async function getBatmanVideos(): Promise<Video[]> {
 
   try {
     const videoPromises = searchQueries.map(query => 
-        fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=5&key=${YOUTUBE_API_KEY}`, {
+        fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&videoDuration=medium&maxResults=5&key=${YOUTUBE_API_KEY}`, {
             cache: 'no-store'
         }).then(res => res.json())
     );
