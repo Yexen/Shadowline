@@ -62,45 +62,33 @@ const fallbackVideos: Video[] = [
 ];
 
 async function getBatmanVideos(): Promise<{ videos: Video[], error?: string }> {
-  const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
-
-  if (!YOUTUBE_API_KEY || YOUTUBE_API_KEY === "YOUR_API_KEY_HERE") {
-    return { videos: fallbackVideos, error: "YouTube API Key is not configured. Showing fallback videos." };
-  }
-  
-  const searchQuery = 'batman lore deep dive';
+  // Use a placeholder for the base URL which will work in both development and production.
+  const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000';
 
   try {
-    const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchQuery)}&type=video&videoDuration=medium&maxResults=10&key=${YOUTUBE_API_KEY}`, {
-        next: { revalidate: 3600 } // Revalidate every hour
+    const response = await fetch(`${baseUrl}/api/videos`, {
+      next: { revalidate: 3600 } // This revalidates the fetch from our *own* API route
     });
-
+    
     if (!response.ok) {
-        const err = await response.json();
-        const errorMessage = err.error.message || "An unknown error occurred with the YouTube API.";
-        console.error(`YouTube API Error for query "${searchQuery}":`, errorMessage);
+        const errorData = await response.json();
+        const errorMessage = errorData.error || "An unknown error occurred while fetching videos from the internal API.";
+        console.error("Internal video API Error:", errorMessage);
         return { videos: fallbackVideos, error: errorMessage };
     }
 
-    const result = await response.json();
-
-    const finalVideos: Video[] = (result.items || [])
-        .map((item: any) => ({
-            id: item.id.videoId,
-            title: item.snippet.title,
-            uploader: item.snippet.channelTitle,
-            thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || 'https://placehold.co/480x360.png',
-            url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-            publishedAt: item.snippet.publishedAt,
-        }))
-        .filter((video: Video) => video.id && video.title && video.thumbnail)
-        .slice(0, 6);
+    const videos = await response.json();
+    
+    // If the API returns an empty array for some reason, use the fallback.
+    if (!videos || videos.length === 0) {
+        return { videos: fallbackVideos, error: "The video feed is currently empty. Showing fallback content." };
+    }
         
-    return { videos: finalVideos };
+    return { videos };
 
   } catch (error) {
     console.error("Failed to fetch videos due to an unhandled error:", error);
-    return { videos: fallbackVideos, error: "An unexpected error occurred while fetching videos." };
+    return { videos: fallbackVideos, error: "The video surveillance system is currently offline. Displaying archived footage." };
   }
 }
 
@@ -194,8 +182,8 @@ export default async function HomePage() {
                 <CardHeader className="flex-row items-center gap-4">
                     <AlertTriangle className="w-10 h-10 text-destructive" />
                     <div>
-                        <CardTitle className="text-destructive">YouTube Feed Error</CardTitle>
-                        <CardDescription className="text-destructive/80">{videoError} Please add your key to the .env.local file.</CardDescription>
+                        <CardTitle className="text-destructive">Video Feed Error</CardTitle>
+                        <CardDescription className="text-destructive/80">{videoError}</CardDescription>
                     </div>
                 </CardHeader>
             </Card>
@@ -243,7 +231,7 @@ export default async function HomePage() {
               </Card>
             ))
           ) : (
-             Array.from({ length: 6 }).map((_, index) => (
+             !videoError && Array.from({ length: 6 }).map((_, index) => (
                 <Card key={`skeleton-${index}`} className="overflow-hidden bg-card">
                     <CardContent className="p-0">
                         <Skeleton className="w-full aspect-video" />
