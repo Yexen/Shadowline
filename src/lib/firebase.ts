@@ -1,7 +1,7 @@
 
 'use client';
 
-import { initializeApp, getApps, getApp } from "firebase/app";
+import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 
 export const firebaseConfig = {
   "projectId": "shadows-of-gotham",
@@ -13,5 +13,7 @@ export const firebaseConfig = {
   "measurementId": "G-S6V0G6J85V"
 };
 
-// Initialize Firebase more robustly
-export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+// Initialize Firebase
+const app: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
+
+export { app };

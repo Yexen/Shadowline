@@ -50,7 +50,7 @@ export function useWriters() {
   const [isLoaded, setIsLoaded] = useState(false);
   const router = useRouter();
 
-  // Lazy initialize Firebase services
+  // Lazy initialize Firebase services to prevent race conditions
   if (!auth) {
     auth = getAuth(app);
   }
