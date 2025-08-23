@@ -34,7 +34,16 @@ const nextConfig: NextConfig = {
         hostname: 'firebasestorage.googleapis.com',
         port: '',
         pathname: '/**',
-      }
+      },
+      { protocol: 'https', hostname: 'assets-prd.ignimgs.com' },
+      { protocol: 'https', hostname: 'www.dc.com' },
+      { protocol: 'https', hostname: 'www.gamespot.com' },
+      { protocol: 'https', hostname: 'static1.srcdn.com' },
+      { protocol: 'https', hostname: 'www.cbr.com' },
+      { protocol: 'https', hostname: 'cdn.vox-cdn.com' },
+      { protocol: 'https', hostname: '**.akamaized.net' },
+      { protocol: 'https', hostname: '**.cloudfront.net' },
+      { protocol: 'https', hostname: 'img.youtube.com' }
     ],
   },
   devIndicators: {
