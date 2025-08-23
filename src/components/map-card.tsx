@@ -8,8 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ImagePlus } from 'lucide-react';
+import { ImagePlus, Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import { storage } from '@/lib/firebase';
+import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { useToast } from '@/hooks/use-toast';
 
 interface MapCardProps {
   map: MapData;
@@ -20,10 +23,33 @@ interface MapCardProps {
 export function MapCard({ map, onOpenMap, onUpdateMap }: MapCardProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newImageUrl, setNewImageUrl] = useState(map.imageUrl);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
-  const handleImageSave = () => {
-    onUpdateMap(map.id, { imageUrl: newImageUrl });
+  const handleImageSave = async () => {
+    if (!newImageUrl) return;
+
+    let finalUrl = newImageUrl;
+
+    if (newImageUrl.startsWith('data:image')) {
+        setIsUploading(true);
+        try {
+            toast({ title: 'Uploading map cover...' });
+            const storageRef = ref(storage, `maps/${map.id}-cover-${Date.now()}`);
+            const snapshot = await uploadString(storageRef, newImageUrl, 'data_url');
+            finalUrl = await getDownloadURL(snapshot.ref);
+            toast({ title: 'Upload complete!' });
+        } catch (error) {
+            console.error('Map cover upload failed', error);
+            toast({ variant: 'destructive', title: 'Upload Failed' });
+            setIsUploading(false);
+            return;
+        }
+    }
+    
+    onUpdateMap(map.id, { imageUrl: finalUrl });
+    setIsUploading(false);
     setDialogOpen(false);
   };
 
@@ -77,7 +103,10 @@ export function MapCard({ map, onOpenMap, onUpdateMap }: MapCardProps) {
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={handleImageSave}>Save Image</Button>
+                    <Button onClick={handleImageSave} disabled={isUploading}>
+                        {isUploading && <Loader2 className="mr-2 animate-spin"/>}
+                        Save Image
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

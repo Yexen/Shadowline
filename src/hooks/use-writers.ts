@@ -12,8 +12,9 @@ import {
   Auth,
 } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, deleteDoc, query, where, Firestore } from 'firebase/firestore';
-import { app } from '@/lib/firebase';
+import { app, storage } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
+import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 
 
 export type UserRole = 'head-writer' | 'writer' | 'reader';
@@ -179,24 +180,35 @@ export function useWriters() {
     fetchAllUsers();
   };
   
-  const updateWriterAvatar = async (writerId: string, avatarUrl: string) => {
-    // If head writer is managing, no need for auth check here.
-    if(activeWriter?.id === 'head-writer-001') {
-      const updatedWriter = {...activeWriter, avatarUrl};
+  const updateWriterAvatar = async (writerId: string, avatarDataUrl: string) => {
+    let finalAvatarUrl = avatarDataUrl;
+
+    // If it's a data URL, upload to Firebase Storage
+    if (avatarDataUrl.startsWith('data:image')) {
+        const storageRef = ref(storage, `avatars/${writerId}`);
+        const snapshot = await uploadString(storageRef, avatarDataUrl, 'data_url');
+        finalAvatarUrl = await getDownloadURL(snapshot.ref);
+    }
+
+    // If head writer is managing, update local storage for bypassed user
+    if(activeWriter?.id === 'head-writer-001' && activeWriter.id === writerId) {
+      const updatedWriter = {...activeWriter, avatarUrl: finalAvatarUrl};
       localStorage.setItem('gotham-bypassed-user', JSON.stringify(updatedWriter));
       setActiveWriter(updatedWriter);
       return;
     }
 
     const userDocRef = doc(db, "users", writerId);
-    await updateDoc(userDocRef, { avatarUrl });
+    await updateDoc(userDocRef, { avatarUrl: finalAvatarUrl });
     if(activeWriter && activeWriter.id === writerId) {
-        setActiveWriter({...activeWriter, avatarUrl});
+        setActiveWriter({...activeWriter, avatarUrl: finalAvatarUrl});
     }
     fetchAllUsers();
   }
 
   const deleteWriter = async (writerId: string) => {
+    // Note: This does not delete the Firebase Auth user, only the Firestore document.
+    // For a production app, you would want to use a Firebase Function to handle user deletion.
     const userDocRef = doc(db, "users", writerId);
     await deleteDoc(userDocRef);
     fetchAllUsers();

@@ -9,11 +9,14 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { Folder, ImagePlus, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { Folder, ImagePlus, MoreHorizontal, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Card, CardContent } from './ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import { storage } from '@/lib/firebase';
+import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
+import { useToast } from '@/hooks/use-toast';
 
 
 interface GalleryFolderProps {
@@ -36,18 +39,42 @@ export function GalleryFolder({ folder, filter, onAddItem, onUpdateItem, onDelet
   const [newItemCaption, setNewItemCaption] = useState('');
   const [newItemDataAiHint, setNewItemDataAiHint] = useState('');
   const [newItemType, setNewItemType] = useState<'image' | 'video'>('image');
+  const [isUploading, setIsUploading] = useState(false);
+
+  const { toast } = useToast();
 
   const [editFolderName, setEditFolderName] = useState('');
   
-  const handleAddItem = () => {
-    if (newItemUrl.trim() && newItemCaption.trim()) {
-        onAddItem(folder.id, newItemType, newItemUrl, newItemCaption, newItemDataAiHint);
-        setNewItemUrl('');
-        setNewItemCaption('');
-        setNewItemDataAiHint('');
-        setNewItemType('image');
-        setAddDialog(false);
+  const handleAddItem = async () => {
+    if ((!newItemUrl.trim() && !fileInputRef.current?.files?.[0]) || !newItemCaption.trim()) {
+        toast({ variant: 'destructive', title: 'Missing Information', description: 'Please provide a caption and either a URL or a file.'});
+        return;
     }
+
+    setIsUploading(true);
+    let finalUrl = newItemUrl;
+
+    if (newItemUrl.startsWith('data:')) {
+        try {
+            const storageRef = ref(storage, `gallery/${folder.id}/${Date.now()}`);
+            const snapshot = await uploadString(storageRef, newItemUrl, 'data_url');
+            finalUrl = await getDownloadURL(snapshot.ref);
+        } catch (error) {
+            console.error("Upload failed", error);
+            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload the file to storage.' });
+            setIsUploading(false);
+            return;
+        }
+    }
+    
+    onAddItem(folder.id, newItemType, finalUrl, newItemCaption, newItemDataAiHint);
+    setNewItemUrl('');
+    setNewItemCaption('');
+    setNewItemDataAiHint('');
+    setNewItemType('image');
+    setAddDialog(false);
+    setIsUploading(false);
+    toast({ title: 'Media Added', description: `Added "${newItemCaption}" to ${folder.name}.`});
   }
 
   const handleStartEditItem = (item: GalleryItem) => {
@@ -58,14 +85,37 @@ export function GalleryFolder({ folder, filter, onAddItem, onUpdateItem, onDelet
     setNewItemType(item.type);
   }
 
-  const handleUpdateItem = () => {
+  const handleUpdateItem = async () => {
     if (editingItem && newItemUrl.trim() && newItemCaption.trim()) {
-        onUpdateItem(folder.id, editingItem.id, newItemUrl, newItemCaption, newItemDataAiHint, newItemType);
+        setIsUploading(true);
+        let finalUrl = newItemUrl;
+
+        // If a new file was selected (data URI), upload it and delete the old one
+        if (newItemUrl.startsWith('data:') && editingItem.url.includes('firebasestorage')) {
+             try {
+                // Delete old object
+                const oldRef = ref(storage, editingItem.url);
+                await deleteObject(oldRef);
+                // Upload new object
+                const newRef = ref(storage, `gallery/${folder.id}/${Date.now()}`);
+                const snapshot = await uploadString(newRef, newItemUrl, 'data_url');
+                finalUrl = await getDownloadURL(snapshot.ref);
+             } catch (error) {
+                console.error("Update failed", error);
+                toast({ variant: 'destructive', title: 'Update Failed', description: 'Could not update the file in storage.' });
+                setIsUploading(false);
+                return;
+            }
+        }
+        
+        onUpdateItem(folder.id, editingItem.id, finalUrl, newItemCaption, newItemDataAiHint, newItemType);
         setEditingItem(null);
         setNewItemUrl('');
         setNewItemCaption('');
         setNewItemDataAiHint('');
         setNewItemType('image');
+        setIsUploading(false);
+        toast({ title: 'Media Updated'});
     }
   }
   
@@ -149,7 +199,10 @@ export function GalleryFolder({ folder, filter, onAddItem, onUpdateItem, onDelet
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setAddDialog(false)}>Cancel</Button>
-                        <Button onClick={handleAddItem}>Add Item</Button>
+                        <Button onClick={handleAddItem} disabled={isUploading}>
+                            {isUploading && <Loader2 className="mr-2 animate-spin"/>}
+                            Add Item
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -288,7 +341,10 @@ export function GalleryFolder({ folder, filter, onAddItem, onUpdateItem, onDelet
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setEditingItem(null)}>Cancel</Button>
-                    <Button onClick={handleUpdateItem}>Save Changes</Button>
+                    <Button onClick={handleUpdateItem} disabled={isUploading}>
+                        {isUploading && <Loader2 className="mr-2 animate-spin"/>}
+                        Save Changes
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

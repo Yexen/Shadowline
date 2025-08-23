@@ -239,9 +239,15 @@ export function WriterProfile({ isOpen, onClose }: { isOpen: boolean; onClose: (
 
     const handleAvatarSave = async () => {
         if (newAvatarUrl && activeWriter) {
-            await updateWriterAvatar(activeWriter.id, newAvatarUrl);
-            toast({ title: 'Avatar updated successfully' });
-            setAvatarDialogOpen(false);
+            try {
+                toast({ title: "Uploading new avatar..."});
+                await updateWriterAvatar(activeWriter.id, newAvatarUrl);
+                toast({ title: 'Avatar updated successfully' });
+                setAvatarDialogOpen(false);
+                setNewAvatarUrl('');
+            } catch (error) {
+                 toast({ variant: 'destructive', title: 'Error', description: 'Failed to update avatar.' });
+            }
         }
     };
     
@@ -314,7 +320,7 @@ export function WriterProfile({ isOpen, onClose }: { isOpen: boolean; onClose: (
                         )}
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setAvatarDialogOpen(false)}>Cancel</Button>
+                        <Button variant="outline" onClick={() => { setAvatarDialogOpen(false); setNewAvatarUrl(''); }}>Cancel</Button>
                         <Button onClick={handleAvatarSave}>Save</Button>
                     </DialogFooter>
                 </DialogContent>

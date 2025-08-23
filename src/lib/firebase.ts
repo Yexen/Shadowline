@@ -1,7 +1,7 @@
-
 'use client';
 
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
+import { getStorage } from "firebase/storage";
 
 export const firebaseConfig = {
   "projectId": "shadows-of-gotham",
@@ -15,5 +15,6 @@ export const firebaseConfig = {
 
 // Initialize Firebase
 const app: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const storage = getStorage(app);
 
-export { app };
+export { app, storage };
