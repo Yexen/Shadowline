@@ -4,12 +4,12 @@
 import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import Image from "next/image";
-import { Youtube, Newspaper } from "lucide-react";
+import { Youtube, Newspaper, PlayCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Define TypeScript types for our data
 interface Video {
-    id: number;
+    id: string;
     title: string;
     uploader: string;
     views: string;
@@ -92,14 +92,19 @@ export default function HomePage() {
             ))
           ) : (
             videos.map(video => (
-              <a href={video.url} key={video.id} target="_blank" rel="noopener noreferrer" className="block overflow-hidden bg-card hover:border-primary/50 transition-colors rounded-lg">
+              <a href={video.url} key={video.id} target="_blank" rel="noopener noreferrer" className="block group overflow-hidden bg-card hover:border-primary/50 transition-colors rounded-lg">
                 <Card className="border-0 shadow-none h-full">
                   <CardContent className="p-0">
-                    <Image src={video.thumbnail} alt={video.title} width={600} height={400} className="aspect-video object-cover" data-ai-hint={video.dataAiHint} />
+                    <div className="relative aspect-video">
+                        <Image src={video.thumbnail} alt={video.title} fill className="object-cover" data-ai-hint={video.dataAiHint} />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <PlayCircle className="w-16 h-16 text-white/80" />
+                        </div>
+                    </div>
                     <div className="p-4">
                         <h3 className="font-bold font-headline truncate">{video.title}</h3>
                         <p className="text-sm text-muted-foreground">{video.uploader}</p>
-                        <p className="text-xs text-muted-foreground">{video.views} views</p>
+                        <p className="text-xs text-muted-foreground">{video.views}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -115,7 +120,7 @@ export default function HomePage() {
             Latest Intel
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {isLoading ? (
+            {isLoading && news.length === 0 ? (
                 Array.from({ length: 3 }).map((_, index) => (
                     <Card key={index} className="flex flex-col bg-card">
                         <CardHeader>
