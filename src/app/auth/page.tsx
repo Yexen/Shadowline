@@ -22,7 +22,9 @@ export default function AuthPage() {
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="w-full max-w-md space-y-8 text-center">
           <div>
-            <BatLogo className="w-24 h-12 mx-auto text-primary" />
+            <div className="w-24 h-24 mx-auto rounded-full flex items-center justify-center bg-primary/10 border border-primary/20">
+                <BatLogo className="w-16 h-16 text-primary" />
+            </div>
             <h1 className="font-headline text-4xl font-bold mt-4 tracking-wider">SHADOWLINE</h1>
             <p className="text-muted-foreground text-lg">Writer’s Protocol</p>
           </div>

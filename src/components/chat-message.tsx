@@ -1,10 +1,10 @@
-
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import type { ChatMessage } from '@/ai/types';
 import { BatLogo } from './bat-logo';
+import { User } from 'lucide-react';
 
 interface ChatMessageProps {
   message: ChatMessage;
@@ -16,11 +16,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
   return (
     <div className={cn("flex items-start gap-3", isUser && "justify-end")}>
       {!isUser && (
-        <Avatar className="h-8 w-8">
-            <div className="flex items-center justify-center w-full h-full bg-primary rounded-full">
-                <BatLogo className="w-4 h-2 text-primary-foreground" />
-            </div>
-          <AvatarFallback>N</AvatarFallback>
+        <Avatar className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center">
+            <BatLogo className="w-5 h-5" />
+            <AvatarFallback>N</AvatarFallback>
         </Avatar>
       )}
       <div
@@ -34,8 +32,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
         <p className="text-sm whitespace-pre-wrap">{message.content}</p>
       </div>
       {isUser && (
-        <Avatar className="h-8 w-8">
-          <AvatarFallback>U</AvatarFallback>
+        <Avatar className="h-8 w-8 bg-muted text-muted-foreground flex items-center justify-center">
+            <User className="w-5 h-5" />
+            <AvatarFallback>U</AvatarFallback>
         </Avatar>
       )}
     </div>
