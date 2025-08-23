@@ -8,8 +8,8 @@ import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storag
 
 const COVER_IMAGE_STORAGE_KEY = 'gotham-cover-image-url';
 const COVER_IMAGE_HINT_KEY = 'gotham-cover-image-hint';
-const DEFAULT_COVER_IMAGE = 'https://storage.googleapis.com/gcp-kms-prod-tokens-studio-uploads-us-central1/users%2F-MQ2SW0sC2oGZl62Lp5I%2Fprompt-images%2F624e5a07153f3e9c7a2b992176d65b75.png';
-const DEFAULT_AI_HINT = 'batman rooftop';
+const DEFAULT_COVER_IMAGE = 'https://firebasestorage.googleapis.com/v0/b/shadows-of-gotham.firebasestorage.app/o/alimoini_Ultra-wide_comic-book_splash_header_on_a_rain-slick__039016ec-7d75-4c0a-8233-4e1ec46921c4_3.png?alt=media&token=0d9079bb-628f-4ac6-92b3-dbc6419fae47';
+const DEFAULT_AI_HINT = 'gotham city dark';
 
 // Helper function to upload image and get URL
 const uploadCoverImage = async (dataUrl: string): Promise<string> => {
