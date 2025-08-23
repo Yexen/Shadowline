@@ -27,7 +27,12 @@ async function getBatmanVideos(): Promise<Video[]> {
     const videoPromises = searchQueries.map(query => 
         fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&videoDuration=medium&maxResults=5&key=${YOUTUBE_API_KEY}`, {
             cache: 'no-store'
-        }).then(res => res.json())
+        }).then(res => {
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            return res.json();
+        })
     );
 
     const results = await Promise.all(videoPromises);
@@ -37,7 +42,7 @@ async function getBatmanVideos(): Promise<Video[]> {
             id: item.id.videoId,
             title: item.snippet.title,
             uploader: item.snippet.channelTitle,
-            thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,
+            thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || 'https://placehold.co/480x360.png',
             url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
             publishedAt: item.snippet.publishedAt,
         })) || []
@@ -45,6 +50,7 @@ async function getBatmanVideos(): Promise<Video[]> {
 
     // Sort all videos by publish date and take the most recent 6
     return allVideos
+        .filter(video => video.id && video.title && video.thumbnail) // Filter out incomplete videos
         .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
         .slice(0, 6);
 
@@ -155,6 +161,8 @@ export default async function HomePage() {
                           alt={`Thumbnail for ${video.title}`} 
                           fill
                           className="object-cover w-full h-full"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          unoptimized={video.thumbnail.includes('ytimg.com')} // YouTube thumbnails don't need Next.js optimization
                         />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <PlayCircle className="w-16 h-16 text-white/80" />
@@ -173,7 +181,7 @@ export default async function HomePage() {
             ))
           ) : (
              Array.from({ length: 6 }).map((_, index) => (
-                <Card key={index} className="overflow-hidden bg-card">
+                <Card key={`skeleton-${index}`} className="overflow-hidden bg-card">
                     <CardContent className="p-0">
                         <Skeleton className="w-full aspect-video" />
                         <div className="p-4 space-y-2">
@@ -209,7 +217,8 @@ export default async function HomePage() {
                           alt={`Image for ${article.title}`} 
                           fill
                           className="object-cover w-full h-full" 
-                          data-ai-hint={article.dataAiHint} 
+                          data-ai-hint={article.dataAiHint}
+                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         />
                     </div>
                   </a>
@@ -221,7 +230,9 @@ export default async function HomePage() {
                       <p className="text-muted-foreground">{article.snippet}</p>
                   </CardContent>
                   <div className="p-6 pt-0 flex justify-between items-center">
-                      <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-primary font-bold">Read More &rarr;</a>
+                      <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-primary font-bold hover:underline">
+                        Read More &rarr;
+                      </a>
                       <ReadlistButton article={article} />
                   </div>
                 </Card>
