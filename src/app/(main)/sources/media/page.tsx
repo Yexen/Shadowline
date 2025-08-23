@@ -32,6 +32,7 @@ interface MediaItem {
     watched: boolean;
     userRating: number;
     inWatchlist: boolean;
+    dataAiHint?: string;
 }
 
 const mediaData: MediaItem[] = [
@@ -51,7 +52,8 @@ const mediaData: MediaItem[] = [
     boxOffice: "$411.3M",
     rottenTomatoes: "73%",
     imdbScore: "7.5",
-    poster: "https://placehold.co/300x450/2c3e50/f1c40f?text=BATMAN+1989",
+    poster: "https://placehold.co/300x450.png",
+    dataAiHint: "batman movie poster",
     watched: false,
     userRating: 0,
     inWatchlist: false
@@ -71,7 +73,8 @@ const mediaData: MediaItem[] = [
     boxOffice: "$266.8M",
     rottenTomatoes: "79%",
     imdbScore: "7.0",
-    poster: "https://placehold.co/300x450/2c3e50/f1c40f?text=BATMAN+RETURNS",
+    poster: "https://placehold.co/300x450.png",
+    dataAiHint: "batman returns poster",
     watched: false,
     userRating: 0,
     inWatchlist: false
@@ -91,7 +94,8 @@ const mediaData: MediaItem[] = [
     boxOffice: "$336.6M",
     rottenTomatoes: "38%",
     imdbScore: "5.4",
-    poster: "https://placehold.co/300x450/8e44ad/f1c40f?text=BATMAN+FOREVER",
+    poster: "https://placehold.co/300x450.png",
+    dataAiHint: "batman forever poster",
     watched: false,
     userRating: 0,
     inWatchlist: false
@@ -111,7 +115,8 @@ const mediaData: MediaItem[] = [
     boxOffice: "$238.2M",
     rottenTomatoes: "11%",
     imdbScore: "3.8",
-    poster: "https://placehold.co/300x450/3498db/f1c40f?text=BATMAN+ROBIN",
+    poster: "https://placehold.co/300x450.png",
+    dataAiHint: "batman robin poster",
     watched: false,
     userRating: 0,
     inWatchlist: false
@@ -131,7 +136,8 @@ const mediaData: MediaItem[] = [
     boxOffice: "$371.9M",
     rottenTomatoes: "85%",
     imdbScore: "8.2",
-    poster: "https://placehold.co/300x450/1a1a1a/f1c40f?text=BATMAN+BEGINS",
+    poster: "https://placehold.co/300x450.png",
+    dataAiHint: "batman begins poster",
     watched: false,
     userRating: 0,
     inWatchlist: false
@@ -151,7 +157,8 @@ const mediaData: MediaItem[] = [
     boxOffice: "$1.005B",
     rottenTomatoes: "94%",
     imdbScore: "9.0",
-    poster: "https://placehold.co/300x450/0a0a0a/f1c40f?text=THE+DARK+KNIGHT",
+    poster: "https://placehold.co/300x450.png",
+    dataAiHint: "dark knight poster",
     watched: false,
     userRating: 0,
     inWatchlist: false
@@ -171,7 +178,8 @@ const mediaData: MediaItem[] = [
     boxOffice: "$1.081B",
     rottenTomatoes: "87%",
     imdbScore: "8.4",
-    poster: "https://placehold.co/300x450/34495e/f1c40f?text=TDKR",
+    poster: "https://placehold.co/300x450.png",
+    dataAiHint: "dark knight rises",
     watched: false,
     userRating: 0,
     inWatchlist: false
@@ -191,7 +199,8 @@ const mediaData: MediaItem[] = [
     boxOffice: "$873.6M",
     rottenTomatoes: "29%",
     imdbScore: "6.4",
-    poster: "https://placehold.co/300x450/2c3e50/e74c3c?text=BVS",
+    poster: "https://placehold.co/300x450.png",
+    dataAiHint: "batman superman poster",
     watched: false,
     userRating: 0,
     inWatchlist: false
@@ -211,7 +220,8 @@ const mediaData: MediaItem[] = [
     boxOffice: "$657.9M",
     rottenTomatoes: "40%",
     imdbScore: "6.0",
-    poster: "https://placehold.co/300x450/e67e22/ffffff?text=JUSTICE+LEAGUE",
+    poster: "https://placehold.co/300x450.png",
+    dataAiHint: "justice league movie",
     watched: false,
     userRating: 0,
     inWatchlist: false
@@ -231,7 +241,8 @@ const mediaData: MediaItem[] = [
     boxOffice: "$771.0M",
     rottenTomatoes: "85%",
     imdbScore: "7.8",
-    poster: "https://placehold.co/300x450/8b0000/f1c40f?text=THE+BATMAN",
+    poster: "https://placehold.co/300x450.png",
+    dataAiHint: "the batman movie",
     watched: false,
     userRating: 0,
     inWatchlist: false
@@ -253,7 +264,8 @@ const mediaData: MediaItem[] = [
     seasons: "3 seasons",
     episodes: "120 episodes",
     network: "ABC",
-    poster: "https://placehold.co/300x450/e74c3c/ffff00?text=BATMAN+66",
+    poster: "https://placehold.co/300x450.png",
+    dataAiHint: "batman 66 show",
     watched: false,
     userRating: 0,
     inWatchlist: false
@@ -273,7 +285,8 @@ const mediaData: MediaItem[] = [
     seasons: "4 seasons",
     episodes: "85 episodes",
     network: "Fox Kids",
-    poster: "https://placehold.co/300x450/2c3e50/f1c40f?text=BATMAN+TAS",
+    poster: "https://placehold.co/300x450.png",
+    dataAiHint: "batman animated series",
     watched: false,
     userRating: 0,
     inWatchlist: false
@@ -293,7 +306,8 @@ const mediaData: MediaItem[] = [
     seasons: "3 seasons",
     episodes: "52 episodes",
     network: "Kids' WB",
-    poster: "https://placehold.co/300x450/e74c3c/000000?text=BATMAN+BEYOND",
+    poster: "https://placehold.co/300x450.png",
+    dataAiHint: "batman beyond show",
     watched: false,
     userRating: 0,
     inWatchlist: false
@@ -313,7 +327,8 @@ const mediaData: MediaItem[] = [
     seasons: "1 season",
     episodes: "13 episodes",
     network: "The WB",
-    poster: "https://placehold.co/300x450/9b59b6/ffffff?text=BIRDS+OF+PREY",
+    poster: "https://placehold.co/300x450.png",
+    dataAiHint: "birds prey show",
     watched: false,
     userRating: 0,
     inWatchlist: false
@@ -333,7 +348,8 @@ const mediaData: MediaItem[] = [
     seasons: "5 seasons",
     episodes: "65 episodes",
     network: "Kids' WB",
-    poster: "https://placehold.co/300x450/27ae60/000000?text=THE+BATMAN+04",
+    poster: "https://placehold.co/300x450.png",
+    dataAiHint: "the batman 2004",
     watched: false,
     userRating: 0,
     inWatchlist: false
@@ -353,7 +369,8 @@ const mediaData: MediaItem[] = [
     seasons: "3 seasons",
     episodes: "65 episodes",
     network: "Cartoon Network",
-    poster: "https://placehold.co/300x450/3498db/f1c40f?text=BRAVE+BOLD",
+    poster: "https://placehold.co/300x450.png",
+    dataAiHint: "brave bold show",
     watched: false,
     userRating: 0,
     inWatchlist: false
@@ -373,7 +390,8 @@ const mediaData: MediaItem[] = [
     seasons: "5 seasons",
     episodes: "100 episodes",
     network: "Fox",
-    poster: "https://placehold.co/300x450/34495e/f1c40f?text=GOTHAM",
+    poster: "https://placehold.co/300x450.png",
+    dataAiHint: "gotham tv show",
     watched: false,
     userRating: 0,
     inWatchlist: false
@@ -393,7 +411,8 @@ const mediaData: MediaItem[] = [
     seasons: "4 seasons",
     episodes: "49 episodes",
     network: "HBO Max",
-    poster: "https://placehold.co/300x450/8e44ad/ffffff?text=TITANS",
+    poster: "https://placehold.co/300x450.png",
+    dataAiHint: "titans tv show",
     watched: false,
     userRating: 0,
     inWatchlist: false
@@ -413,7 +432,8 @@ const mediaData: MediaItem[] = [
     seasons: "3 seasons",
     episodes: "30 episodes",
     network: "HBO Max",
-    poster: "https://placehold.co/300x450/95a5a6/2c3e50?text=PENNYWORTH",
+    poster: "https://placehold.co/300x450.png",
+    dataAiHint: "pennyworth tv show",
     watched: false,
     userRating: 0,
     inWatchlist: false
@@ -570,7 +590,7 @@ export default function BatmanMediaDatabase() {
             <Card key={item.id} className="bg-card hover:border-primary/50 transition-colors">
                 <div className="flex flex-col lg:flex-row gap-6 p-6">
                     <div className="flex-shrink-0">
-                         <Image src={item.poster} alt={`${item.title} poster`} width={200} height={300} className="rounded-lg border-2 border-border shadow-lg" />
+                         <Image src={item.poster} alt={`${item.title} poster`} width={200} height={300} data-ai-hint={item.dataAiHint} className="rounded-lg border-2 border-border shadow-lg" />
                     </div>
               
                     <div className="flex-1">
@@ -625,4 +645,3 @@ export default function BatmanMediaDatabase() {
     </div>
   );
 }
-
