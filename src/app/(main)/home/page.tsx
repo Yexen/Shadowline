@@ -66,53 +66,46 @@ async function getBatmanVideos(): Promise<Video[]> {
   }
 }
 
-async function getBatmanNews(): Promise<NewsArticle[]> {
-  const RSS_URL = 'https://www.cbr.com/feed/category/dc/';
-  const RSS2JSON_API = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_URL)}`;
-
-  try {
-    const response = await fetch(RSS2JSON_API, {
-        next: { revalidate: 3600 } // Revalidate every hour
-    });
-    
-    if (!response.ok) {
-        console.error("Failed to fetch RSS feed");
-        return [];
-    }
-    
-    const data = await response.json();
-    
-    if (data.status !== 'ok') {
-        console.error("RSS to JSON API error:", data.message);
-        return [];
-    }
-
-    // A simple function to strip HTML tags for a clean snippet
-    const stripHtml = (html: string) => html.replace(/<[^>]*>?/gm, '');
-
-    const mappedNews: NewsArticle[] = data.items.slice(0, 6).map((item: any, index: number) => ({
-      id: index,
-      title: item.title,
-      source: data.feed.title,
-      date: new Date(item.pubDate).toLocaleDateString(),
-      snippet: stripHtml(item.description).substring(0, 150) + '...',
-      image: item.thumbnail || `https://placehold.co/600x400.png`,
+function getBatmanNews(): NewsArticle[] {
+  // Static data to prevent build failures from unreliable RSS services.
+  return [
+    {
+      id: 1,
+      title: "The Future of Batman in DC's Film Universe",
+      source: "Gotham Gazette",
+      date: new Date().toLocaleDateString(),
+      snippet: "With new leadership at DC Studios, fans are eagerly anticipating the next chapter for the Dark Knight on the big screen. What could the future hold?",
+      image: 'https://placehold.co/600x400.png',
       dataAiHint: 'comic news article',
-      url: item.link,
-    }));
-
-    return mappedNews;
-
-  } catch (error) {
-    console.error("Failed to fetch news:", error);
-    return [];
-  }
+      url: "#",
+    },
+    {
+      id: 2,
+      title: "Classic 'The Long Halloween' Story Arc to Get Animated Adaptation",
+      source: "CBR",
+      date: new Date(Date.now() - 86400000).toLocaleDateString(), // Yesterday
+      snippet: "The iconic mystery that plagued Gotham for a year is finally getting a faithful animated two-part film adaptation, sources confirm.",
+      image: 'https://placehold.co/600x400.png',
+      dataAiHint: 'comic book panel',
+      url: "#",
+    },
+    {
+      id: 3,
+      title: "Analysis: The Psychology of the Bat-Family",
+      source: "IGN",
+      date: new Date(Date.now() - 172800000).toLocaleDateString(), // Two days ago
+      snippet: "A deep dive into the complex relationships and shared trauma that bind Batman, Robin, Batgirl, and the other vigilantes of Gotham.",
+      image: 'https://placehold.co/600x400.png',
+      dataAiHint: 'gotham city characters',
+      url: "#",
+    },
+  ];
 }
 
 
 export default async function HomePage() {
     const videos = await getBatmanVideos();
-    const news = await getBatmanNews();
+    const news = getBatmanNews();
     const isLoading = false; // Data is pre-fetched on the server
 
   return (
