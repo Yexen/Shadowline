@@ -2,17 +2,17 @@
 'use client';
 
 import * as React from "react"
-import { Eye, EyeOff, CheckCircle } from "lucide-react"
+import { Eye, EyeOff } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Input } from "./ui/input"
 import { Button } from "./ui/button"
 
 interface PasswordInputProps extends Omit<React.ComponentProps<"input">, "type"> {
-  showTick?: boolean;
+  icon?: React.ReactNode;
 }
 
 const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
-  ({ className, showTick = false, ...props }, ref) => {
+  ({ className, icon, ...props }, ref) => {
     const [showPassword, setShowPassword] = React.useState(false)
     const togglePasswordVisibility = () => setShowPassword(!showPassword)
 
@@ -24,7 +24,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
           ref={ref}
           {...props}
         />
-        {showTick && <CheckCircle className="absolute right-10 top-1/2 -translate-y-1/2 h-5 w-5 text-green-500" />}
+        {icon && <div className="absolute right-10 top-1/2 -translate-y-1/2">{icon}</div>}
         <Button
           type="button"
           variant="ghost"

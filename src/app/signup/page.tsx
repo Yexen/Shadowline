@@ -14,6 +14,7 @@ import { useWriters } from '@/hooks/use-writers';
 import { BatLogo } from '@/components/bat-logo';
 import Link from 'next/link';
 import { PasswordInput } from '@/components/password-input';
+import { CheckCircle, XCircle } from 'lucide-react';
 
 const signupSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -34,9 +35,15 @@ export default function SignupPage() {
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<SignupFormValues>({
+  const { register, handleSubmit, formState: { errors }, watch } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
   });
+
+  const password = watch('password');
+  const confirmPassword = watch('confirmPassword');
+  const passwordsMatch = password && confirmPassword && password === confirmPassword;
+  const passwordsDontMatch = confirmPassword && password !== confirmPassword;
+
 
   const onSubmit = async (data: SignupFormValues) => {
     setError(null);
@@ -104,7 +111,17 @@ export default function SignupPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <PasswordInput id="confirmPassword" {...register('confirmPassword')} disabled={isLoading} />
+                <PasswordInput 
+                    id="confirmPassword" 
+                    {...register('confirmPassword')} 
+                    disabled={isLoading} 
+                    icon={
+                        <>
+                            {passwordsMatch && <CheckCircle className="h-5 w-5 text-green-500" />}
+                            {passwordsDontMatch && <XCircle className="h-5 w-5 text-destructive" />}
+                        </>
+                    }
+                />
                 {errors.confirmPassword && <p className="text-destructive text-sm">{errors.confirmPassword.message}</p>}
               </div>
               {error && <p className="text-destructive text-sm">{error}</p>}
