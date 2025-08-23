@@ -22,6 +22,9 @@ const FEEDS = [
   'https://www.cbr.com/feed/',                       // CBR
   'https://www.polygon.com/rss/index.xml',
   'https://www.theverge.com/rss/index.xml',
+  'https://comicbook.com/feed/',                     // ComicBook.com
+  'https://collider.com/feed/',                      // Collider
+  'https://www.gamesradar.com/all-content/news/rss/',// GamesRadar+
 ];
 
 const parser = new Parser({
