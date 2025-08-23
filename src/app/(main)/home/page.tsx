@@ -6,8 +6,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshButton } from "@/components/refresh-button";
 import { WatchlistButton } from "@/components/watchlist-button";
 import type { Video } from "@/hooks/use-watchlist";
-import { ReadlistButton } from "@/components/readlist-button";
-import type { NewsArticle } from "@/hooks/use-readlist";
 
 const fallbackVideos: Video[] = [
     {
@@ -91,74 +89,8 @@ async function getBatmanVideos(): Promise<{ videos: Video[], error?: string }> {
   }
 }
 
-function getBatmanNews(): NewsArticle[] {
-  return [
-    {
-      id: 1,
-      title: "The Future of Batman in DC's Film Universe",
-      source: "DC Comics",
-      date: new Date().toLocaleDateString(),
-      snippet: "With new leadership at DC Studios, fans are eagerly anticipating the next chapter for the Dark Knight on the big screen.",
-      image: 'https://placehold.co/600x400.png',
-      dataAiHint: 'comic news article',
-      url: "https://www.dc.com/blog/2023/01/31/dc-studios-unveils-its-first-chapter-gods-and-monsters",
-    },
-    {
-      id: 2,
-      title: "Classic 'The Long Halloween' Story Arc to Get Animated Adaptation",
-      source: "Warner Bros",
-      date: new Date(Date.now() - 86400000).toLocaleDateString(),
-      snippet: "The iconic mystery that plagued Gotham for a year is finally getting a faithful animated two-part film adaptation.",
-      image: 'https://placehold.co/600x400.png',
-      dataAiHint: 'comic book panel',
-      url: "https://www.warnerbros.com/movies/batman-long-halloween-part-one",
-    },
-    {
-      id: 3,
-      title: "Analysis: The Psychology of the Bat-Family",
-      source: "IGN",
-      date: new Date(Date.now() - 172800000).toLocaleDateString(),
-      snippet: "A deep dive into the complex relationships and shared trauma that bind Batman and the vigilantes of Gotham.",
-      image: 'https://placehold.co/600x400.png',
-      dataAiHint: 'gotham city characters',
-      url: "https://www.ign.com/articles/the-bat-familys-most-messed-up-moments",
-    },
-    {
-      id: 4,
-      title: "New 'Arkham' Game Rumored to be in Development",
-      source: "GameSpot",
-      date: new Date(Date.now() - 259200000).toLocaleDateString(),
-      snippet: "Leaks suggest a new entry in the acclaimed Arkham series is in early stages, focusing on a younger Batman.",
-      image: 'https://placehold.co/600x400.png',
-      dataAiHint: 'video game art',
-      url: "https://www.gamespot.com/articles/new-batman-arkham-game-reportedly-in-development/1100-6466657/",
-    },
-    {
-      id: 5,
-      title: "Top 10 Most Underrated Batman Villains",
-      source: "ScreenRant",
-      date: new Date(Date.now() - 345600000).toLocaleDateString(),
-      snippet: "Beyond the Joker and Penguin lies a rich gallery of rogues. We explore the villains who deserve more spotlight.",
-      image: 'https://placehold.co/600x400.png',
-      dataAiHint: 'gotham villains comic',
-      url: "https://screenrant.com/underrated-batman-villains-comics/",
-    },
-    {
-      id: 6,
-      title: "The Architectural History of Gotham City",
-      source: "ArchDaily",
-      date: new Date(Date.now() - 432000000).toLocaleDateString(),
-      snippet: "From its gothic spires to its art deco skyscrapers, an in-depth look at the architectural styles that define Gotham.",
-      image: 'https://placehold.co/600x400.png',
-      dataAiHint: 'gothic architecture city',
-      url: "https://www.archdaily.com/985538/the-urban-evolution-of-gotham-city-a-story-of-dark-architecture-and-the-grit-of-new-york",
-    },
-  ];
-}
-
 export default async function HomePage() {
     const { videos, error: videoError } = await getBatmanVideos();
-    const news = getBatmanNews();
 
   return (
     <div className="space-y-8">
@@ -242,53 +174,6 @@ export default async function HomePage() {
                 </Card>
             ))
           )}
-        </div>
-      </section>
-
-      <section>
-        <h2 className="font-headline text-2xl font-bold uppercase flex items-center gap-3 mb-4">
-            <Newspaper className="text-primary" />
-            Latest Intel
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {news.map(article => (
-                <Card key={article.id} className="group overflow-hidden bg-card hover:border-primary/50 transition-colors flex flex-col">
-                  {/* Image */}
-                  <div className="relative aspect-video">
-                    <Image
-                      src={article.image}
-                      alt={`Image for ${article.title}`}
-                      fill
-                      className="object-cover w-full h-full"
-                      data-ai-hint={article.dataAiHint}
-                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    />
-                  </div>
-
-                  <CardHeader>
-                      <a href={article.url} target="_blank" rel="noopener noreferrer">
-                        <CardTitle className="font-headline">{article.title}</CardTitle>
-                        <CardDescription>{article.source} — {article.date}</CardDescription>
-                      </a>
-                  </CardHeader>
-
-                  <CardContent className="flex-grow">
-                    <p className="text-muted-foreground">{article.snippet}</p>
-                  </CardContent>
-
-                  <div className="p-6 pt-0 flex justify-between items-center">
-                    <a
-                      href={article.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary font-bold hover:underline"
-                    >
-                      Read More →
-                    </a>
-                    <ReadlistButton article={article} />
-                  </div>
-                </Card>
-            ))}
         </div>
       </section>
     </div>
