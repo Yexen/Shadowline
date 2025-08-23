@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import Image from "next/image";
 import { Youtube, Newspaper, PlayCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RefreshButton } from "@/components/refresh-button";
 
 interface Video {
     id: string;
@@ -105,10 +106,11 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-8">
-      <div>
+      <div className="flex justify-between items-start">
         <p className="mt-2 text-muted-foreground">
           Your watch has begun. Here is the latest from the shadows.
         </p>
+        <RefreshButton />
       </div>
 
       <section>
