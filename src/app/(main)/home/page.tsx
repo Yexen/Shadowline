@@ -67,9 +67,46 @@ async function getBatmanVideos(): Promise<Video[]> {
 }
 
 async function getBatmanNews(): Promise<NewsArticle[]> {
-    // This will return an empty array as per the user's request.
-    // In the future, this could fetch from a real news API.
+  const RSS_URL = 'https://www.cbr.com/feed/category/dc/';
+  const RSS2JSON_API = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_URL)}`;
+
+  try {
+    const response = await fetch(RSS2JSON_API, {
+        next: { revalidate: 3600 } // Revalidate every hour
+    });
+    
+    if (!response.ok) {
+        console.error("Failed to fetch RSS feed");
+        return [];
+    }
+    
+    const data = await response.json();
+    
+    if (data.status !== 'ok') {
+        console.error("RSS to JSON API error:", data.message);
+        return [];
+    }
+
+    // A simple function to strip HTML tags for a clean snippet
+    const stripHtml = (html: string) => html.replace(/<[^>]*>?/gm, '');
+
+    const mappedNews: NewsArticle[] = data.items.slice(0, 6).map((item: any, index: number) => ({
+      id: index,
+      title: item.title,
+      source: data.feed.title,
+      date: new Date(item.pubDate).toLocaleDateString(),
+      snippet: stripHtml(item.description).substring(0, 150) + '...',
+      image: item.thumbnail || `https://placehold.co/600x400.png`,
+      dataAiHint: 'comic news article',
+      url: item.link,
+    }));
+
+    return mappedNews;
+
+  } catch (error) {
+    console.error("Failed to fetch news:", error);
     return [];
+  }
 }
 
 
@@ -137,16 +174,16 @@ export default async function HomePage() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {news.length > 0 ? (
-                news.map(news => (
-                    <a href={news.url} key={news.id} target="_blank" rel="noopener noreferrer" className="block bg-card hover:border-primary/50 transition-colors rounded-lg">
+                news.map(article => (
+                    <a href={article.url} key={article.id} target="_blank" rel="noopener noreferrer" className="block bg-card hover:border-primary/50 transition-colors rounded-lg">
                       <Card className="flex flex-col border-0 shadow-none h-full">
                           <CardHeader>
-                              <Image src={news.image} alt={news.title} width={600} height={400} className="aspect-video object-cover rounded-t-lg -mt-6 -mx-6" data-ai-hint={news.dataAiHint} />
-                              <CardTitle className="font-headline pt-4">{news.title}</CardTitle>
-                              <CardDescription>{news.source} - {news.date}</CardDescription>
+                              <Image src={article.image} alt={article.title} width={600} height={400} className="aspect-video object-cover rounded-t-lg -mt-6 -mx-6 w-[calc(100%+48px)]" data-ai-hint={article.dataAiHint} />
+                              <CardTitle className="font-headline pt-4">{article.title}</CardTitle>
+                              <CardDescription>{article.source} - {article.date}</CardDescription>
                           </CardHeader>
                           <CardContent className="flex-grow">
-                              <p className="text-muted-foreground">{news.snippet}</p>
+                              <p className="text-muted-foreground">{article.snippet}</p>
                           </CardContent>
                           <div className="p-6 pt-0">
                               <span className="text-primary font-bold">Read More &rarr;</span>
