@@ -3,7 +3,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { useToast } from './use-toast';
+import { toast } from './use-toast';
 
 export interface Video {
     id: string;
@@ -28,7 +28,6 @@ export const useWatchlist = create<WatchlistState>()(
       videos: [],
       isLoaded: false,
       addVideo: (video) => {
-        const { toast } = useToast.getState();
         const existing = get().videos.find(v => v.id === video.id);
         if (existing) {
             toast({
@@ -45,7 +44,7 @@ export const useWatchlist = create<WatchlistState>()(
       },
       removeVideo: (videoId) => {
         set((state) => ({ videos: state.videos.filter((v) => v.id !== videoId) }));
-         useToast.getState().toast({
+         toast({
             title: "Removed from Watchlist",
             variant: "destructive"
         });
