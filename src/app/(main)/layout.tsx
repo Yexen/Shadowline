@@ -84,7 +84,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { href: '/messages', label: 'Messages', icon: MessageSquare },
     { href: '/sources', label: 'Sources', icon: Book },
     { href: '/about', label: 'About', icon: Info },
-    { href: '/settings', label: 'Settings', icon: Settings, action: () => setSettingsOpen(true) },
   ];
   
   const handleSaveEntry = (category: string, entry: BibleEntry) => {
@@ -137,7 +136,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </SidebarHeader>
         <SidebarContent>
             <SidebarMenu>
-                {menuItems.filter(i => !['/nyxen'].includes(i.href)).slice(0, 10).map((item) => (
+                {menuItems.filter(i => !['/nyxen'].includes(i.href)).map((item) => (
                 <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                         onClick={() => item.action ? item.action() : router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href)}
@@ -215,19 +214,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         <span>Volumes</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
-                
-                {menuItems.filter(i => !['/nyxen'].includes(i.href)).slice(10).map((item) => (
-                <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                        onClick={() => item.action ? item.action() : router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href)}
-                        isActive={pathname.startsWith(item.href)}
-                        tooltip={{ children: item.label, side: "right", align: "center" }}
-                    >
-                        <item.icon />
-                        <span>{item.label}</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                ))}
+
             </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
@@ -256,7 +243,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => setWriterProfileOpen(true)}>
                             <User className="mr-2"/>
-                            Profile & Settings
+                            Profile
                         </DropdownMenuItem>
                         <DropdownMenuSub>
                             <DropdownMenuSubTrigger>
@@ -271,6 +258,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                                 </DropdownMenuSubContent>
                             </DropdownMenuPortal>
                         </DropdownMenuSub>
+                        <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+                            <Settings className="mr-2"/>
+                            Settings
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={logout}>
                              <LogOut className="mr-2"/>
