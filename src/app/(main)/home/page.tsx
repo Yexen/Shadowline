@@ -8,9 +8,6 @@ import { WatchlistButton } from "@/components/watchlist-button";
 import type { Video } from "@/hooks/use-watchlist";
 import { ReadlistButton } from "@/components/readlist-button";
 import type { NewsArticle } from "@/hooks/use-readlist";
-import { checkUrl, type UrlStatus } from "@/lib/checkUrl";
-
-type Intel = NewsArticle & { status: UrlStatus };
 
 const fallbackVideos: Video[] = [
     {
@@ -161,11 +158,7 @@ function getBatmanNews(): NewsArticle[] {
 
 export default async function HomePage() {
     const { videos, error: videoError } = await getBatmanVideos();
-    const baseNews = getBatmanNews();
-    
-    const news: Intel[] = await Promise.all(
-      baseNews.map(async (a) => ({ ...a, status: await checkUrl(a.url) }))
-    );
+    const news = getBatmanNews();
 
   return (
     <div className="space-y-8">
@@ -270,25 +263,13 @@ export default async function HomePage() {
                       data-ai-hint={article.dataAiHint}
                       sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     />
-                    {!article.status.ok && (
-                      <div className="absolute top-2 right-2 text-xs bg-destructive/90 text-white px-2 py-1 rounded">
-                        Offline
-                      </div>
-                    )}
                   </div>
 
                   <CardHeader>
-                    {article.status.ok ? (
-                      <a href={article.status.finalUrl ?? article.url} target="_blank" rel="noopener noreferrer">
+                      <a href={article.url} target="_blank" rel="noopener noreferrer">
                         <CardTitle className="font-headline">{article.title}</CardTitle>
                         <CardDescription>{article.source} — {article.date}</CardDescription>
                       </a>
-                    ) : (
-                      <div title={article.status.reason ?? "Unavailable"}>
-                        <CardTitle className="font-headline">{article.title}</CardTitle>
-                        <CardDescription>{article.source} — {article.date}</CardDescription>
-                      </div>
-                    )}
                   </CardHeader>
 
                   <CardContent className="flex-grow">
@@ -296,27 +277,14 @@ export default async function HomePage() {
                   </CardContent>
 
                   <div className="p-6 pt-0 flex justify-between items-center">
-                    {article.status.ok ? (
-                      <a
-                        href={article.status.finalUrl ?? article.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary font-bold hover:underline"
-                      >
-                        Read More →
-                      </a>
-                    ) : (
-                      article.status.archiveUrl ? (
-                        <a
-                          href={article.status.archiveUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-muted-foreground hover:underline"
-                        >
-                          View on Web Archive →
-                        </a>
-                      ) : <span />
-                    )}
+                    <a
+                      href={article.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary font-bold hover:underline"
+                    >
+                      Read More →
+                    </a>
                     <ReadlistButton article={article} />
                   </div>
                 </Card>
