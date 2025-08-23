@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import Image from "next/image";
-import { Youtube, Newspaper, PlayCircle } from "lucide-react";
+import { Youtube, Newspaper, PlayCircle, AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshButton } from "@/components/refresh-button";
 import { WatchlistButton } from "@/components/watchlist-button";
@@ -10,12 +10,11 @@ import { ReadlistButton } from "@/components/readlist-button";
 import type { NewsArticle } from "@/hooks/use-readlist";
 import Link from 'next/link';
 
-async function getBatmanVideos(): Promise<Video[]> {
+async function getBatmanVideos(): Promise<{ videos: Video[], error?: string }> {
   const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
-  if (!YOUTUBE_API_KEY) {
-    console.warn("YouTube API Key is not configured. Skipping video fetch.");
-    return [];
+  if (!YOUTUBE_API_KEY || YOUTUBE_API_KEY === "YOUR_API_KEY_HERE") {
+    return { videos: [], error: "YouTube API Key is not configured." };
   }
   
   const searchQueries = [
@@ -31,7 +30,10 @@ async function getBatmanVideos(): Promise<Video[]> {
         }).then(res => {
             if (!res.ok) {
                 // Don't throw, just return null to filter out later
-                return null;
+                return res.json().then(err => {
+                   console.error(`YouTube API Error for query "${query}":`, err.error.message);
+                   return null; 
+                });
             }
             return res.json();
         })
@@ -40,9 +42,9 @@ async function getBatmanVideos(): Promise<Video[]> {
     const results = await Promise.all(videoPromises);
 
     const allVideos: Video[] = results
-        .filter(result => result !== null) // Filter out failed requests
+        .filter(result => result !== null && result.items) // Filter out failed requests
         .flatMap(result => 
-            result.items?.map((item: any) => ({
+            result.items.map((item: any) => ({
                 id: item.id.videoId,
                 title: item.snippet.title,
                 uploader: item.snippet.channelTitle,
@@ -53,14 +55,16 @@ async function getBatmanVideos(): Promise<Video[]> {
         );
 
     // Sort all videos by publish date and take the most recent 6
-    return allVideos
+    const finalVideos = allVideos
         .filter(video => video.id && video.title && video.thumbnail) // Filter out incomplete videos
         .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
         .slice(0, 6);
+        
+    return { videos: finalVideos };
 
   } catch (error) {
     console.error("Failed to fetch videos due to an unhandled error:", error);
-    return [];
+    return { videos: [], error: "An unexpected error occurred while fetching videos." };
   }
 }
 
@@ -130,7 +134,7 @@ function getBatmanNews(): NewsArticle[] {
 }
 
 export default async function HomePage() {
-    const videos = await getBatmanVideos();
+    const { videos, error: videoError } = await getBatmanVideos();
     const news = getBatmanNews();
     const isExternal = (url?: string) => !!url && /^https?:\/\//i.test(url);
 
@@ -149,7 +153,17 @@ export default async function HomePage() {
             Surveillance Footage
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {videos.length > 0 ? (
+          {videoError ? (
+             <Card className="col-span-full bg-destructive/10 border-destructive/50">
+                <CardHeader className="flex-row items-center gap-4">
+                    <AlertTriangle className="w-10 h-10 text-destructive" />
+                    <div>
+                        <CardTitle className="text-destructive">YouTube Feed Error</CardTitle>
+                        <CardDescription className="text-destructive/80">{videoError} Please add your key to the .env file.</CardDescription>
+                    </div>
+                </CardHeader>
+            </Card>
+          ) : videos.length > 0 ? (
             videos.map(video => (
               <Card key={video.id} className="group overflow-hidden bg-card hover:border-primary/50 transition-colors flex flex-col">
                 <a 
