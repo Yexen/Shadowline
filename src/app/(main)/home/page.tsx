@@ -6,17 +6,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshButton } from "@/components/refresh-button";
 import { WatchlistButton } from "@/components/watchlist-button";
 import type { Video } from "@/hooks/use-watchlist";
-
-interface NewsArticle {
-    id: number;
-    title: string;
-    source: string;
-    date: string;
-    snippet: string;
-    image: string;
-    dataAiHint: string;
-    url: string;
-}
+import { ReadlistButton } from "@/components/readlist-button";
+import type { NewsArticle } from "@/hooks/use-readlist";
 
 async function getBatmanVideos(): Promise<Video[]> {
   const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
@@ -174,36 +165,36 @@ export default async function HomePage() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {news.map(article => (
-                <a 
-                  href={article.url} 
-                  key={article.id} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="block bg-card hover:border-primary/50 transition-colors rounded-lg"
-                  aria-label={`Read ${article.title}`}
-                >
-                  <Card className="flex flex-col border-0 shadow-none h-full overflow-hidden">
-                      <div className="relative aspect-video">
-                          <Image 
-                            src={article.image} 
-                            alt={`Image for ${article.title}`} 
-                            fill
-                            className="object-cover w-full h-full" 
-                            data-ai-hint={article.dataAiHint} 
-                          />
-                      </div>
-                      <CardHeader>
-                          <CardTitle className="font-headline">{article.title}</CardTitle>
-                          <CardDescription>{article.source} - {article.date}</CardDescription>
-                      </CardHeader>
-                      <CardContent className="flex-grow">
-                          <p className="text-muted-foreground">{article.snippet}</p>
-                      </CardContent>
-                      <div className="p-6 pt-0">
-                          <span className="text-primary font-bold">Read More &rarr;</span>
-                      </div>
-                  </Card>
-                </a>
+                <Card key={article.id} className="group overflow-hidden bg-card hover:border-primary/50 transition-colors flex flex-col">
+                  <a 
+                    href={article.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="block"
+                    aria-label={`Read ${article.title}`}
+                  >
+                    <div className="relative aspect-video">
+                        <Image 
+                          src={article.image} 
+                          alt={`Image for ${article.title}`} 
+                          fill
+                          className="object-cover w-full h-full" 
+                          data-ai-hint={article.dataAiHint} 
+                        />
+                    </div>
+                  </a>
+                  <CardHeader>
+                      <CardTitle className="font-headline">{article.title}</CardTitle>
+                      <CardDescription>{article.source} - {article.date}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-grow">
+                      <p className="text-muted-foreground">{article.snippet}</p>
+                  </CardContent>
+                  <div className="p-6 pt-0 flex justify-between items-center">
+                      <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-primary font-bold">Read More &rarr;</a>
+                      <ReadlistButton article={article} />
+                  </div>
+                </Card>
             ))}
         </div>
       </section>

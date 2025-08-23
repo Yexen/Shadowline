@@ -7,9 +7,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BatLogo } from '@/components/bat-logo';
 import { useWatchlist, type Video } from '@/hooks/use-watchlist';
+import { useReadlist, type NewsArticle } from '@/hooks/use-readlist';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { PlayCircle, Trash2, Camera } from 'lucide-react';
+import { PlayCircle, Trash2, Camera, Link as LinkIcon } from 'lucide-react';
 import { PasswordInput } from '@/components/password-input';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
@@ -67,6 +68,48 @@ function WatchlistSection() {
         </Card>
     );
 }
+
+function ReadlistSection() {
+    const { articles, removeArticle, isLoaded } = useReadlist();
+
+    if (!isLoaded) {
+        return <p>Loading read list...</p>;
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>My Read List</CardTitle>
+                <CardDescription>Articles you've saved to read later.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {articles.length > 0 ? (
+                     <div className="space-y-4">
+                        {articles.map(article => (
+                             <Card key={article.id} className="bg-card/50 flex items-center p-3">
+                                <a href={article.url} target="_blank" rel="noopener noreferrer" className="flex-grow flex items-center gap-4 min-w-0">
+                                   <div className="relative h-16 w-24 flex-shrink-0 overflow-hidden rounded-md">
+                                     <Image src={article.image} alt={article.title} fill className="object-cover" />
+                                   </div>
+                                   <div className="flex-grow min-w-0">
+                                     <p className="font-semibold truncate">{article.title}</p>
+                                     <p className="text-sm text-muted-foreground truncate">{article.source}</p>
+                                   </div>
+                                </a>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 ml-4 flex-shrink-0" onClick={() => removeArticle(article.id)}>
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                             </Card>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-muted-foreground text-center py-8">Your read list is empty.</p>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
 
 function ChangePasswordSection() {
     const { toast } = useToast();
@@ -204,6 +247,7 @@ export default function ProfilePage() {
         </div>
 
        <WatchlistSection />
+       <ReadlistSection />
        <ChangePasswordSection />
     </div>
   );
