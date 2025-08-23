@@ -1,12 +1,10 @@
-
 'use client';
 
-import { useState } from "react";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
-import { useWriters, Writer, UserRole, UserStatus } from "@/hooks/use-writers";
+import { useWriters, UserRole, UserStatus } from "@/hooks/use-writers";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { CheckCircle, MessageSquare, Pencil, Plus, Trash2, User, X } from "lucide-react";
+import { MessageSquare, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Badge } from "./ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -30,12 +28,12 @@ export function WriterProfile({ isOpen, onClose }: WriterProfileProps) {
                 title: 'Status Updated',
                 description: `User status has been set to ${status}.`,
             });
-        } catch(error) {
+        } catch(error: any) {
             console.error("Failed to update status:", error);
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Could not update user status.',
+                description: error.message || 'Could not update user status.',
             });
         }
     };
@@ -47,12 +45,12 @@ export function WriterProfile({ isOpen, onClose }: WriterProfileProps) {
                 title: 'Role Updated',
                 description: `User role has been set to ${role}.`,
             });
-        } catch(error) {
+        } catch(error: any) {
             console.error("Failed to update role:", error);
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Could not update user role.',
+                description: error.message || 'Could not update user role.',
             });
         }
     };
@@ -65,18 +63,17 @@ export function WriterProfile({ isOpen, onClose }: WriterProfileProps) {
                 description: 'The user has been removed from the system.',
                 variant: 'destructive'
             });
-        } catch(error) {
+        } catch(error: any) {
             console.error("Failed to delete user:", error);
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Could not delete user.',
+                description: error.message || 'Could not delete user.',
             });
         }
     }
 
     const handleStartMessage = (writerId: string) => {
-        // Navigate to the messages page with a query param to start a new conversation
         onClose();
         router.push(`/messages?new=${writerId}`);
     }
@@ -89,7 +86,7 @@ export function WriterProfile({ isOpen, onClose }: WriterProfileProps) {
                 <DialogHeader>
                     <DialogTitle className="font-headline">Manage Users</DialogTitle>
                     <DialogDescription>
-                        {canManageUsers ? "Approve, edit roles for, or remove user profiles." : "You do not have permission to manage users."}
+                        {canManageUsers ? "Approve, edit roles for, or remove user profiles." : "View all writers on the project."}
                     </DialogDescription>
                 </DialogHeader>
 

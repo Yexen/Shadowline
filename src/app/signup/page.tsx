@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -28,18 +27,22 @@ export default function SignupPage() {
   const { addWriter } = useWriters();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
   });
 
-  const onSubmit = (data: SignupFormValues) => {
+  const onSubmit = async (data: SignupFormValues) => {
+    setError(null);
+    setIsLoading(true);
     try {
-      addWriter(data.name, data.email, data.password);
+      await addWriter(data.name, data.email, data.password);
       setSuccess(true);
-      setError(null);
     } catch (e: any) {
       setError(e.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -81,21 +84,23 @@ export default function SignupPage() {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
-                <Input id="name" type="text" placeholder="Selina Kyle" {...register('name')} />
+                <Input id="name" type="text" placeholder="Selina Kyle" {...register('name')} disabled={isLoading} />
                 {errors.name && <p className="text-destructive text-sm">{errors.name.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="cat@gotham.net" {...register('email')} />
+                <Input id="email" type="email" placeholder="cat@gotham.net" {...register('email')} disabled={isLoading} />
                 {errors.email && <p className="text-destructive text-sm">{errors.email.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <PasswordInput id="password" {...register('password')} />
+                <PasswordInput id="password" {...register('password')} disabled={isLoading} />
                 {errors.password && <p className="text-destructive text-sm">{errors.password.message}</p>}
               </div>
               {error && <p className="text-destructive text-sm">{error}</p>}
-              <Button type="submit" className="w-full">Request Access</Button>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'Submitting...' : 'Request Access'}
+              </Button>
             </form>
           </CardContent>
         </Card>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -17,7 +16,7 @@ import { BatLogo } from '@/components/bat-logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Home, PenSquare, BrainCircuit, Info, LogOut, FileText, Images, Settings, BookCopy, BookOpenCheck, ClipboardList, Map as MapIcon, Search, Library, Book, MessageSquare } from 'lucide-react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, redirect } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -41,7 +40,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
 
   const { isLoaded: bibleLoaded, bibleData, addCategory, addOrUpdateEntry } = useBible();
-  const { activeWriter } = useWriters();
+  const { activeWriter, isLoaded: authLoaded, logout } = useWriters();
   const { modalType, modalData, closeModal } = useModalStore();
 
   const [editingEntry, setEditingEntry] = useState<{ category: string; entry: BibleEntry } | null>(null);
@@ -53,6 +52,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const { getChapter, updateChapter, isLoaded: volumesLoaded } = useVolumes();
   const [editingChapter, setEditingChapter] = useState<{volumeId: string, chapterId: string} | null>(null);
 
+  useEffect(() => {
+    if (authLoaded && !activeWriter) {
+      redirect('/auth');
+    }
+  }, [authLoaded, activeWriter]);
 
   useEffect(() => {
     if (modalType === 'bible' && modalData?.bible) {
@@ -107,6 +111,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     setEditingChapter(null);
   };
   
+  if (!authLoaded || !activeWriter) {
+    return (
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+            <BatLogo className="w-24 h-12 text-primary animate-pulse" />
+        </div>
+    )
+  }
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -225,7 +237,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         <span className="text-sm font-semibold group-data-[state=collapsed]:hidden">{activeWriter?.name || 'The Writer'}</span>
                     </div>
                      <div className="opacity-0 group-hover:opacity-100 group-data-[state=collapsed]:hidden ml-auto">
-                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); /* handleLogout(); */ }}><LogOut/></Button>
+                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); logout(); }}><LogOut/></Button>
                     </div>
                 </div>
             </div>
