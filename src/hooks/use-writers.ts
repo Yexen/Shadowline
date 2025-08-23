@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -33,7 +32,7 @@ let auth: Auth;
 let db: Firestore;
 
 const headWriterDefault = {
-  id: 'head-writer-001', // Placeholder, will be replaced by actual UID on first signup/login
+  id: 'head-writer-001',
   name: 'Yekta Jokar',
   email: 'yekta.kjs@gmail.com',
   password: 'LivFreya',
@@ -50,7 +49,7 @@ export function useWriters() {
   const [isLoaded, setIsLoaded] = useState(false);
   const router = useRouter();
 
-  // Lazy initialize Firebase services to prevent race conditions
+  // Lazy initialize Firebase services
   if (!auth) {
     auth = getAuth(app);
   }
@@ -70,7 +69,6 @@ export function useWriters() {
   }, [activeWriter]);
 
   useEffect(() => {
-    // If a bypassed user is already set, don't run Firebase auth listener
     const bypassedUser = localStorage.getItem('gotham-bypassed-user');
     if (bypassedUser) {
         setActiveWriter(JSON.parse(bypassedUser));
@@ -87,14 +85,11 @@ export function useWriters() {
            if (userData.status === 'approved') {
               setActiveWriter({ id: user.uid, ...userData });
            } else {
-              // User is not approved, log them out
               signOut(auth);
               setActiveWriter(null);
-              // Optionally redirect to a page explaining their status
               if(router) router.push('/auth');
            }
         } else {
-            // Firestore doc doesn't exist, something is wrong.
              signOut(auth);
              setActiveWriter(null);
         }
@@ -107,7 +102,6 @@ export function useWriters() {
     return () => unsubscribe();
   }, [router]);
   
-  // Fetch all users if the active user is a head-writer
   useEffect(() => {
     if (isLoaded && activeWriter?.role === 'head-writer') {
         fetchAllUsers();
@@ -122,15 +116,11 @@ export function useWriters() {
     if (!password) throw new Error("Password is required for signup.");
     
     const usersRef = collection(db, "users");
-
-    // Check if email already exists
     const emailQuery = query(usersRef, where("email", "==", email.toLowerCase()));
     const emailSnapshot = await getDocs(emailQuery);
     if (!emailSnapshot.empty) {
         throw new Error("A user with this email already exists.");
     }
-
-    // Check if name already exists
     const nameQuery = query(usersRef, where("name", "==", name));
     const nameSnapshot = await getDocs(nameQuery);
     if (!nameSnapshot.empty) {
@@ -150,19 +140,19 @@ export function useWriters() {
     };
     
     await setDoc(doc(db, "users", user.uid), newWriter);
-    // The onAuthStateChanged listener will handle setting the active user if they get auto-logged in,
-    // but typically we want them to log in after their account is approved.
     await signOut(auth);
   };
   
   const login = async (email: string, password?: string) => {
     if (!password) throw new Error("Password is required for login.");
     await signInWithEmailAndPassword(auth, email, password);
-    // onAuthStateChanged will handle the rest
   };
 
-  const loginAsHeadWriter = async () => {
-    // Quick Bypass Solution as requested
+  const loginAsHeadWriter = async (email?: string, password?: string) => {
+    if (email?.toLowerCase() !== headWriterDefault.email || password !== headWriterDefault.password) {
+        throw new Error("Invalid Head Writer credentials.");
+    }
+
     const headWriterSession = {
         id: headWriterDefault.id,
         name: headWriterDefault.name,
@@ -179,28 +169,25 @@ export function useWriters() {
   const updateWriterStatus = async (writerId: string, status: UserStatus) => {
     const userDocRef = doc(db, "users", writerId);
     await updateDoc(userDocRef, { status });
-    fetchAllUsers(); // Refresh the list
+    fetchAllUsers();
   };
 
   const updateWriterRole = async (writerId: string, role: UserRole) => {
     const userDocRef = doc(db, "users", writerId);
     await updateDoc(userDocRef, { role });
-    fetchAllUsers(); // Refresh the list
+    fetchAllUsers();
   };
 
   const deleteWriter = async (writerId: string) => {
-    // Note: Deleting a Firebase Auth user requires admin privileges,
-    // usually handled by a backend function. Here we just delete the Firestore record.
     const userDocRef = doc(db, "users", writerId);
     await deleteDoc(userDocRef);
-    fetchAllUsers(); // Refresh the list
+    fetchAllUsers();
   };
 
   const logout = async () => {
-    // Clear the bypass user from local storage
     localStorage.removeItem('gotham-bypassed-user');
     await signOut(auth);
-    setActiveWriter(null); // Explicitly clear active user
+    setActiveWriter(null);
     router.push('/auth');
   };
 

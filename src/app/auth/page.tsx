@@ -9,25 +9,13 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { LoginDialog } from '@/components/login-dialog';
 
-type Role = 'writer' | 'reader';
+type Role = 'writer' | 'reader' | 'head-writer';
 
 export default function AuthPage() {
   const router = useRouter();
-  const { loginAsHeadWriter, isLoaded } = useWriters();
-  const { toast } = useToast();
+  const { isLoaded } = useWriters();
   const [isLoading, setIsLoading] = useState(false);
   const [dialogRole, setDialogRole] = useState<Role | null>(null);
-
-  const handleHeadWriterAccess = async () => {
-    setIsLoading(true);
-    try {
-        await loginAsHeadWriter();
-        router.push('/home');
-    } catch (e: any) {
-        toast({ variant: 'destructive', title: 'Head Writer Access Failed', description: e.message });
-        setIsLoading(false);
-    }
-  };
 
   return (
     <>
@@ -68,7 +56,7 @@ export default function AuthPage() {
              <Button 
                 variant="ghost" 
                 className="w-full text-primary hover:text-primary/90" 
-                onClick={handleHeadWriterAccess}
+                onClick={() => setDialogRole('head-writer')}
                 disabled={!isLoaded || isLoading}
               >
                 {isLoading ? 'Accessing...' : 'Head Writer Access'}

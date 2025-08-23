@@ -21,13 +21,13 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 interface LoginDialogProps {
-    role: 'writer' | 'reader' | null;
+    role: 'writer' | 'reader' | 'head-writer' | null;
     onClose: () => void;
 }
 
 export function LoginDialog({ role, onClose }: LoginDialogProps) {
   const router = useRouter();
-  const { login, isLoaded } = useWriters();
+  const { login, loginAsHeadWriter, isLoaded } = useWriters();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -41,8 +41,11 @@ export function LoginDialog({ role, onClose }: LoginDialogProps) {
     setIsLoading(true);
     setError(null);
     try {
-      await login(data.email, data.password);
-      // The onAuthStateChanged listener in the hook will handle redirection.
+      if (role === 'head-writer') {
+        await loginAsHeadWriter(data.email, data.password);
+      } else {
+        await login(data.email, data.password);
+      }
       router.push('/home');
     } catch (e: any) {
       const errorMessage = e.message || 'An unknown error occurred.';
@@ -62,13 +65,20 @@ export function LoginDialog({ role, onClose }: LoginDialogProps) {
       }
   }
 
+  const getTitle = () => {
+    if (role === 'head-writer') return 'Head Writer Login';
+    if (role === 'writer') return 'Writer Login';
+    if (role === 'reader') return 'Reader Login';
+    return 'Login';
+  }
+
   if (!role) return null;
 
   return (
     <Dialog open={!!role} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="font-headline">{role === 'writer' ? 'Writer' : 'Reader'} Login</DialogTitle>
+          <DialogTitle className="font-headline">{getTitle()}</DialogTitle>
           <DialogDescription>
             Enter your credentials to engage with the Protocol.
           </DialogDescription>
