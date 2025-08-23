@@ -33,7 +33,7 @@ async function getBatmanVideos(): Promise<Video[]> {
     return [];
   }
 
-  const YOUTUBE_API_URL = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=batman&type=video&order=viewCount&maxResults=6&key=${YOUTUBE_API_KEY}`;
+  const YOUTUBE_API_URL = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=batman&type=video&order=viewCount&videoDuration=medium&maxResults=6&key=${YOUTUBE_API_KEY}`;
   
   try {
     const response = await fetch(YOUTUBE_API_URL, {
