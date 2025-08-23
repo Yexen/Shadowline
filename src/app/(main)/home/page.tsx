@@ -72,7 +72,7 @@ function getBatmanNews(): NewsArticle[] {
       source: "Gotham Gazette",
       date: new Date().toLocaleDateString(),
       snippet: "With new leadership at DC Studios, fans are eagerly anticipating the next chapter for the Dark Knight on the big screen.",
-      image: 'https://placehold.co/600x400/2c3e50/ffffff?text=Batman+News',
+      image: 'https://placehold.co/600x400.png',
       dataAiHint: 'comic news article',
       url: "#",
     },
@@ -82,7 +82,7 @@ function getBatmanNews(): NewsArticle[] {
       source: "CBR",
       date: new Date(Date.now() - 86400000).toLocaleDateString(),
       snippet: "The iconic mystery that plagued Gotham for a year is finally getting a faithful animated two-part film adaptation.",
-      image: 'https://placehold.co/600x400/2c3e50/ffffff?text=Long+Halloween',
+      image: 'https://placehold.co/600x400.png',
       dataAiHint: 'comic book panel',
       url: "#",
     },
@@ -92,7 +92,7 @@ function getBatmanNews(): NewsArticle[] {
       source: "IGN",
       date: new Date(Date.now() - 172800000).toLocaleDateString(),
       snippet: "A deep dive into the complex relationships and shared trauma that bind Batman and the vigilantes of Gotham.",
-      image: 'https://placehold.co/600x400/2c3e50/ffffff?text=Bat+Family',
+      image: 'https://placehold.co/600x400.png',
       dataAiHint: 'gotham city characters',
       url: "#",
     },
@@ -133,8 +133,9 @@ export default async function HomePage() {
                         <Image 
                           src={video.thumbnail} 
                           alt={`Thumbnail for ${video.title}`} 
-                          fill 
-                          className="object-cover" 
+                          width={480}
+                          height={360}
+                          className="object-cover w-full h-full" 
                           data-ai-hint={video.dataAiHint} 
                         />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -187,8 +188,9 @@ export default async function HomePage() {
                           <Image 
                             src={article.image} 
                             alt={`Image for ${article.title}`} 
-                            fill 
-                            className="object-cover" 
+                            width={600}
+                            height={400}
+                            className="object-cover w-full h-full" 
                             data-ai-hint={article.dataAiHint} 
                           />
                       </div>
