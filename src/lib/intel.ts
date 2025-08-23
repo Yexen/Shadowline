@@ -13,8 +13,9 @@ export type IntelItem = {
 };
 
 const FEEDS = [
-  // official + big games/comics sites that often cover Batman
+  // Official DC Comics feed
   'https://www.dc.com/blog/rss.xml',
+  // Other big games/comics sites that often cover Batman
   'https://feeds.ign.com/ign/all',                   // IGN
   'https://www.gamespot.com/feeds/mashup/',          // GameSpot
   'https://screenrant.com/feed/',                    // ScreenRant
