@@ -1,18 +1,19 @@
 
+'use client';
+
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import Image from "next/image";
-import { Youtube, Newspaper, PlayCircle, AlertTriangle, Link as LinkIcon, BadgeHelp } from "lucide-react";
+import { Youtube, Newspaper, PlayCircle, AlertTriangle, BadgeHelp } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshButton } from "@/components/refresh-button";
 import { WatchlistButton } from "@/components/watchlist-button";
 import type { Video } from "@/hooks/use-watchlist";
 import type { NewsArticle } from "@/hooks/use-readlist";
 import { ReadlistButton } from "@/components/readlist-button";
-import { Badge } from "@/components/ui/badge";
+import { VideoModal } from '@/components/video-modal';
 import { GET as getNewsRoute } from '@/app/api/news/route';
 import { GET as getVideosRoute } from '@/app/api/videos/route';
-
-type Intel = NewsArticle & { alive: boolean; };
 
 const fallbackVideos: Video[] = [
     {
@@ -39,107 +40,23 @@ const fallbackVideos: Video[] = [
         url: "https://www.youtube.com/watch?v=pG_NKNX0g-Q",
         publishedAt: "2018-10-23T00:00:00Z"
     },
-    {
-        id: "9MFJk4Xm3A4",
-        title: "What You Never Knew About The Batcave",
-        uploader: "CBR",
-        thumbnail: "https://i.ytimg.com/vi/9MFJk4Xm3A4/hqdefault.jpg",
-        url: "https://www.youtube.com/watch?v=9MFJk4Xm3A4",
-        publishedAt: "2021-05-15T00:00:00Z"
-    },
-    {
-        id: "D8eS2gY2i_w",
-        title: "How Batman's Villains Represent Stages of Grief",
-        uploader: "The Imaginary Axis",
-        thumbnail: "https://i.ytimg.com/vi/D8eS2gY2i_w/hqdefault.jpg",
-        url: "https://www.youtube.com/watch?v=D8eS2gY2i_w",
-        publishedAt: "2020-09-20T00:00:00Z"
-    },
-    {
-        id: "T7d64R2n4d4",
-        title: "The Long Halloween: A Complete History",
-        uploader: "Comics Explained",
-        thumbnail: "https://i.ytimg.com/vi/T7d64R2n4d4/hqdefault.jpg",
-        url: "https://www.youtube.com/watch?v=T7d64R2n4d4",
-        publishedAt: "2021-06-25T00:00:00Z"
-    },
 ];
 
-const fallbackIntel: Intel[] = [
-    {
-        id: 'fallback-1',
-        title: 'The Batman 2 Release Date, Cast, Plot, And Everything We Know',
-        source: 'ScreenRant',
-        date: '2024-08-22T00:00:00Z',
-        snippet: 'The sequel to The Batman is highly anticipated. Here is everything we know about the cast, plot, and potential release date for the next chapter in Matt Reeves\' saga.',
-        url: '#',
-        image: 'https://placehold.co/800x450.png',
-        alive: true,
-    },
-    {
-        id: 'fallback-2',
-        title: 'New "Batman: Arkham Shadow" Trailer Reveals More Gameplay',
-        source: 'IGN',
-        date: '2024-08-21T00:00:00Z',
-        snippet: 'The latest trailer for the upcoming VR game "Batman: Arkham Shadow" showcases new gameplay mechanics, traversal, and a deeper look at the game\'s villains.',
-        url: '#',
-        image: 'https://placehold.co/800x450.png',
-        alive: true,
-    }
-];
+type Intel = NewsArticle & { alive: boolean; };
 
+function HomePageClient({ initialVideos, initialNews, videoError, newsError }: { initialVideos: Video[], initialNews: Intel[], videoError?: string, newsError?: string }) {
+  const [open, setOpen] = React.useState(false);
+  const [active, setActive] = React.useState<{ id: string; title: string } | null>(null);
 
-async function getBatmanVideos(): Promise<{ videos: Video[], error?: string }> {
-  try {
-    const response = await getVideosRoute();
-    
-    if (!response.ok) {
-        const errorData = await response.json();
-        const errorMessage = errorData.error || "An unknown error occurred while fetching videos from the internal API.";
-        console.error("Internal video API Error:", errorMessage);
-        return { videos: fallbackVideos, error: errorMessage };
-    }
+  const openVideo = (id: string, title: string) => {
+    setActive({ id, title });
+    setOpen(true);
+  };
 
-    const videos = await response.json();
-    
-    if (!videos || videos.length === 0) {
-        return { videos: fallbackVideos, error: "The video feed is currently empty. Showing fallback content." };
-    }
-        
-    return { videos };
-
-  } catch (error) {
-    console.error("Failed to fetch videos due to an unhandled error:", error);
-    return { videos: fallbackVideos, error: "The video surveillance system is currently offline. Displaying archived footage." };
-  }
-}
-
-async function getIntel(): Promise<{ news: Intel[], error?: string }> {
-    try {
-        const response = await getNewsRoute();
-
-        if (!response.ok) {
-            return { news: fallbackIntel, error: 'Could not fetch the latest intel from the network. Displaying fallback articles.' };
-        }
-        
-        const news = await response.json();
-
-        if (!news || news.length === 0) {
-             return { news: fallbackIntel, error: 'The intel network is quiet. Displaying fallback articles.' };
-        }
-
-        return { news };
-
-    } catch (error) {
-        console.error('Failed to fetch intel:', error);
-        return { news: fallbackIntel, error: 'The intel network is currently unreachable. Displaying fallback articles.' };
-    }
-}
-
-
-export default async function HomePage() {
-    const { videos, error: videoError } = await getBatmanVideos();
-    const { news, error: newsError } = await getIntel();
+  const closeVideo = () => {
+    setOpen(false);
+    setActive(null);
+  };
 
   return (
     <div className="space-y-8">
@@ -167,15 +84,14 @@ export default async function HomePage() {
                 </CardHeader>
             </Card>
           )}
-          {videos.length > 0 ? (
-            videos.map(video => (
+          {initialVideos.length > 0 ? (
+            initialVideos.map(video => (
               <Card key={video.id} className="group overflow-hidden bg-card hover:border-primary/50 transition-colors flex flex-col">
-                <a 
-                  href={video.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block"
-                  aria-label={`Watch ${video.title} by ${video.uploader}`}
+                <button
+                  type="button"
+                  onClick={() => openVideo(video.id, video.title)}
+                  className="block text-left"
+                  aria-label={`Play ${video.title}`}
                 >
                   <CardContent className="p-0">
                     <div className="relative aspect-video overflow-hidden rounded-t-lg">
@@ -185,24 +101,23 @@ export default async function HomePage() {
                           fill
                           className="object-cover w-full h-full"
                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                          unoptimized={video.thumbnail.includes('ytimg.com')} // YouTube thumbnails don't need Next.js optimization
+                          unoptimized={video.thumbnail.includes('ytimg.com')}
                         />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <PlayCircle className="w-16 h-16 text-white/80" />
                         </div>
                     </div>
                   </CardContent>
-                </a>
+                </button>
                 <div className="p-4 flex flex-col flex-grow">
-                  <a 
-                    href={video.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-grow"
+                  <button 
+                    type="button"
+                    onClick={() => openVideo(video.id, video.title)}
+                    className="text-left flex-grow"
                   >
                     <h3 className="font-bold font-headline line-clamp-2">{video.title}</h3>
                     <p className="text-sm text-muted-foreground truncate">{video.uploader}</p>
-                  </a>
+                  </button>
                     <div className="flex justify-end mt-2">
                         <WatchlistButton video={video} />
                     </div>
@@ -243,7 +158,7 @@ export default async function HomePage() {
                   </CardHeader>
               </Card>
             )}
-            {news.map((article: any) => (
+            {initialNews.map((article: any) => (
               <Card key={article.id} className="group overflow-hidden bg-card hover:border-primary/50 transition-colors flex flex-col">
                 <a href={article.url} target="_blank" rel="noopener noreferrer">
                   <div className="relative aspect-video">
@@ -275,7 +190,7 @@ export default async function HomePage() {
                 </div>
               </Card>
             ))}
-            {!newsError && news.length === 0 && (
+            {!newsError && initialNews.length === 0 && (
                  <Card className="col-span-full bg-card/50">
                     <CardHeader className="flex-row items-center gap-4">
                         <BadgeHelp className="w-10 h-10 text-muted-foreground" />
@@ -288,6 +203,55 @@ export default async function HomePage() {
             )}
           </div>
         </section>
+
+        <VideoModal
+          open={open}
+          onClose={closeVideo}
+          videoId={active?.id}
+          title={active?.title}
+        />
     </div>
+  );
+}
+
+export default async function HomePage() {
+  let videos: Video[] = [];
+  let news: Intel[] = [];
+  let videoError: string | undefined;
+  let newsError: string | undefined;
+
+  try {
+    const videoResponse = await getVideosRoute();
+    if (!videoResponse.ok) {
+      const errorData = await videoResponse.json();
+      videoError = errorData.error || "An unknown error occurred while fetching videos.";
+      videos = fallbackVideos;
+    } else {
+      videos = await videoResponse.json();
+    }
+  } catch (error) {
+    videoError = "The video surveillance system is currently offline.";
+    videos = fallbackVideos;
+  }
+
+  try {
+    const newsResponse = await getNewsRoute();
+    if (!newsResponse.ok) {
+      const errorData = await newsResponse.json();
+      newsError = errorData.error || 'Could not fetch the latest intel from the network.';
+    } else {
+      news = await newsResponse.json();
+    }
+  } catch (error) {
+    newsError = 'The intel network is currently unreachable.';
+  }
+
+  return (
+    <HomePageClient 
+      initialVideos={videos}
+      initialNews={news}
+      videoError={videoError}
+      newsError={newsError}
+    />
   );
 }
