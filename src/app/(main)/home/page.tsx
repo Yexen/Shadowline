@@ -133,8 +133,7 @@ export default async function HomePage() {
                         <Image 
                           src={video.thumbnail} 
                           alt={`Thumbnail for ${video.title}`} 
-                          width={480}
-                          height={360}
+                          fill
                           className="object-cover w-full h-full" 
                           data-ai-hint={video.dataAiHint} 
                         />
@@ -188,8 +187,7 @@ export default async function HomePage() {
                           <Image 
                             src={article.image} 
                             alt={`Image for ${article.title}`} 
-                            width={600}
-                            height={400}
+                            fill
                             className="object-cover w-full h-full" 
                             data-ai-hint={article.dataAiHint} 
                           />
