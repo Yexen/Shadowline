@@ -71,7 +71,7 @@ function getBatmanNews(): NewsArticle[] {
       snippet: "With new leadership at DC Studios, fans are eagerly anticipating the next chapter for the Dark Knight on the big screen.",
       image: 'https://placehold.co/600x400.png',
       dataAiHint: 'comic news article',
-      url: "#",
+      url: "https://news.google.com/search?q=Batman%20DC%20Studios",
     },
     {
       id: 2,
@@ -81,7 +81,7 @@ function getBatmanNews(): NewsArticle[] {
       snippet: "The iconic mystery that plagued Gotham for a year is finally getting a faithful animated two-part film adaptation.",
       image: 'https://placehold.co/600x400.png',
       dataAiHint: 'comic book panel',
-      url: "#",
+      url: "https://www.cbr.com/search/the-long-halloween/",
     },
     {
       id: 3,
@@ -91,7 +91,7 @@ function getBatmanNews(): NewsArticle[] {
       snippet: "A deep dive into the complex relationships and shared trauma that bind Batman and the vigilantes of Gotham.",
       image: 'https://placehold.co/600x400.png',
       dataAiHint: 'gotham city characters',
-      url: "#",
+      url: "https://www.ign.com/search?q=psychology%20of%20the%20bat-family",
     },
     {
       id: 4,
@@ -101,7 +101,7 @@ function getBatmanNews(): NewsArticle[] {
       snippet: "Leaks suggest a new entry in the acclaimed Arkham series is in early stages, focusing on a younger Batman.",
       image: 'https://placehold.co/600x400.png',
       dataAiHint: 'video game art',
-      url: "#",
+      url: "https://www.gamespot.com/search/?q=new%20arkham%20game",
     },
     {
       id: 5,
@@ -111,7 +111,7 @@ function getBatmanNews(): NewsArticle[] {
       snippet: "Beyond the Joker and Penguin lies a rich gallery of rogues. We explore the villains who deserve more spotlight.",
       image: 'https://placehold.co/600x400.png',
       dataAiHint: 'gotham villains comic',
-      url: "#",
+      url: "https://screenrant.com/search/underrated%20batman%20villains/",
     },
     {
       id: 6,
@@ -121,7 +121,7 @@ function getBatmanNews(): NewsArticle[] {
       snippet: "From its gothic spires to its art deco skyscrapers, an in-depth look at the architectural styles that define Gotham.",
       image: 'https://placehold.co/600x400.png',
       dataAiHint: 'gothic architecture city',
-      url: "#",
+      url: "https://www.architecturaldigest.com/search?q=gotham%20city%20architecture",
     },
   ];
 }
@@ -129,6 +129,7 @@ function getBatmanNews(): NewsArticle[] {
 export default async function HomePage() {
     const videos = await getBatmanVideos();
     const news = getBatmanNews();
+    const isExternal = (url?: string) => !!url && /^https?:\/\//i.test(url);
 
   return (
     <div className="space-y-8">
@@ -148,7 +149,7 @@ export default async function HomePage() {
           {videos.length > 0 ? (
             videos.map(video => (
               <Card key={video.id} className="group overflow-hidden bg-card hover:border-primary/50 transition-colors flex flex-col">
-                <Link 
+                <a 
                   href={video.url}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -170,9 +171,9 @@ export default async function HomePage() {
                         </div>
                     </div>
                   </CardContent>
-                </Link>
+                </a>
                 <div className="p-4 flex flex-col flex-grow">
-                  <Link 
+                  <a 
                     href={video.url}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -180,7 +181,7 @@ export default async function HomePage() {
                   >
                     <h3 className="font-bold font-headline line-clamp-2">{video.title}</h3>
                     <p className="text-sm text-muted-foreground truncate">{video.uploader}</p>
-                  </Link>
+                  </a>
                     <div className="flex justify-end mt-2">
                         <WatchlistButton video={video} />
                     </div>
@@ -212,41 +213,41 @@ export default async function HomePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {news.map(article => (
                 <Card key={article.id} className="group overflow-hidden bg-card hover:border-primary/50 transition-colors flex flex-col">
-                  <Link 
-                    href={article.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="block"
-                    aria-label={`Read ${article.title}`}
-                  >
-                    <div className="relative aspect-video">
-                        <Image 
-                          src={article.image} 
-                          alt={`Image for ${article.title}`} 
-                          fill
-                          className="object-cover w-full h-full" 
-                          data-ai-hint={article.dataAiHint}
-                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        />
+                  {isExternal(article.url) ? (
+                    <a href={article.url} target="_blank" rel="noopener noreferrer" className="block" aria-label={`Read ${article.title}`}>
+                      <div className="relative aspect-video">
+                          <Image src={article.image} alt={`Image for ${article.title}`} fill className="object-cover w-full h-full" data-ai-hint={article.dataAiHint} sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw" />
+                      </div>
+                    </a>
+                  ) : (
+                    <div className="relative aspect-video pointer-events-none opacity-90">
+                       <Image src={article.image} alt={`Image for ${article.title}`} fill className="object-cover w-full h-full" data-ai-hint={article.dataAiHint} sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw" />
                     </div>
-                  </Link>
+                  )}
+
                   <CardHeader>
-                    <Link 
-                        href={article.url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                      >
-                      <CardTitle className="font-headline">{article.title}</CardTitle>
-                      <CardDescription>{article.source} - {article.date}</CardDescription>
-                    </Link>
+                    {isExternal(article.url) ? (
+                       <a href={article.url} target="_blank" rel="noopener noreferrer">
+                         <CardTitle className="font-headline">{article.title}</CardTitle>
+                         <CardDescription>{article.source} - {article.date}</CardDescription>
+                       </a>
+                    ) : (
+                       <div>
+                         <CardTitle className="font-headline">{article.title}</CardTitle>
+                         <CardDescription>{article.source} - {article.date}</CardDescription>
+                       </div>
+                    )}
                   </CardHeader>
+
                   <CardContent className="flex-grow">
                       <p className="text-muted-foreground">{article.snippet}</p>
                   </CardContent>
                   <div className="p-6 pt-0 flex justify-between items-center">
+                    {isExternal(article.url) ? (
                       <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-primary font-bold hover:underline">
                         Read More &rarr;
                       </a>
+                    ) : <span />}
                       <ReadlistButton article={article} />
                   </div>
                 </Card>
