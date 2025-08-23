@@ -110,7 +110,7 @@ export function useWriters() {
     }
   }, [isLoaded, activeWriter, fetchAllUsers]);
 
-  const addWriter = async (name: string, email: string, password?: string) => {
+  const addWriter = async (name: string, email: string, password: string, role: UserRole) => {
     if (!password) throw new Error("Password is required for signup.");
     
     const usersRef = collection(db, "users");
@@ -137,7 +137,7 @@ export function useWriters() {
       email: email.toLowerCase(),
       avatarUrl: `https://placehold.co/128x128.png`,
       dataAiHint: 'writer portrait',
-      role: 'writer',
+      role: role,
       status: 'pending',
     };
     
