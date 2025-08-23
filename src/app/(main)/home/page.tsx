@@ -8,6 +8,7 @@ import { WatchlistButton } from "@/components/watchlist-button";
 import type { Video } from "@/hooks/use-watchlist";
 import { ReadlistButton } from "@/components/readlist-button";
 import type { NewsArticle } from "@/hooks/use-readlist";
+import Link from 'next/link';
 
 async function getBatmanVideos(): Promise<Video[]> {
   const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
@@ -147,7 +148,7 @@ export default async function HomePage() {
           {videos.length > 0 ? (
             videos.map(video => (
               <Card key={video.id} className="group overflow-hidden bg-card hover:border-primary/50 transition-colors flex flex-col">
-                <a 
+                <Link 
                   href={video.url}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -169,10 +170,17 @@ export default async function HomePage() {
                         </div>
                     </div>
                   </CardContent>
-                </a>
+                </Link>
                 <div className="p-4 flex flex-col flex-grow">
-                    <h3 className="font-bold font-headline line-clamp-2 flex-grow">{video.title}</h3>
+                  <Link 
+                    href={video.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-grow"
+                  >
+                    <h3 className="font-bold font-headline line-clamp-2">{video.title}</h3>
                     <p className="text-sm text-muted-foreground truncate">{video.uploader}</p>
+                  </Link>
                     <div className="flex justify-end mt-2">
                         <WatchlistButton video={video} />
                     </div>
@@ -204,7 +212,7 @@ export default async function HomePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {news.map(article => (
                 <Card key={article.id} className="group overflow-hidden bg-card hover:border-primary/50 transition-colors flex flex-col">
-                  <a 
+                  <Link 
                     href={article.url} 
                     target="_blank" 
                     rel="noopener noreferrer" 
@@ -221,10 +229,16 @@ export default async function HomePage() {
                           sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         />
                     </div>
-                  </a>
+                  </Link>
                   <CardHeader>
+                    <Link 
+                        href={article.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                      >
                       <CardTitle className="font-headline">{article.title}</CardTitle>
                       <CardDescription>{article.source} - {article.date}</CardDescription>
+                    </Link>
                   </CardHeader>
                   <CardContent className="flex-grow">
                       <p className="text-muted-foreground">{article.snippet}</p>
