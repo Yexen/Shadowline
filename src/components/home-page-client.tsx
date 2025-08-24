@@ -22,6 +22,30 @@ interface HomePageClientProps {
     newsError?: string
 }
 
+const translations = {
+  en: {
+    pageDescription: "Your watch has begun. Here is the latest from the shadows.",
+    surveillanceTitle: "Surveillance Footage",
+    intelTitle: "Latest Intel",
+    videoErrorTitle: "Video Feed Error",
+    intelErrorTitle: "Intel Feed Error",
+    quietNightTitle: "A Quiet Night in Gotham",
+    quietNightDescription: "Could not find any recent Batman-related news. The city is quiet... too quiet.",
+    openExternally: "Open Externally"
+  },
+  fa: {
+    pageDescription: "دیده بانی شما آغاز شده است. این آخرین خبر از سایه‌ها است.",
+    surveillanceTitle: "تصاویر نظارتی",
+    intelTitle: "آخرین اطلاعات",
+    videoErrorTitle: "خطا در فید ویدیو",
+    intelErrorTitle: "خطا در فید اطلاعات",
+    quietNightTitle: "یک شب آرام در گاتهام",
+    quietNightDescription: "هیچ خبر جدیدی مرتبط با بتمن یافت نشد. شهر آرام است... بیش از حد آرام.",
+    openExternally: "باز کردن در تب جدید"
+  }
+};
+
+
 // This is the Client Component. It handles state and user interactions.
 export function HomePageClient({ initialVideos, initialNews, videoError, newsError }: HomePageClientProps) {
   const [videos, setVideos] = React.useState(initialVideos);
@@ -29,6 +53,20 @@ export function HomePageClient({ initialVideos, initialNews, videoError, newsErr
   
   const [activeVideo, setActiveVideo] = React.useState<{ id: string; title: string } | null>(null);
   const [activeArticle, setActiveArticle] = React.useState<{ url: string; title: string } | null>(null);
+  const [lang, setLang] = React.useState<'en' | 'fa'>('en');
+
+  React.useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const currentLang = document.documentElement.lang;
+      if (currentLang === 'fa') {
+        setLang('fa');
+      } else {
+        setLang('en');
+      }
+    }
+  }, []);
+
+  const t = translations[lang];
 
   const openVideo = (id: string, title: string) => setActiveVideo({ id, title });
   const openArticle = (url: string, title: string) => setActiveArticle({ url, title });
@@ -37,7 +75,7 @@ export function HomePageClient({ initialVideos, initialNews, videoError, newsErr
     <div className="space-y-8">
       <div className="flex justify-between items-start">
         <p className="mt-2 text-muted-foreground">
-          Your watch has begun. Here is the latest from the shadows.
+          {t.pageDescription}
         </p>
         <RefreshButton />
       </div>
@@ -45,7 +83,7 @@ export function HomePageClient({ initialVideos, initialNews, videoError, newsErr
       <section>
         <h2 className="font-headline text-2xl font-bold uppercase flex items-center gap-3 mb-4">
             <Youtube className="text-primary" />
-            Surveillance Footage
+            {t.surveillanceTitle}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {videoError && (
@@ -53,7 +91,7 @@ export function HomePageClient({ initialVideos, initialNews, videoError, newsErr
                 <CardHeader className="flex-row items-center gap-4">
                     <AlertTriangle className="w-10 h-10 text-destructive" />
                     <div>
-                        <CardTitle className="text-destructive">Video Feed Error</CardTitle>
+                        <CardTitle className="text-destructive">{t.videoErrorTitle}</CardTitle>
                         <CardDescription className="text-destructive/80">{videoError}</CardDescription>
                     </div>
                 </CardHeader>
@@ -119,7 +157,7 @@ export function HomePageClient({ initialVideos, initialNews, videoError, newsErr
       <section>
           <h2 className="font-headline text-2xl font-bold uppercase flex items-center gap-3 mb-4">
             <Newspaper className="text-primary" />
-            Latest Intel
+            {t.intelTitle}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {newsError ? (
@@ -127,7 +165,7 @@ export function HomePageClient({ initialVideos, initialNews, videoError, newsErr
                   <CardHeader className="flex-row items-center gap-4">
                       <AlertTriangle className="w-10 h-10 text-destructive" />
                       <div>
-                          <CardTitle className="text-destructive">Intel Feed Error</CardTitle>
+                          <CardTitle className="text-destructive">{t.intelErrorTitle}</CardTitle>
                           <CardDescription className="text-destructive/80">{newsError}</CardDescription>
                       </div>
                   </CardHeader>
@@ -167,7 +205,7 @@ export function HomePageClient({ initialVideos, initialNews, videoError, newsErr
                 <div className="p-4 pt-0 flex justify-between items-center">
                   <Button variant="ghost" size="sm" asChild>
                     <a href={article.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                        <ExternalLink className="mr-2"/> Open Externally
+                        <ExternalLink className="mr-2"/> {t.openExternally}
                     </a>
                   </Button>
                   <ReadlistButton article={article} />
@@ -179,8 +217,8 @@ export function HomePageClient({ initialVideos, initialNews, videoError, newsErr
                     <CardHeader className="flex-row items-center gap-4">
                         <BadgeHelp className="w-10 h-10 text-muted-foreground" />
                         <div>
-                            <CardTitle>A Quiet Night in Gotham</CardTitle>
-                            <CardDescription>Could not find any recent Batman-related news. The city is quiet... too quiet.</CardDescription>
+                            <CardTitle>{t.quietNightTitle}</CardTitle>
+                            <CardDescription>{t.quietNightDescription}</CardDescription>
                         </div>
                     </CardHeader>
                 </Card>
