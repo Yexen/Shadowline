@@ -14,7 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Card, CardContent } from './ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
-import { storage } from '@/lib/firebase';
+import { getAppStorage } from '@/lib/firebase';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
 
@@ -56,6 +56,7 @@ export function GalleryFolder({ folder, filter, onAddItem, onUpdateItem, onDelet
 
     if (newItemUrl.startsWith('data:')) {
         try {
+            const storage = getAppStorage();
             const storageRef = ref(storage, `gallery/${folder.id}/${Date.now()}`);
             const snapshot = await uploadString(storageRef, newItemUrl, 'data_url');
             finalUrl = await getDownloadURL(snapshot.ref);
@@ -89,6 +90,7 @@ export function GalleryFolder({ folder, filter, onAddItem, onUpdateItem, onDelet
     if (editingItem && newItemUrl.trim() && newItemCaption.trim()) {
         setIsUploading(true);
         let finalUrl = newItemUrl;
+        const storage = getAppStorage();
 
         // If a new file was selected (data URI), upload it and delete the old one
         if (newItemUrl.startsWith('data:') && editingItem.url.includes('firebasestorage')) {

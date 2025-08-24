@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from './use-toast';
-import { storage } from '@/lib/firebase';
+import { getAppStorage } from '@/lib/firebase';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 
 const COVER_IMAGE_STORAGE_KEY = 'gotham-cover-image-url';
@@ -16,6 +16,7 @@ const DEFAULT_POSITION = 50; // Center
 
 // Helper function to upload image and get URL
 const uploadCoverImage = async (dataUrl: string): Promise<string> => {
+    const storage = getAppStorage();
     // Client-side size check before upload to prevent large files from being processed
     // 2MB limit
     if (dataUrl.length > 2 * 1024 * 1024) {
@@ -69,6 +70,7 @@ export function useCoverImage() {
             const oldUrl = localStorage.getItem(COVER_IMAGE_STORAGE_KEY);
             if(oldUrl && oldUrl.includes('firebasestorage.googleapis.com')) {
                 try {
+                    const storage = getAppStorage();
                     const oldRef = ref(storage, oldUrl);
                     await deleteObject(oldRef);
                 } catch (deleteError: any) {

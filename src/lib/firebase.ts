@@ -1,6 +1,9 @@
+
 'use client';
 
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 export const firebaseConfig = {
@@ -13,8 +16,18 @@ export const firebaseConfig = {
   "measurementId": "G-S6V0G6J85V"
 };
 
-// Initialize Firebase
-const app: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
-const storage = getStorage(app);
+function getAppInstance(): FirebaseApp {
+  return getApps().length ? getApp() : initializeApp(firebaseConfig);
+}
 
-export { app, storage };
+export function getAppAuth() {
+    return getAuth(getAppInstance());
+}
+
+export function getAppFirestore() {
+    return getFirestore(getAppInstance());
+}
+
+export function getAppStorage() {
+    return getStorage(getAppInstance());
+}

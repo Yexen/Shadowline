@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ImagePlus, Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { storage } from '@/lib/firebase';
+import { getAppStorage } from '@/lib/firebase';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
 
@@ -35,6 +35,7 @@ export function MapCard({ map, onOpenMap, onUpdateMap }: MapCardProps) {
     if (newImageUrl.startsWith('data:image')) {
         setIsUploading(true);
         try {
+            const storage = getAppStorage();
             toast({ title: 'Uploading map cover...' });
             const storageRef = ref(storage, `maps/${map.id}-cover-${Date.now()}`);
             const snapshot = await uploadString(storageRef, newImageUrl, 'data_url');

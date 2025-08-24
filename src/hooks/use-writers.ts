@@ -12,7 +12,7 @@ import {
   Auth,
 } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, deleteDoc, query, where, Firestore } from 'firebase/firestore';
-import { app, storage } from '@/lib/firebase';
+import { getAppStorage, getAppAuth, getAppFirestore } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 
@@ -30,8 +30,6 @@ export interface Writer {
   status: UserStatus;
 }
 
-let auth: Auth;
-let db: Firestore;
 
 const headWriterDefault = {
   id: 'head-writer-001',
@@ -51,19 +49,12 @@ export function useWriters() {
   const [isLoaded, setIsLoaded] = useState(false);
   const router = useRouter();
 
-  // Lazy initialize Firebase services
-  if (!auth) {
-    auth = getAuth(app);
-  }
-  if (!db) {
-    db = getFirestore(app);
-  }
-  
   const fetchAllUsers = useCallback(async () => {
     if (activeWriter?.role !== 'head-writer') {
         setWriters(activeWriter ? [activeWriter] : []);
         return;
     }
+    const db = getAppFirestore();
     const usersCollection = collection(db, "users");
     const userSnapshot = await getDocs(usersCollection);
     const userList = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Writer));
@@ -78,6 +69,8 @@ export function useWriters() {
         return;
     }
 
+    const auth = getAppAuth();
+    const db = getAppFirestore();
     const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
       if (user) {
         const userDocRef = doc(db, "users", user.uid);
@@ -117,6 +110,8 @@ export function useWriters() {
   const addWriter = async (name: string, email: string, password: string, role: UserRole) => {
     if (!password) throw new Error("Password is required for signup.");
     
+    const auth = getAppAuth();
+    const db = getAppFirestore();
     const usersRef = collection(db, "users");
     const emailQuery = query(usersRef, where("email", "==", email.toLowerCase()));
     const emailSnapshot = await getDocs(emailQuery);
@@ -147,6 +142,7 @@ export function useWriters() {
   
   const login = async (email: string, password?: string) => {
     if (!password) throw new Error("Password is required for login.");
+    const auth = getAppAuth();
     await signInWithEmailAndPassword(auth, email, password);
   };
 
@@ -169,18 +165,21 @@ export function useWriters() {
   };
 
   const updateWriterStatus = async (writerId: string, status: UserStatus) => {
+    const db = getAppFirestore();
     const userDocRef = doc(db, "users", writerId);
     await updateDoc(userDocRef, { status });
     fetchAllUsers();
   };
 
   const updateWriterRole = async (writerId: string, role: UserRole) => {
+    const db = getAppFirestore();
     const userDocRef = doc(db, "users", writerId);
     await updateDoc(userDocRef, { role });
     fetchAllUsers();
   };
   
   const updateWriterAvatar = async (writerId: string, avatarDataUrl: string) => {
+    const storage = getAppStorage();
     let finalAvatarUrl = avatarDataUrl;
 
     // If it's a data URL, upload to Firebase Storage
@@ -198,6 +197,7 @@ export function useWriters() {
       return;
     }
 
+    const db = getAppFirestore();
     const userDocRef = doc(db, "users", writerId);
     await updateDoc(userDocRef, { avatarUrl: finalAvatarUrl });
     if(activeWriter && activeWriter.id === writerId) {
@@ -209,12 +209,14 @@ export function useWriters() {
   const deleteWriter = async (writerId: string) => {
     // Note: This does not delete the Firebase Auth user, only the Firestore document.
     // For a production app, you would want to use a Firebase Function to handle user deletion.
+    const db = getAppFirestore();
     const userDocRef = doc(db, "users", writerId);
     await deleteDoc(userDocRef);
     fetchAllUsers();
   };
 
   const logout = async () => {
+    const auth = getAppAuth();
     localStorage.removeItem('gotham-bypassed-user');
     await signOut(auth);
     setActiveWriter(null);
