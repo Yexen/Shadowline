@@ -14,20 +14,19 @@ export type IntelItem = {
 };
 
 const FEEDS = [
-  // Official DC Comics feed
-  'https://www.dc.com/blog/rss.xml',
+  // Official DC Comics feed - removed as it was failing
   'https://batman-news.com/feed/',
   // Other big games/comics sites that often cover Batman
   'https://feeds.ign.com/ign/all',                   // IGN
   'https://www.gamespot.com/feeds/mashup/',          // GameSpot
   'https://screenrant.com/feed/',                    // ScreenRant
-  'https://www.comicbookmovie.com/rss/news-feeds.rss',
+  // 'https://www.comicbookmovie.com/rss/news-feeds.rss', // Removed as it was failing
   'https://www.cbr.com/feed/',                       // CBR
   'https://www.polygon.com/rss/index.xml',
   'https://www.theverge.com/rss/index.xml',
   'https://comicbook.com/feed/',                     // ComicBook.com
   'https://collider.com/feed/',                      // Collider
-  'https://www.gamesradar.com/all-content/news/rss/',// GamesRadar+
+  // 'https://www.gamesradar.com/all-content/news/rss/',// Removed as it was failing
 ];
 
 const parser = new Parser({
