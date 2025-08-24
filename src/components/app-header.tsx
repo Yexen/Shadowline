@@ -13,6 +13,7 @@ import { ImagePlus } from "lucide-react";
 import { SidebarTrigger } from "./ui/sidebar";
 import { BatLogo } from "./bat-logo";
 import { Slider } from "./ui/slider";
+import { InstallPwaButton } from "./install-pwa-button";
 
 const pathToTitle: { [key: string]: string } = {
     '/home': "welcome Gothamite",
@@ -91,7 +92,8 @@ export function AppHeader() {
                 key={coverImage} // Force re-render on image change
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
+                <InstallPwaButton />
                 <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                     <DialogTrigger asChild>
                         <Button variant="secondary" size="sm">
