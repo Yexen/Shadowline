@@ -116,7 +116,7 @@ export function MapCard({ map, onOpenMap, onUpdateMap }: MapCardProps) {
             <Image
                 src={map.imageUrl}
                 alt={`Cover image for ${map.title}`}
-                layout="fill"
+                fill
                 className="object-cover"
                 data-ai-hint={map.dataAiHint}
             />
