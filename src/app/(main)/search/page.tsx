@@ -16,6 +16,42 @@ import { useGallery } from '@/hooks/use-gallery';
 import { useModalStore } from '@/hooks/use-modal-store';
 import { useVolumes } from '@/hooks/use-volumes';
 
+const translations = {
+  en: {
+    searchOptions: "Search Options",
+    allContent: "All Content",
+    drafts: "Drafts",
+    bible: "Bible",
+    gallery: "Gallery",
+    volumes: "Volumes",
+    searchPlaceholder: "Search all project files...",
+    bibleSource: "Bible",
+    volumeSource: "Volume",
+    gallerySource: "Gallery",
+    draftSource: "Draft",
+    noResults: "No results found for",
+    untitledDraft: "Untitled Draft",
+    bibleEntry: "Bible Entry",
+    imageInFolder: "Image in folder",
+  },
+  fa: {
+    searchOptions: "گزینه‌های جستجو",
+    allContent: "همه محتوا",
+    drafts: "پیش‌نویس‌ها",
+    bible: "کتاب مقدس",
+    gallery: "گالری",
+    volumes: "جلدها",
+    searchPlaceholder: "جستجو در تمام فایل‌های پروژه...",
+    bibleSource: "کتاب مقدس",
+    volumeSource: "جلد",
+    gallerySource: "گالری",
+    draftSource: "پیش‌نویس",
+    noResults: "هیچ نتیجه‌ای برای یافت نشد",
+    untitledDraft: "پیش‌نویس بدون عنوان",
+    bibleEntry: "ورودی کتاب مقدس",
+    imageInFolder: "تصویر در پوشه",
+  }
+};
 
 type SearchScope = 'all' | 'drafts' | 'bible' | 'gallery' | 'volumes';
 
@@ -34,6 +70,17 @@ export default function SearchPage() {
     const [query, setQuery] = useState('');
     const [scope, setScope] = useState<SearchScope>('all');
     const [results, setResults] = useState<SearchResult[]>([]);
+    const [lang, setLang] = useState<'en' | 'fa'>('en');
+
+    useEffect(() => {
+      if (typeof document !== 'undefined') {
+        const currentLang = document.documentElement.lang;
+        if (currentLang === 'fa') setLang('fa');
+        else setLang('en');
+      }
+    }, []);
+
+    const t = translations[lang];
 
     const { bibleData } = useBible();
     const { drafts } = useDrafts();
@@ -43,13 +90,13 @@ export default function SearchPage() {
     
     const searchOptions = useMemo(() => {
         return [
-            { id: 'all', label: 'All Content', icon: Globe },
-            { id: 'drafts', label: 'Drafts', icon: FileText },
-            { id: 'bible', label: 'Bible', icon: BookOpen },
-            { id: 'gallery', label: 'Gallery', icon: ImageIcon },
-            { id: 'volumes', label: 'Volumes', icon: Library },
+            { id: 'all', label: t.allContent, icon: Globe },
+            { id: 'drafts', label: t.drafts, icon: FileText },
+            { id: 'bible', label: t.bible, icon: BookOpen },
+            { id: 'gallery', label: t.gallery, icon: ImageIcon },
+            { id: 'volumes', label: t.volumes, icon: Library },
         ];
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         if (!query.trim()) {
@@ -66,9 +113,9 @@ export default function SearchPage() {
                 if (draft.title.toLowerCase().includes(lowerCaseQuery) || draft.content.toLowerCase().includes(lowerCaseQuery)) {
                     newResults.push({
                         id: `draft-${draft.id}`,
-                        title: draft.title || 'Untitled Draft',
+                        title: draft.title || t.untitledDraft,
                         snippet: draft.content.substring(0, 150) + '...',
-                        source: 'Draft',
+                        source: t.draftSource,
                         sourceType: 'draft',
                         url: `/editor/${draft.id}`
                     });
@@ -85,8 +132,8 @@ export default function SearchPage() {
                         newResults.push({
                             id: `bible-${category.category}-${item.title}`,
                             title: item.title,
-                            snippet: item.fields?.[0]?.value.substring(0, 150) + '...' || 'Bible Entry',
-                            source: `Bible: ${category.category}`,
+                            snippet: item.fields?.[0]?.value.substring(0, 150) + '...' || t.bibleEntry,
+                            source: `${t.bibleSource}: ${category.category}`,
                             sourceType: 'bible',
                             url: '#',
                             data: { bible: { category: category.category, entry: item } }
@@ -104,8 +151,8 @@ export default function SearchPage() {
                          newResults.push({
                             id: `gallery-${image.id}`,
                             title: image.caption,
-                            snippet: `Image in folder: ${folder.name}`,
-                            source: 'Gallery',
+                            snippet: `${t.imageInFolder}: ${folder.name}`,
+                            source: t.gallerySource,
                             sourceType: 'gallery',
                             url: '/gallery'
                         });
@@ -123,7 +170,7 @@ export default function SearchPage() {
                         id: `volume-${volume.id}`,
                         title: volume.title,
                         snippet: volume.description.substring(0, 150) + '...',
-                        source: 'Volume',
+                        source: t.volumeSource,
                         sourceType: 'volume',
                         url: '#',
                         data: { volume: { id: volume.id } }
@@ -134,7 +181,7 @@ export default function SearchPage() {
 
         setResults(newResults);
 
-    }, [query, scope, bibleData, drafts, folders, volumes]);
+    }, [query, scope, bibleData, drafts, folders, volumes, t]);
     
     const handleResultClick = (result: SearchResult) => {
         if (result.url !== '#') {
@@ -153,10 +200,10 @@ export default function SearchPage() {
     return (
         <div className="flex flex-col md:flex-row gap-8 h-[calc(100vh-14rem)]">
             <aside className="w-full md:w-64 lg:w-72 flex-shrink-0">
-                <h2 className="font-headline text-lg font-bold mb-4">Search Options</h2>
+                <h2 className="font-headline text-lg font-bold mb-4">{t.searchOptions}</h2>
                 <RadioGroup value={scope} onValueChange={(value) => setScope(value as SearchScope)} className="space-y-2">
                     {searchOptions.map(option => (
-                         <div key={option.id} className="flex items-center space-x-2">
+                         <div key={option.id} className="flex items-center space-x-2 rtl:space-x-reverse">
                             <RadioGroupItem value={option.id} id={option.id} />
                             <Label htmlFor={option.id} className="flex items-center gap-2 cursor-pointer">
                                 <option.icon className="h-4 w-4 text-muted-foreground" />
@@ -169,18 +216,18 @@ export default function SearchPage() {
 
             <main className="flex-1 flex flex-col min-w-0">
                 <div className="relative">
-                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <SearchIcon className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
                         type="search"
-                        placeholder="Search all project files..."
-                        className="w-full pl-10 text-lg h-12"
+                        placeholder={t.searchPlaceholder}
+                        className="w-full pl-10 rtl:pr-10 rtl:pl-4 text-lg h-12"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                     />
                 </div>
 
                 <ScrollArea className="flex-grow mt-6">
-                    <div className="space-y-4 pr-4">
+                    <div className="space-y-4 pr-4 rtl:pl-4 rtl:pr-0">
                         {results.length > 0 ? (
                             results.map(result => (
                                 <Card key={result.id} className="hover:border-primary/50 transition-colors cursor-pointer" onClick={() => handleResultClick(result)}>
@@ -192,7 +239,7 @@ export default function SearchPage() {
                                 </Card>
                             ))
                         ) : (
-                            query && <p className="text-center text-muted-foreground py-8">No results found for "{query}".</p>
+                            query && <p className="text-center text-muted-foreground py-8">{t.noResults} "{query}".</p>
                         )}
                     </div>
                 </ScrollArea>

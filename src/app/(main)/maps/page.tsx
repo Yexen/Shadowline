@@ -1,15 +1,37 @@
 
 'use client';
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMaps } from "@/hooks/use-maps";
 import { GothamMap } from "@/components/gotham-map";
 import { MapCard } from "@/components/map-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { MapData } from "@/hooks/use-maps";
 
+const translations = {
+  en: {
+    description: "Explore the cartography of your universe. Click a map to open the interactive version.",
+    interactiveMap: "Interactive"
+  },
+  fa: {
+    description: "نقشه‌نگاری دنیای خود را کاوش کنید. برای باز کردن نسخه تعاملی، روی یک نقشه کلیک کنید.",
+    interactiveMap: "تعاملی"
+  }
+};
+
 export default function MapsPage() {
   const { maps, updateMap, isLoaded } = useMaps();
   const [activeMap, setActiveMap] = useState<MapData | null>(null);
+  const [lang, setLang] = useState<'en' | 'fa'>('en');
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const currentLang = document.documentElement.lang;
+      if (currentLang === 'fa') setLang('fa');
+      else setLang('en');
+    }
+  }, []);
+
+  const t = translations[lang];
 
   const handleOpenMap = (map: MapData) => {
     setActiveMap(map);
@@ -24,7 +46,7 @@ export default function MapsPage() {
       <div className="space-y-8">
         <div>
           <p className="mt-2 text-muted-foreground">
-            Explore the cartography of your universe. Click a map to open the interactive version.
+            {t.description}
           </p>
         </div>
         
@@ -53,7 +75,7 @@ export default function MapsPage() {
           isOpen={!!activeMap} 
           onClose={handleCloseMap} 
           mapHtml={activeMap.mapHtml} 
-          title={'Interactive ' + activeMap.title + ' Map'}
+          title={`${t.interactiveMap} ${activeMap.title} Map`}
         />
       )}
     </>

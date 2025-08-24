@@ -28,6 +28,55 @@ import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 
+const translations = {
+  en: {
+    untitledDraft: 'Untitled Draft',
+    savedToastTitle: 'Draft Saved',
+    savedToastDesc: 'Your progress has been saved to the Batcomputer.',
+    wordCount: 'Word Count',
+    saving: 'Saving...',
+    lastSaved: 'Last saved',
+    notSaved: 'Not saved yet.',
+    saveToVolume: 'Save to Volume',
+    saveToVolumeDesc: 'Select a volume to save this draft as a new chapter.',
+    selectVolume: 'Select a Volume',
+    chooseVolume: 'Choose a volume...',
+    saveChapter: 'Save Chapter',
+    chapterSavedToast: 'Chapter Saved',
+    chapterSavedToastDesc: 'has been added to the selected volume.',
+    cancel: 'Cancel',
+    generateScene: 'Generate Scene',
+    askOracle: 'Ask Oracle',
+    saveDraft: 'Save Draft',
+    exportMd: 'Export .md',
+    exportTxt: 'Export .txt',
+    placeholder: 'The darkness of Gotham is a canvas. Paint your story...'
+  },
+  fa: {
+    untitledDraft: 'پیش‌نویس بدون عنوان',
+    savedToastTitle: 'پیش‌نویس ذخیره شد',
+    savedToastDesc: 'پیشرفت شما در بت‌کامپیوتر ذخیره شد.',
+    wordCount: 'تعداد کلمات',
+    saving: 'در حال ذخیره...',
+    lastSaved: 'آخرین ذخیره',
+    notSaved: 'هنوز ذخیره نشده.',
+    saveToVolume: 'ذخیره در جلد',
+    saveToVolumeDesc: 'یک جلد برای ذخیره این پیش‌نویس به عنوان فصل جدید انتخاب کنید.',
+    selectVolume: 'یک جلد انتخاب کنید',
+    chooseVolume: 'یک جلد انتخاب کنید...',
+    saveChapter: 'ذخیره فصل',
+    chapterSavedToast: 'فصل ذخیره شد',
+    chapterSavedToastDesc: 'به جلد انتخاب شده اضافه شد.',
+    cancel: 'لغو',
+    generateScene: 'تولید صحنه',
+    askOracle: 'از اوراکل بپرس',
+    saveDraft: 'ذخیره پیش‌نویس',
+    exportMd: 'خروجی .md',
+    exportTxt: 'خروجی .txt',
+    placeholder: 'تاریکی گاتهام یک بوم نقاشی است. داستان خود را نقاشی کنید...'
+  }
+};
+
 export default function EditorPage() {
   const params = useParams();
   const router = useRouter();
@@ -36,7 +85,7 @@ export default function EditorPage() {
   const { getDraft, addDraft, updateDraft } = useDrafts();
   
   const [content, setContent] = useState('');
-  const [title, setTitle] = useState('Untitled Draft');
+  const [title, setTitle] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
   const [currentDraft, setCurrentDraft] = useState<Draft | null>(null);
 
@@ -52,6 +101,17 @@ export default function EditorPage() {
   const [oracleOpen, setOracleOpen] = useState(false);
   const [sceneGenOpen, setSceneGenOpen] = useState(false);
   const [selection, setSelection] = useState('');
+  const [lang, setLang] = useState<'en' | 'fa'>('en');
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const currentLang = document.documentElement.lang;
+      if (currentLang === 'fa') setLang('fa');
+      else setLang('en');
+    }
+  }, []);
+
+  const t = translations[lang];
 
   const editor = useEditor({
     extensions: [
@@ -60,7 +120,7 @@ export default function EditorPage() {
             orderedList: { keepMarks: true, keepAttributes: true },
         }),
         Placeholder.configure({
-            placeholder: "The darkness of Gotham is a canvas. Paint your story...",
+            placeholder: t.placeholder,
         }),
     ],
     content: content,
@@ -75,8 +135,15 @@ export default function EditorPage() {
   });
 
   useEffect(() => {
+    if(editor) {
+      editor.extensionManager.extensions.find(ext => ext.name === 'placeholder')?.options.placeholder = t.placeholder;
+      editor.view.dispatch(editor.state.tr);
+    }
+  }, [t.placeholder, editor]);
+
+  useEffect(() => {
     if (draftId === 'new') {
-      setTitle('Untitled Draft');
+      setTitle(t.untitledDraft);
       setContent('');
       setIsLoaded(true);
     } else {
@@ -85,13 +152,13 @@ export default function EditorPage() {
         setCurrentDraft(draft);
         setTitle(draft.title);
         setContent(draft.content);
-        setLastSaved(draft.lastModified ? new Date(d.lastModified) : null);
+        setLastSaved(draft.lastModified ? new Date(draft.lastModified) : null);
       } else {
         router.replace('/editor/new');
       }
       setIsLoaded(true);
     }
-  }, [draftId, getDraft, router]);
+  }, [draftId, getDraft, router, t.untitledDraft]);
   
   useEffect(() => {
       if (editor && content !== editor.getHTML()) {
@@ -119,8 +186,8 @@ export default function EditorPage() {
     setTimeout(() => {
       setIsSaving(false);
       toast({
-        title: "Draft Saved",
-        description: "Your progress has been saved to the Batcomputer.",
+        title: t.savedToastTitle,
+        description: t.savedToastDesc,
       });
       if (statusRef.current) {
         statusRef.current.classList.add('autosave-flash');
@@ -146,8 +213,8 @@ export default function EditorPage() {
     if (selectedVolume) {
       addChapterToVolume(selectedVolume, title, content);
       toast({
-        title: 'Chapter Saved',
-        description: `"${title}" has been added to the selected volume.`,
+        title: t.chapterSavedToast,
+        description: `"${title}" ${t.chapterSavedToastDesc}`,
       });
       setShowVolumeDialog(false);
       setSelectedVolume('');
@@ -182,33 +249,33 @@ export default function EditorPage() {
         <div className="flex items-center gap-2 flex-wrap">
             <Button variant="ghost" size="sm" onClick={() => setSceneGenOpen(true)}>
               <PenLine />
-              Generate Scene
+              {t.generateScene}
             </Button>
 
             <Button variant="ghost" size="sm" onClick={handleOpenOracle}>
                 <Sparkles />
-                Ask Oracle
+                {t.askOracle}
             </Button>
           
            <Dialog open={showVolumeDialog} onOpenChange={setShowVolumeDialog}>
             <DialogTrigger asChild>
                 <Button variant="ghost" size="sm">
                   <Library />
-                  Save to Volume
+                  {t.saveToVolume}
                 </Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Save Draft to Volume</DialogTitle>
+                    <DialogTitle>{t.saveToVolume}</DialogTitle>
                     <DialogDescription>
-                        Select a volume to save this draft as a new chapter.
+                        {t.saveToVolumeDesc}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
-                    <Label htmlFor="volume-select">Select a Volume</Label>
+                    <Label htmlFor="volume-select">{t.selectVolume}</Label>
                     <Select onValueChange={setSelectedVolume} value={selectedVolume}>
                         <SelectTrigger id="volume-select">
-                            <SelectValue placeholder="Choose a volume..." />
+                            <SelectValue placeholder={t.chooseVolume} />
                         </SelectTrigger>
                         <SelectContent>
                             {volumes.map(vol => (
@@ -218,23 +285,23 @@ export default function EditorPage() {
                     </Select>
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => setShowVolumeDialog(false)}>Cancel</Button>
-                    <Button onClick={handleSaveToVolume} disabled={!selectedVolume}>Save Chapter</Button>
+                    <Button variant="outline" onClick={() => setShowVolumeDialog(false)}>{t.cancel}</Button>
+                    <Button onClick={handleSaveToVolume} disabled={!selectedVolume}>{t.saveChapter}</Button>
                 </DialogFooter>
             </DialogContent>
            </Dialog>
 
           <Button variant="ghost" size="sm" onClick={handleSave} disabled={isSaving}>
             <Save />
-            Save Draft
+            {t.saveDraft}
           </Button>
            <Button variant="ghost" size="sm" onClick={() => handleExport('md')}>
             <FileCode />
-            Export .md
+            {t.exportMd}
           </Button>
           <Button variant="ghost" size="sm" onClick={() => handleExport('txt')}>
             <FileText />
-            Export .txt
+            {t.exportTxt}
           </Button>
         </div>
       </header>
@@ -244,9 +311,9 @@ export default function EditorPage() {
       </div>
 
       <footer className="mt-4 text-sm text-muted-foreground flex justify-between items-center">
-        <span>Word Count: {wordCount}</span>
+        <span>{t.wordCount}: {wordCount}</span>
         <p ref={statusRef} className="transition-colors">
-            {isSaving ? 'Saving...' : lastSaved ? `Last saved: ${lastSaved.toLocaleTimeString()}` : 'Not saved yet.'}
+            {isSaving ? t.saving : lastSaved ? `${t.lastSaved}: ${lastSaved.toLocaleTimeString()}` : t.notSaved}
         </p>
       </footer>
     </div>

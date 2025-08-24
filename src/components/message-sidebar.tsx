@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { ScrollArea } from './ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { cn } from '@/lib/utils';
@@ -19,6 +19,25 @@ interface MessageSidebarProps {
   otherWriters: Writer[];
 }
 
+const translations = {
+  en: {
+    conversations: 'Conversations',
+    newMessage: 'New Message',
+    notesToSelf: 'Notes to Self',
+    unknownUser: 'Unknown User',
+    andMore: 'more',
+    noMessages: 'No messages yet'
+  },
+  fa: {
+    conversations: 'گفتگوها',
+    newMessage: 'پیام جدید',
+    notesToSelf: 'یادداشت برای خود',
+    unknownUser: 'کاربر ناشناس',
+    andMore: 'بیشتر',
+    noMessages: 'هنوز پیامی وجود ندارد'
+  }
+};
+
 export function MessageSidebar({
   threads,
   writers,
@@ -27,16 +46,27 @@ export function MessageSidebar({
   onSelectThread,
   otherWriters,
 }: MessageSidebarProps) {
+  const [lang, setLang] = useState<'en' | 'fa'>('en');
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const currentLang = document.documentElement.lang;
+      if (currentLang === 'fa') setLang('fa');
+      else setLang('en');
+    }
+  }, []);
+
+  const t = translations[lang];
 
   const getThreadDisplayInfo = (thread: Thread) => {
     const otherParticipants = thread.participants.filter(pId => pId !== activeWriterId);
     if (otherParticipants.length === 0) {
-      return { name: 'Notes to Self', avatarUrl: '' };
+      return { name: t.notesToSelf, avatarUrl: '' };
     }
     const otherWriter = writers.find(w => w.id === otherParticipants[0]);
     const name = otherParticipants.length > 1 
-      ? `${otherWriter?.name} & ${otherParticipants.length - 1} more`
-      : otherWriter?.name || 'Unknown User';
+      ? `${otherWriter?.name} & ${otherParticipants.length - 1} ${t.andMore}`
+      : otherWriter?.name || t.unknownUser;
     
     return { name, avatarUrl: otherWriter?.avatarUrl || '' };
   };
@@ -44,13 +74,13 @@ export function MessageSidebar({
   return (
     <div className="w-1/3 border-r h-full flex flex-col">
       <div className="p-4 border-b flex justify-between items-center">
-        <h2 className="font-headline text-xl">Conversations</h2>
+        <h2 className="font-headline text-xl">{t.conversations}</h2>
         <Popover>
             <PopoverTrigger asChild>
                 <button className="text-muted-foreground hover:text-primary"><PlusCircle/></button>
             </PopoverTrigger>
             <PopoverContent className="w-64 p-2">
-                <p className="p-2 text-sm font-semibold">New Message</p>
+                <p className="p-2 text-sm font-semibold">{t.newMessage}</p>
                 <ScrollArea className="h-[200px]">
                    {otherWriters.map(writer => (
                      <button key={writer.id} className="w-full text-left p-2 rounded-md hover:bg-accent flex items-center gap-2" onClick={() => onSelectThread(`new-${writer.id}`)}>
@@ -85,7 +115,7 @@ export function MessageSidebar({
               <div className="flex-grow overflow-hidden">
                 <p className="font-semibold truncate">{name}</p>
                 <p className="text-sm text-muted-foreground truncate">
-                  {lastMessage?.content || 'No messages yet'}
+                  {lastMessage?.content || t.noMessages}
                 </p>
               </div>
             </button>

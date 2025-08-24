@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -39,6 +40,75 @@ const formatTime = (totalSeconds: number) => {
         .join(':');
 };
 
+const translations = {
+  en: {
+    pageDescription: "Mission control. Organize your schedule, tasks, and notes to keep your project on track.",
+    missionClock: "Mission Clock",
+    sessionTime: "Session Time",
+    schedule: "Schedule",
+    focusTimer: "Focus Timer",
+    fifteenMin: "15 min",
+    twentyFiveMin: "25 min",
+    fortyFiveMin: "45 min",
+    start: "Start",
+    pause: "Pause",
+    reset: "Reset",
+    permissionDenied: "Permission Denied",
+    notificationsRequired: "Notifications are required for the alarm to work.",
+    enableNotifications: "Please enable notifications in your browser settings.",
+    fieldIdeas: "Field Ideas",
+    more: "More...",
+    allIdeas: "All Ideas",
+    browseIdeas: "Browse, search, and manage all your story ideas.",
+    addNewIdea: "Add New Idea",
+    createIdea: "Create a New Idea",
+    ideaSubject: "Subject",
+    ideaSubjectPlaceholder: "A catchy title for your idea",
+    ideaBody: "Body",
+    ideaBodyPlaceholder: "Describe your idea in detail...",
+    saveIdea: "Save Idea",
+    close: "Close",
+    taskList: "Task List",
+    addTask: "Add a new task...",
+    fieldNotes: "Field Notes",
+    addNote: "Add a new note...",
+    cancel: "Cancel",
+  },
+  fa: {
+    pageDescription: "کنترل ماموریت. برنامه، وظایف و یادداشت‌های خود را برای پیشبرد پروژه‌تان سازماندهی کنید.",
+    missionClock: "ساعت ماموریت",
+    sessionTime: "زمان جلسه",
+    schedule: "برنامه",
+    focusTimer: "تایمر تمرکز",
+    fifteenMin: "۱۵ دقیقه",
+    twentyFiveMin: "۲۵ دقیقه",
+    fortyFiveMin: "۴۵ دقیقه",
+    start: "شروع",
+    pause: "توقف",
+    reset: "بازنشانی",
+    permissionDenied: "دسترسی رد شد",
+    notificationsRequired: "اعلان‌ها برای کارکرد زنگ هشدار لازم است.",
+    enableNotifications: "لطفاً اعلان‌ها را در تنظیمات مرورگر خود فعال کنید.",
+    fieldIdeas: "ایده‌های میدانی",
+    more: "بیشتر...",
+    allIdeas: "همه ایده‌ها",
+    browseIdeas: "ایده‌های داستانی خود را مرور، جستجو و مدیریت کنید.",
+    addNewIdea: "افزودن ایده جدید",
+    createIdea: "ایجاد یک ایده جدید",
+    ideaSubject: "موضوع",
+    ideaSubjectPlaceholder: "یک عنوان جذاب برای ایده شما",
+    ideaBody: "بدنه",
+    ideaBodyPlaceholder: "ایده خود را با جزئیات توصیف کنید...",
+    saveIdea: "ذخیره ایده",
+    close: "بستن",
+    taskList: "لیست وظایف",
+    addTask: "افزودن یک وظیفه جدید...",
+    fieldNotes: "یادداشت‌های میدانی",
+    addNote: "افزودن یک یادداشت جدید...",
+    cancel: "لغو",
+  }
+};
+
 function MissionClock() {
     const [time, setTime] = useState(new Date());
 
@@ -50,7 +120,7 @@ function MissionClock() {
     return <p className="text-4xl font-bold font-mono tracking-wider">{time.toLocaleTimeString()}</p>;
 }
 
-function FocusTimer() {
+function FocusTimer({ t }: { t: typeof translations['en'] }) {
     const { 
         focusTime, 
         focusTimeLeft, 
@@ -71,16 +141,16 @@ function FocusTimer() {
             if (permission !== 'granted') {
                 toast({
                     variant: 'destructive',
-                    title: 'Permission Denied',
-                    description: 'Notifications are required for the alarm to work.',
+                    title: t.permissionDenied,
+                    description: t.notificationsRequired,
                 });
                 return;
             }
         } else if (Notification.permission === 'denied') {
              toast({
                 variant: 'destructive',
-                title: 'Permission Denied',
-                description: 'Please enable notifications in your browser settings.',
+                title: t.permissionDenied,
+                description: t.enableNotifications,
             });
             return;
         }
@@ -90,23 +160,23 @@ function FocusTimer() {
     return (
         <Card className="bg-card">
             <CardHeader>
-                <CardTitle className="font-headline flex items-center gap-2"><Bell/> Focus Timer</CardTitle>
+                <CardTitle className="font-headline flex items-center gap-2"><Bell/> {t.focusTimer}</CardTitle>
             </CardHeader>
             <CardContent className="text-center">
                  <p className="text-5xl font-bold font-mono tracking-wider mb-4">{formatTime(focusTimeLeft)}</p>
                  {!isFocusTimerRunning ? (
                     <div className="flex gap-2 justify-center mb-4">
-                        <Button variant="outline" size="sm" onClick={() => handleSetTime(15)}>15 min</Button>
-                        <Button variant="outline" size="sm" onClick={() => handleSetTime(25)}>25 min</Button>
-                        <Button variant="outline" size="sm" onClick={() => handleSetTime(45)}>45 min</Button>
+                        <Button variant="outline" size="sm" onClick={() => handleSetTime(15)}>{t.fifteenMin}</Button>
+                        <Button variant="outline" size="sm" onClick={() => handleSetTime(25)}>{t.twentyFiveMin}</Button>
+                        <Button variant="outline" size="sm" onClick={() => handleSetTime(45)}>{t.fortyFiveMin}</Button>
                     </div>
                  ) : null}
                  <div className="flex gap-2 justify-center">
                     <Button onClick={handleToggle} disabled={focusTime === 0}>
-                        {isFocusTimerRunning ? <Pause className="mr-2"/> : <Play className="mr-2"/>}
-                        {isFocusTimerRunning ? 'Pause' : 'Start'}
+                        {isFocusTimerRunning ? <Pause className="mr-2 rtl:ml-2 rtl:mr-0"/> : <Play className="mr-2 rtl:ml-2 rtl:mr-0"/>}
+                        {isFocusTimerRunning ? t.pause : t.start}
                     </Button>
-                    <Button variant="secondary" onClick={resetFocusTimer}><RotateCcw className="mr-2"/> Reset</Button>
+                    <Button variant="secondary" onClick={resetFocusTimer}><RotateCcw className="mr-2 rtl:ml-2 rtl:mr-0"/> {t.reset}</Button>
                  </div>
             </CardContent>
         </Card>
@@ -116,6 +186,17 @@ function FocusTimer() {
 export default function OrganizationPage() {
   const { sessionTime } = useTimer();
   const [date, setDate] = useState<Date | undefined>(new Date());
+  const [lang, setLang] = useState<'en' | 'fa'>('en');
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const currentLang = document.documentElement.lang;
+      if (currentLang === 'fa') setLang('fa');
+      else setLang('en');
+    }
+  }, []);
+
+  const t = translations[lang];
 
   const [tasks, setTasks] = useState<Task[]>([
     { id: 1, text: "Outline Chapter 3", completed: false },
@@ -194,7 +275,7 @@ export default function OrganizationPage() {
     <div className="space-y-8">
       <div>
         <p className="mt-2 text-muted-foreground">
-          Mission control. Organize your schedule, tasks, and notes to keep your project on track.
+          {t.pageDescription}
         </p>
       </div>
 
@@ -202,20 +283,20 @@ export default function OrganizationPage() {
         <div className="lg:col-span-1 space-y-8">
             <Card className="bg-card">
               <CardHeader>
-                <CardTitle className="font-headline flex items-center gap-2"><Clock/> Mission Clock</CardTitle>
+                <CardTitle className="font-headline flex items-center gap-2"><Clock/> {t.missionClock}</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col items-center justify-center">
                 <MissionClock />
                 <div className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                     <Timer size={14}/>
-                    <span>Session Time: {formatTime(sessionTime)}</span>
+                    <span>{t.sessionTime}: {formatTime(sessionTime)}</span>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="bg-card">
                 <CardHeader>
-                    <CardTitle className="font-headline flex items-center gap-2"><CalendarIcon /> Schedule</CardTitle>
+                    <CardTitle className="font-headline flex items-center gap-2"><CalendarIcon /> {t.schedule}</CardTitle>
                 </CardHeader>
                 <CardContent className="flex justify-center">
                     <Calendar
@@ -227,11 +308,11 @@ export default function OrganizationPage() {
                 </CardContent>
             </Card>
 
-            <FocusTimer />
+            <FocusTimer t={t} />
             
              <Card className="bg-card">
                 <CardHeader>
-                    <CardTitle className="font-headline flex items-center gap-2"><Lightbulb /> Field Ideas</CardTitle>
+                    <CardTitle className="font-headline flex items-center gap-2"><Lightbulb /> {t.fieldIdeas}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                     {ideas.slice(0, 3).map(idea => (
@@ -242,13 +323,13 @@ export default function OrganizationPage() {
                     ))}
                     <Dialog open={ideasDialogOpen} onOpenChange={setIdeasDialogOpen}>
                         <DialogTrigger asChild>
-                            <Button variant="link" className="p-0 h-auto">More...</Button>
+                            <Button variant="link" className="p-0 h-auto">{t.more}</Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-2xl h-[70vh] flex flex-col">
                             <DialogHeader>
-                                <DialogTitle className="font-headline">All Ideas</DialogTitle>
+                                <DialogTitle className="font-headline">{t.allIdeas}</DialogTitle>
                                 <DialogDescription>
-                                    Browse, search, and manage all your story ideas.
+                                    {t.browseIdeas}
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="flex-grow space-y-4 py-4 overflow-y-auto pr-4">
@@ -265,29 +346,29 @@ export default function OrganizationPage() {
                             <DialogFooter className="justify-between">
                                 <Dialog open={newIdeaDialogOpen} onOpenChange={setNewIdeaDialogOpen}>
                                     <DialogTrigger asChild>
-                                        <Button><Plus className="mr-2"/> Add New Idea</Button>
+                                        <Button><Plus className="mr-2 rtl:ml-2 rtl:mr-0"/> {t.addNewIdea}</Button>
                                     </DialogTrigger>
                                     <DialogContent>
                                         <DialogHeader>
-                                            <DialogTitle>Create a New Idea</DialogTitle>
+                                            <DialogTitle>{t.createIdea}</DialogTitle>
                                         </DialogHeader>
                                         <div className="py-4 space-y-4">
                                             <div className="space-y-2">
-                                                <Label htmlFor="idea-title">Subject</Label>
-                                                <Input id="idea-title" value={newIdeaTitle} onChange={e => setNewIdeaTitle(e.target.value)} placeholder="A catchy title for your idea"/>
+                                                <Label htmlFor="idea-title">{t.ideaSubject}</Label>
+                                                <Input id="idea-title" value={newIdeaTitle} onChange={e => setNewIdeaTitle(e.target.value)} placeholder={t.ideaSubjectPlaceholder}/>
                                             </div>
                                             <div className="space-y-2">
-                                                <Label htmlFor="idea-content">Body</Label>
-                                                <Textarea id="idea-content" value={newIdeaContent} onChange={e => setNewIdeaContent(e.target.value)} placeholder="Describe your idea in detail..." className="min-h-[120px]"/>
+                                                <Label htmlFor="idea-content">{t.ideaBody}</Label>
+                                                <Textarea id="idea-content" value={newIdeaContent} onChange={e => setNewIdeaContent(e.target.value)} placeholder={t.ideaBodyPlaceholder} className="min-h-[120px]"/>
                                             </div>
                                         </div>
                                         <DialogFooter>
-                                            <Button variant="outline" onClick={() => setNewIdeaDialogOpen(false)}>Cancel</Button>
-                                            <Button onClick={handleAddIdea}>Save Idea</Button>
+                                            <Button variant="outline" onClick={() => setNewIdeaDialogOpen(false)}>{t.cancel}</Button>
+                                            <Button onClick={handleAddIdea}>{t.saveIdea}</Button>
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
-                                <Button variant="outline" onClick={() => setIdeasDialogOpen(false)}>Close</Button>
+                                <Button variant="outline" onClick={() => setIdeasDialogOpen(false)}>{t.close}</Button>
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
@@ -298,13 +379,13 @@ export default function OrganizationPage() {
         <div className="lg:col-span-2 grid grid-cols-1 gap-8">
             <Card className="bg-card">
               <CardHeader>
-                <CardTitle className="font-headline flex items-center gap-2"><CheckSquare /> Task List</CardTitle>
+                <CardTitle className="font-headline flex items-center gap-2"><CheckSquare /> {t.taskList}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex gap-2">
                     <Input
-                      placeholder="Add a new task..."
+                      placeholder={t.addTask}
                       value={newTask}
                       onChange={(e) => setNewTask(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
@@ -333,13 +414,13 @@ export default function OrganizationPage() {
             </Card>
             <Card className="bg-card">
                 <CardHeader>
-                    <CardTitle className="font-headline flex items-center gap-2"><Clipboard/> Field Notes</CardTitle>
+                    <CardTitle className="font-headline flex items-center gap-2"><Clipboard/> {t.fieldNotes}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
                       <div className="flex gap-2">
                         <Input
-                          placeholder="Add a new note..."
+                          placeholder={t.addNote}
                           value={newNote}
                           onChange={(e) => setNewNote(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleAddNote()}

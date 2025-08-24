@@ -14,8 +14,34 @@ interface IntelViewerProps {
   title?: string;
 }
 
+const translations = {
+  en: {
+    intelReport: 'Intel Report',
+    openInNewTab: 'Open in New Tab',
+    close: 'Close',
+    loading: 'Loading...'
+  },
+  fa: {
+    intelReport: 'گزارش اطلاعاتی',
+    openInNewTab: 'باز کردن در تب جدید',
+    close: 'بستن',
+    loading: 'در حال بارگیری...'
+  }
+};
+
 export function IntelViewer({ open, onClose, url, title }: IntelViewerProps) {
   const [isLoading, setIsLoading] = React.useState(true);
+  const [lang, setLang] = React.useState<'en' | 'fa'>('en');
+
+  React.useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const currentLang = document.documentElement.lang;
+      if (currentLang === 'fa') setLang('fa');
+      else setLang('en');
+    }
+  }, []);
+
+  const t = translations[lang];
 
   React.useEffect(() => {
     if (open) {
@@ -30,17 +56,17 @@ export function IntelViewer({ open, onClose, url, title }: IntelViewerProps) {
       <DialogContent className="max-w-[90vw] w-[90vw] h-[90vh] flex flex-col p-0 gap-0">
         <DialogHeader className="p-4 border-b flex-row items-center justify-between">
           <div className="min-w-0">
-            <DialogTitle className="font-headline truncate">{title || 'Intel Report'}</DialogTitle>
+            <DialogTitle className="font-headline truncate">{title || t.intelReport}</DialogTitle>
             <DialogDescription className="truncate">{url}</DialogDescription>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
              <Button variant="outline" size="sm" asChild>
                 <a href={url} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="mr-2"/> Open in New Tab
+                    <ExternalLink className="mr-2 rtl:ml-2 rtl:mr-0"/> {t.openInNewTab}
                 </a>
             </Button>
             <DialogClose asChild>
-              <Button variant="secondary">Close</Button>
+              <Button variant="secondary">{t.close}</Button>
             </DialogClose>
           </div>
         </DialogHeader>

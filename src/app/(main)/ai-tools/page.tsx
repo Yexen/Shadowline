@@ -8,24 +8,63 @@ import { ImageGenTool } from '@/components/image-gen-tool';
 import { SummarizeTool } from '@/components/summarize-tool';
 import { OracleChatTool } from '@/components/oracle-chat-tool';
 import { Separator } from '@/components/ui/separator';
+import { useEffect, useState } from 'react';
+
+const translations = {
+  en: {
+    pageDescription: 'A suite of AI-powered tools to assist your writing process, from generating ideas to refining your drafts.',
+    chapterGenTitle: 'Chapter Generation',
+    chapterGenDesc: 'Provide a prompt and let the AI ghostwriter draft a scene or chapter for you.',
+    goToEditor: 'Go to Editor',
+    askOracleTitle: 'Ask the Oracle (Contextual)',
+    askOracleDesc: 'Select text in the editor and ask contextual questions to get insights, clarify themes, or check character motivations.',
+    imageGenTitle: 'Image Generation',
+    imageGenDesc: 'Generate a visual reference for a character, location, or scene.',
+    summarizeTitle: 'Summarize',
+    summarizeDesc: 'Get a quick summary of a bible entry. Try "@The Joker".'
+  },
+  fa: {
+    pageDescription: 'مجموعه‌ای از ابزارهای مجهز به هوش مصنوعی برای کمک به فرآیند نویسندگی شما، از تولید ایده تا اصلاح پیش‌نویس‌ها.',
+    chapterGenTitle: 'تولید فصل',
+    chapterGenDesc: 'یک اعلان ارائه دهید و به نویسنده هوش مصنوعی اجازه دهید یک صحنه یا فصل برای شما بنویسد.',
+    goToEditor: 'برو به ویرایشگر',
+    askOracleTitle: 'از اوراکل بپرس (متنی)',
+    askOracleDesc: 'متنی را در ویرایشگر انتخاب کرده و سوالات متنی بپرسید تا بینش کسب کنید، مضامین را روشن کنید یا انگیزه‌های شخصیت را بررسی کنید.',
+    imageGenTitle: 'تولید تصویر',
+    imageGenDesc: 'یک مرجع بصری برای یک شخصیت، مکان یا صحنه ایجاد کنید.',
+    summarizeTitle: 'خلاصه کردن',
+    summarizeDesc: 'خلاصه سریعی از یک ورودی کتاب مقدس دریافت کنید. "@جوکر" را امتحان کنید.'
+  }
+};
 
 export default function AiToolsPage() {
   const router = useRouter();
+  const [lang, setLang] = useState<'en' | 'fa'>('en');
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const currentLang = document.documentElement.lang;
+      if (currentLang === 'fa') setLang('fa');
+      else setLang('en');
+    }
+  }, []);
+
+  const t = translations[lang];
 
   const tools = [
     {
-      title: 'Chapter Generation',
-      description: 'Provide a prompt and let the AI ghostwriter draft a scene or chapter for you.',
+      title: t.chapterGenTitle,
+      description: t.chapterGenDesc,
       icon: PenLine,
       action: () => router.push('/editor/new'),
-      cta: 'Go to Editor'
+      cta: t.goToEditor
     },
     {
-      title: 'Ask the Oracle (Contextual)',
-      description: 'Select text in the editor and ask contextual questions to get insights, clarify themes, or check character motivations.',
+      title: t.askOracleTitle,
+      description: t.askOracleDesc,
       icon: Sparkles,
       action: () => router.push('/editor/new'),
-      cta: 'Go to Editor'
+      cta: t.goToEditor
     }
   ];
 
@@ -33,7 +72,7 @@ export default function AiToolsPage() {
     <div className="space-y-8">
       <div>
         <p className="mt-2 text-muted-foreground">
-          A suite of AI-powered tools to assist your writing process, from generating ideas to refining your drafts.
+          {t.pageDescription}
         </p>
       </div>
 
@@ -59,7 +98,7 @@ export default function AiToolsPage() {
             </CardHeader>
             <div className="p-6 pt-0 mt-auto">
                 <div className="flex items-center justify-end text-primary font-bold text-sm">
-                    {tool.cta} <ChevronRight className="w-4 h-4 ml-1" />
+                    {tool.cta} <ChevronRight className="w-4 h-4 ml-1 rtl:mr-1 rtl:ml-0" />
                 </div>
             </div>
           </Card>
@@ -70,8 +109,8 @@ export default function AiToolsPage() {
                  <ImageIcon className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <CardTitle className="font-headline text-xl">Image Generation</CardTitle>
-                <CardDescription className="mt-1">Generate a visual reference for a character, location, or scene.</CardDescription>
+                <CardTitle className="font-headline text-xl">{t.imageGenTitle}</CardTitle>
+                <CardDescription className="mt-1">{t.imageGenDesc}</CardDescription>
               </div>
             </CardHeader>
             <div className="p-6 pt-0">
@@ -84,8 +123,8 @@ export default function AiToolsPage() {
                  <FileText className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <CardTitle className="font-headline text-xl">Summarize</CardTitle>
-                <CardDescription className="mt-1">Get a quick summary of a bible entry. Try "@The Joker".</CardDescription>
+                <CardTitle className="font-headline text-xl">{t.summarizeTitle}</CardTitle>
+                <CardDescription className="mt-1">{t.summarizeDesc}</CardDescription>
               </div>
             </CardHeader>
             <div className="p-6 pt-0">

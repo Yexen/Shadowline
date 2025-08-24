@@ -20,11 +20,41 @@ interface MessageThreadProps {
   onSendMessage: (threadId: string, content: string, recipientIds: string[]) => void;
 }
 
+const translations = {
+  en: {
+    selectConversation: 'Select a conversation to begin.',
+    startConversation: 'Start a new conversation with',
+    typeMessage: 'Type a message...',
+    send: 'Send',
+    notesToSelf: 'Notes to Self',
+    unknownUser: 'Unknown',
+  },
+  fa: {
+    selectConversation: 'یک گفتگو را برای شروع انتخاب کنید.',
+    startConversation: 'یک گفتگوی جدید با شروع کنید',
+    typeMessage: 'یک پیام تایپ کنید...',
+    send: 'ارسال',
+    notesToSelf: 'یادداشت برای خود',
+    unknownUser: 'ناشناس',
+  }
+};
+
 const EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
 export function MessageThread({ threadId, threads, writers, activeWriter, onSendMessage }: MessageThreadProps) {
   const [input, setInput] = useState('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [lang, setLang] = useState<'en' | 'fa'>('en');
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const currentLang = document.documentElement.lang;
+      if (currentLang === 'fa') setLang('fa');
+      else setLang('en');
+    }
+  }, []);
+  
+  const t = translations[lang];
 
   const selectedThread = threads.find(t => t.id === threadId);
 
@@ -58,13 +88,13 @@ export function MessageThread({ threadId, threads, writers, activeWriter, onSend
   };
 
   if (!threadId) {
-    return <div className="flex-grow flex items-center justify-center text-muted-foreground"><p>Select a conversation to begin.</p></div>;
+    return <div className="flex-grow flex items-center justify-center text-muted-foreground"><p>{t.selectConversation}</p></div>;
   }
   
-  const otherParticipants = selectedThread?.participants.filter(pId => pId !== activeWriter.id) || [];
+  const otherParticipants = selectedThread?.participants.filter(pId => pId !== activeWriter.id) || (threadId.startsWith('new-') ? [threadId.replace('new-', '')] : []);
   const headerName = otherParticipants.length > 0
-    ? getParticipantInfo(otherParticipants[0])?.name || 'Unknown'
-    : 'Notes to Self';
+    ? getParticipantInfo(otherParticipants[0])?.name || t.unknownUser
+    : t.notesToSelf;
 
   return (
     <div className="flex-grow flex flex-col h-full">
@@ -105,7 +135,7 @@ export function MessageThread({ threadId, threads, writers, activeWriter, onSend
           })}
            {!selectedThread && (
             <div className="text-center text-muted-foreground pt-8">
-                <p>Start a new conversation with {getParticipantInfo(threadId.replace('new-', ''))?.name}.</p>
+                <p>{t.startConversation} {getParticipantInfo(threadId.replace('new-', ''))?.name}.</p>
             </div>
           )}
         </div>
@@ -127,12 +157,12 @@ export function MessageThread({ threadId, threads, writers, activeWriter, onSend
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type a message..."
+            placeholder={t.typeMessage}
             autoComplete="off"
           />
           <Button type="submit">
-            <Send className="mr-2 h-4 w-4" />
-            Send
+            <Send className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" />
+            {t.send}
           </Button>
         </form>
       </div>
