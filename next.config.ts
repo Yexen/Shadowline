@@ -36,6 +36,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'static.dc.com' },
       { protocol: 'https', hostname: 'www.warnerbros.com' },
       { protocol: 'https', hostname: 'i0.wp.com' },
+      { protocol: 'https', hostname: 'comicbook.com' },
     ],
   },
   devIndicators: {
