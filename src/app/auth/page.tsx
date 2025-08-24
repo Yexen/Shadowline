@@ -29,7 +29,7 @@ const translations = {
     protocol: "پروتکل نویسنده",
     writerAccess: "دسترسی نویسنده",
     readerAccess: "دسترسی خواننده",
-    headWriterAccess: "دسترسی نویسنده ارشد",
+    headWriterAccess: "نویسنده ارشد",
     or: "یا",
     needAccount: "حساب کاربری ندارید؟",
     requestAccess: "درخواست دسترسی",
@@ -40,7 +40,7 @@ const translations = {
 
 export default function AuthPage() {
   const router = useRouter();
-  const { isLoaded } = useWriters();
+  const { isLoaded, activeWriter } = useWriters();
   const [isLoading, setIsLoading] = useState(false);
   const [dialogRole, setDialogRole] = useState<Role | null>(null);
   const [language, setLanguage] = useState<Language>('en');
@@ -52,12 +52,26 @@ export default function AuthPage() {
       document.documentElement.lang = language;
     }
   }, [language]);
+  
+  useEffect(() => {
+    if (isLoaded && activeWriter) {
+        router.push('/home');
+    }
+  }, [isLoaded, activeWriter, router]);
 
   const toggleLanguage = () => {
     setLanguage(prev => (prev === 'en' ? 'fa' : 'en'));
   };
 
   const t = translations[language];
+  
+  if (!isLoaded) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background">
+            <BatLogo className="w-24 h-12 text-primary animate-pulse" />
+        </div>
+      )
+  }
 
   return (
     <>
