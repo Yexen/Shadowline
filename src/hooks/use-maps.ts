@@ -31,7 +31,7 @@ const defaultMapsData: MapData[] = [
         id: 'map-gotham',
         title: 'Gotham City (2D)',
         description: 'A detailed, canonical map of Gotham City, based on the official "No Man\'s Land" layout.',
-        imageUrl: 'https://placehold.co/600x400.png',
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/shadows-of-gotham.firebasestorage.app/o/Btas-Gotham_City.webp?alt=media&token=5fe4b89f-3fed-43b3-b74d-e1135528b558',
         mapHtml: gothamHtml,
         dataAiHint: 'gotham city map'
     },
