@@ -54,9 +54,8 @@ export function VolumesSidebar({ open, onOpenChange }: VolumesSidebarProps) {
         deleteResource
     } = useVolumes();
     const { modalType, modalData, closeModal, openModal } = useModalStore();
+    const [activeTab, setActiveTab] = useState<'volumes' | 'outlines'>('volumes');
     const [outlineDialogVolume, setOutlineDialogVolume] = useState<Volume | null>(null);
-
-    const activeTab = modalType === 'volume' ? 'volumes' : 'outlines';
 
     const editingVolume = volumes.find(v => v.id === modalData?.volume?.id);
     const overviewVolume = volumes.find(v => v.id === modalData?.overview?.id);
@@ -129,7 +128,7 @@ export function VolumesSidebar({ open, onOpenChange }: VolumesSidebarProps) {
                             <Library /> STORY VOLUMES
                         </SheetTitle>
                     </SheetHeader>
-                    <Tabs value={activeTab} className="flex-grow flex flex-col mt-4">
+                    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'volumes' | 'outlines')} className="flex-grow flex flex-col mt-4">
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="volumes"><BookCopy className="mr-2"/> Volumes</TabsTrigger>
                             <TabsTrigger value="outlines"><BookOpen className="mr-2"/> Outlines</TabsTrigger>
