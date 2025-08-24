@@ -134,12 +134,23 @@ export default function EditorPage() {
     },
   });
 
-  useEffect(() => {
-    if(editor) {
-      editor.extensionManager.extensions.find(ext => ext.name === 'placeholder')?.options.placeholder = t.placeholder;
-      editor.view.dispatch(editor.state.tr);
-    }
-  }, [t.placeholder, editor]);
+import Placeholder from '@tiptap/extension-placeholder';
+
+// ...
+
+useEffect(() => {
+  if (!editor) return;
+
+  // Reconfigure placeholder cleanly
+  editor?.extensionManager?.removeExtension?.(Placeholder);
+  editor?.extensionManager?.registerExtension?.(
+    Placeholder.configure({ placeholder: t.placeholder })
+  );
+
+  // Force a re-render of the editor state
+  editor.view.dispatch(editor.state.tr);
+}, [t.placeholder, editor]);
+
 
   useEffect(() => {
     if (draftId === 'new') {
