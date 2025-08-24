@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster"
 export const metadata: Metadata = {
   title: 'Shadows of Gotham Writer',
   description: 'Your sanctuary for crafting tales in the dark city.',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
