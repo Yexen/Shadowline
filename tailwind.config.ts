@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -10,8 +11,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Rajdhani', 'sans-serif'],
-        headline: ['Orbitron', 'sans-serif'],
+        body: ['Rajdhani', 'Vazirmatn', 'sans-serif'],
+        headline: ['Orbitron', 'Vazirmatn', 'sans-serif'],
         code: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', 'monospace'],
       },
       colors: {

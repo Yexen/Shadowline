@@ -52,9 +52,19 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [writerProfileOpen, setWriterProfileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [volumesSidebarOpen, setVolumesSidebarOpen] = useState(false);
+  const [language, setLanguage] = useState('en');
 
   const { getChapter, updateChapter, isLoaded: volumesLoaded } = useVolumes();
   const [editingChapter, setEditingChapter] = useState<{volumeId: string, chapterId: string} | null>(null);
+  
+  // Keep document dir/lang in sync with selected language
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.dir = language === 'fa' ? 'rtl' : 'ltr';
+      document.documentElement.lang = language;
+    }
+  }, [language]);
+
 
   useEffect(() => {
     if (authLoaded && !activeWriter) {
@@ -263,9 +273,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             </DropdownMenuSubTrigger>
                             <DropdownMenuPortal>
                                 <DropdownMenuSubContent>
-                                    <DropdownMenuItem>English</DropdownMenuItem>
-                                    <DropdownMenuItem>Français (French)</DropdownMenuItem>
-                                    <DropdownMenuItem>فارسی (Farsi)</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setLanguage('en')}>English</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setLanguage('fa')}>فارسی (Farsi)</DropdownMenuItem>
                                 </DropdownMenuSubContent>
                             </DropdownMenuPortal>
                         </DropdownMenuSub>
