@@ -1,10 +1,10 @@
 {
-  "theme_color": "#f1c40f",
-  "background_color": "#121212",
+  "theme_color": "#111827",
+  "background_color": "#111827",
   "display": "standalone",
   "scope": "/",
   "start_url": "/",
-  "name": "Shadows of Gotham Writer",
+  "name": "Shadows of Gotham Writer's Protocol",
   "short_name": "Gotham Writer",
   "description": "Your sanctuary for crafting tales in the dark city.",
   "icons": [
