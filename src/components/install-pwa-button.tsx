@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button, ButtonProps } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -13,7 +14,7 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
-export function InstallPwaButton() {
+export function InstallPwaButton(props: ButtonProps) {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
@@ -49,7 +50,7 @@ export function InstallPwaButton() {
   }
 
   return (
-    <Button onClick={handleInstallClick} variant="secondary" size="sm">
+    <Button onClick={handleInstallClick} size="sm" {...props}>
       <Download className="mr-2" />
       Install App
     </Button>
