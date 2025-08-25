@@ -1,8 +1,8 @@
-export type BibleFieldsInput = { text: string };
-export type BibleFieldsOutput = { fields: Record<string, string> };
-
-export async function extractBibleFields(_: BibleFieldsInput): Promise<BibleFieldsOutput> {
-  return { fields: {} };
+// must export *named* suggestBibleFields
+export async function suggestBibleFields(text: string) {
+  // Return a structure your UI can render
+  return [
+    { label: 'Description', value: text?.slice(0, 200) || '' },
+  ];
 }
-export const bibleFieldsFlow = extractBibleFields;
-export default extractBibleFields;
+
