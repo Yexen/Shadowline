@@ -1,11 +1,8 @@
 'use client';
 
-// --- Force dynamic, disable prerender, and disable caching (number literal!) ---
 export const dynamic = 'force-dynamic';
-export const revalidate = 0 as const;
+export const revalidate = 0;            // plain number (no const assertion)
 export const fetchCache = 'default-no-store';
-// Optional: make sure Next doesn't try to precompute params
-export const generateStaticParams = undefined;
 
 import { useEffect, useRef, useState } from 'react';
 
