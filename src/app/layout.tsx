@@ -1,15 +1,34 @@
-// Layout component
-import React from 'react';
+// src/app/layout.tsx
+import type { Metadata } from 'next';
+import Link from 'next/link';
 import './globals.css';
 
-export default function RootLayout({ children }) {
+export const metadata: Metadata = {
+  title: 'My App',
+  description: 'This is my app',
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body>
-        <header style={{ backgroundImage: 'url(/header-cover.jpg)', height: '300px', backgroundSize: 'cover' }}>
-          {/* TODO: Add header content here */}
+        {/* --- SINGLE NAV (keep only here) --- */}
+        <header>
+          <nav>
+            <ul>
+            </ul>
+          </nav>
         </header>
-        {children}
+
+        <main>{children}</main>
+
+        <footer>
+          <p>© {new Date().getFullYear()} My App</p>
+        </footer>
       </body>
     </html>
   );
