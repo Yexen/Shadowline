@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
-export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
@@ -34,7 +33,6 @@ Only output raw code, no backticks, no explanations.`;
     });
 
     if (!r.ok) return NextResponse.json({ error: await r.text() }, { status: 500 });
-
     const data = await r.json();
     const code = data.choices?.[0]?.message?.content ?? '';
     return NextResponse.json({ code });
