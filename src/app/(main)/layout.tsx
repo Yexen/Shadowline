@@ -16,9 +16,9 @@ import {
 import { BatLogo } from '@/components/bat-logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Home, PenSquare, BrainCircuit, Info, LogOut, FileText, Images, Settings, BookCopy, BookOpenCheck, ClipboardList, Map as MapIcon, Search, Library, Book, MessageSquare, Globe, User, Gamepad2 } from 'lucide-react';
+import { Home, PenSquare, BrainCircuit, Info, LogOut, FileText, Images, Settings, BookCopy, ClipboardList, Map as MapIcon, Search, Library, Book, MessageSquare, Globe, User, Gamepad2, TerminalSquare } from 'lucide-react'; // ADDED TerminalSquare
 import { useRouter, usePathname, redirect } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react'; // already present
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useBible, type BibleEntry } from '@/hooks/use-bible';
@@ -37,11 +37,34 @@ import { ChapterEditor } from '@/components/chapter-editor';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
 import { useTimer } from '@/hooks/use-timer';
 
-
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   useTimer(); // Initialize the timer hook to start tracking time.
+
+  // ADDED: compute Dev Console URL (uses public key env var)
+  const devKey = process.env.NEXT_PUBLIC_DEV_CONSOLE_KEY || '';
+  const devConsoleUrl = `/dev/console?key=${encodeURIComponent(devKey)}`;
+
+  // ADDED: keyboard shortcut to open Dev Console
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      const isMac = navigator.platform.toUpperCase().includes('MAC');
+      const combo = isMac
+        ? e.metaKey && e.altKey && e.key.toLowerCase() === 'd'   // ⌘+Option+D
+        : e.ctrlKey && e.altKey && e.key.toLowerCase() === 'd'; // Ctrl+Alt+D
+      if (combo) {
+        e.preventDefault();
+        if (devKey) {
+          window.open(devConsoleUrl, '_blank', 'noopener,noreferrer');
+        } else {
+          alert('Dev Console key not set (NEXT_PUBLIC_DEV_CONSOLE_KEY).');
+        }
+      }
+    }
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [devKey, devConsoleUrl]);
 
   const { isLoaded: bibleLoaded, bibleData, addCategory, addOrUpdateEntry } = useBible();
   const { activeWriter, isLoaded: authLoaded, logout } = useWriters();
@@ -65,7 +88,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     }
   }, [language]);
 
-
   useEffect(() => {
     if (authLoaded && !activeWriter) {
       redirect('/auth');
@@ -81,7 +103,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     }
   }, [modalType, modalData]);
 
-
   const menuItems = [
     { href: '/home', label: 'Home', icon: Home },
     { href: '/search', label: 'Search', icon: Search },
@@ -95,7 +116,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { href: '/messages', label: 'Messages', icon: MessageSquare },
     { href: '/sources', label: 'Sources', icon: Book },
   ];
-  
+
+  // ADDED: inject a Dev Console menu item when the key exists
+  const menuItemsWithDev = devKey
+    ? [
+        ...menuItems,
+        { href: devConsoleUrl, label: 'Dev Console', icon: TerminalSquare }, // opens with key param
+      ]
+    : menuItems;
+
   const handleSaveEntry = (category: string, entry: BibleEntry) => {
     addOrUpdateEntry(category, entry, editingEntry?.entry.title);
     setEditingEntry(null);
@@ -146,17 +175,26 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </SidebarHeader>
         <SidebarContent>
             <SidebarMenu>
-                {menuItems.filter(i => !['/nyxen'].includes(i.href)).map((item) => (
-                <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                        onClick={() => router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href)}
-                        isActive={pathname.startsWith(item.href)}
+                {menuItemsWithDev
+                  .filter(i => !['/nyxen'].includes(i.href))
+                  .map((item) => (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton
+                        onClick={() => {
+                          // open Dev Console in a new tab; others navigate in-app
+                          if (item.label === 'Dev Console') {
+                            window.open(item.href, '_blank', 'noopener,noreferrer'); // ADDED
+                          } else {
+                            router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href);
+                          }
+                        }}
+                        isActive={item.label !== 'Dev Console' && pathname.startsWith(item.href)}
                         tooltip={{ children: item.label, side: "right", align: "center" }}
-                    >
+                      >
                         <item.icon />
                         <span>{item.label}</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
                 ))}
 
                 <SidebarMenuItem>
@@ -246,7 +284,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             <div className="flex items-center gap-2">
                                 <Avatar className="h-8 w-8">
                                     <AvatarImage src={activeWriter?.avatarUrl} alt={activeWriter?.name} data-ai-hint={activeWriter?.dataAiHint} key={activeWriter?.avatarUrl} />
-                                    <AvatarFallback>{activeWriter?.name.charAt(0) || 'W'}</AvatarFallback>
+                                    <AvatarFallback>{activeWriter?.name?.charAt(0) || 'W'}</AvatarFallback>
                                 </Avatar>
                                 <span className="text-sm font-semibold group-data-[state=collapsed]:hidden">{activeWriter?.name || 'The Writer'}</span>
                             </div>
@@ -262,6 +300,16 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                           </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
+                        {/* ADDED: quick Dev Console launcher */}
+                        {devKey && (
+                          <>
+                            <DropdownMenuItem onClick={() => window.open(devConsoleUrl, '_blank', 'noopener,noreferrer')}>
+                              <TerminalSquare className="mr-2" />
+                              Dev Console
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                          </>
+                        )}
                         <DropdownMenuItem onClick={() => setWriterProfileOpen(true)}>
                             <User className="mr-2"/>
                             Profile
@@ -330,3 +378,4 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     </SidebarProvider>
   );
 }
+
