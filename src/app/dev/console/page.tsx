@@ -59,6 +59,12 @@ async function aiGenerate(prompt: string, targetPath: string) {
   return j.code as string;
 }
 
+// NEW: planner
+async function aiPlan(prompt: string): Promise<{ targetPath: string; action: 'create'|'edit'; reason: string; currentContent?: string|null }> {
+  const j = await api('/api/ai/plan', { prompt });
+  return { targetPath: j.plan?.targetPath, action: j.plan?.action, reason: j.plan?.reason, currentContent: j.currentContent ?? null };
+}
+
 /** ---------------------------
  *  Minimal styles (Tailwind classes assumed in your app)
  *  ---------------------------
@@ -150,6 +156,10 @@ export default function DevConsole() {
   const [prompt, setPrompt] = useState('Make a simple TSX component that says Hello Gotham.');
   const [thinking, setThinking] = useState(false);
 
+  // NEW: planner UI state
+  const [planning, setPlanning] = useState(false);
+  const [planReason, setPlanReason] = useState('');
+
   // preview
   const [previewHtml, setPreviewHtml] = useState<string>('');
 
@@ -167,7 +177,6 @@ export default function DevConsole() {
     setLoadingLS(true);
     try {
       const arr = await ls(dir);
-      // show relative names (GitHub "contents" returns full path)
       const trimmed = arr.map(x => {
         const last = x.name.replace(/^\/+/,'').split('/').slice(-1).join('/');
         return { name: last ? (dir ? `${dir}/${last}` : last) : x.name, type: x.type };
@@ -198,14 +207,50 @@ export default function DevConsole() {
     }
   }
 
+  // NEW: Ask AI to suggest the best file path (and action)
+  async function suggestPath() {
+    if (!prompt.trim()) {
+      alert('Write your idea in the prompt first.');
+      return;
+    }
+    try {
+      setPlanning(true);
+      setPlanReason('thinking…');
+      const plan = await aiPlan(prompt);
+      if (plan.targetPath) {
+        setTargetPath(plan.targetPath);
+        setPlanReason(`(${plan.action}) ${plan.reason}`);
+        // if editing, optionally preload the existing file into the editor
+        if (plan.action === 'edit' && plan.currentContent != null) {
+          setCode(plan.currentContent);
+          setDirty(false);
+        }
+        append(`🧭 planned → ${plan.targetPath} (${plan.action})`);
+      } else {
+        setPlanReason('No plan returned.');
+      }
+    } catch (e:any) {
+      setPlanReason('❌ ' + (e.message || 'plan failed'));
+      append(`! plan error: ${e.message || e}`);
+    } finally {
+      setPlanning(false);
+    }
+  }
+
   async function handleGen() {
     try {
+      // auto-plan if the path looks empty
+      if (!targetPath.trim()) {
+        await suggestPath();
+        if (!targetPath.trim()) return; // still no path
+      }
+
       setThinking(true);
       append(`> ai → ${targetPath}`);
       const out = await aiGenerate(prompt, targetPath);
       setCode(out || '');
       setDirty(true);
-      // naive static preview: if user generated raw HTML (not React), we can show it
+      // naive static preview for raw HTML (not React)
       if (/<\/?html|<\/?main|<\/?section|<\/?article/i.test(out) && !/export\s+default|import\s+React/i.test(out)) {
         setPreviewHtml(out);
       } else {
@@ -236,7 +281,6 @@ export default function DevConsole() {
     try {
       await mkdirp(name);
       append(`created ${name}/.gitkeep`);
-      // refresh the parent dir the user is looking at if applicable
       const parent = name.replace(/\/+$/,'').split('/').slice(0,-1).join('/');
       await refreshLS(parent);
     } catch (e:any) {
@@ -254,7 +298,6 @@ export default function DevConsole() {
       setCode('');
       setPreviewHtml('');
       setDirty(false);
-      // refresh current dir
       const parent = targetPath.split('/').slice(0, -1).join('/');
       await refreshLS(parent);
     } catch (e:any) {
@@ -326,10 +369,10 @@ export default function DevConsole() {
   function usePreset(p: typeof PRESETS[number]) {
     setTargetPath(p.target);
     setPrompt(p.prompt);
+    setPlanReason(''); // clear old plan hint
   }
 
   const previewUrlHint = useMemo(() => {
-    // Helpful hint: if editing something under public/, it will be live at /<rest> after deploy
     if (targetPath.startsWith('public/')) {
       return '/' + targetPath.replace(/^public\/+/,'');
     }
@@ -401,7 +444,7 @@ export default function DevConsole() {
             <input
               className={input}
               value={targetPath}
-              onChange={e=>{ setTargetPath(e.target.value); setPreviewHtml(''); }}
+              onChange={e=>{ setTargetPath(e.target.value); setPreviewHtml(''); setPlanReason(''); }}
               placeholder="e.g. src/components/MyCard.tsx"
             />
             <label className="font-mono text-xs">prompt</label>
@@ -411,12 +454,16 @@ export default function DevConsole() {
               onChange={e=>setPrompt(e.target.value)}
               placeholder="Describe what you want…"
             />
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+              <button className={btnGhost} disabled={planning} onClick={suggestPath}>🧭 Suggest path</button>
               <button className={btn} disabled={thinking} onClick={handleGen}>✨ Generate</button>
               <button className={btnGhost} disabled={!dirty && !code} onClick={handleSave}>💾 Save to GitHub</button>
               <button className={btnGhost} disabled={!targetPath} onClick={handleDelete}>🗑 Delete file</button>
               {previewUrlHint && <span className="text-xs opacity-70 ml-auto">after deploy: {previewUrlHint}</span>}
             </div>
+            {!!planReason && (
+              <p className="text-xs opacity-70 font-mono mt-1">{planReason}</p>
+            )}
           </div>
         </div>
 
@@ -494,3 +541,4 @@ function promptModal(msg: string) {
   if (!v) return '';
   return v.trim();
 }
+
