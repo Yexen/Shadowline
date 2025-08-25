@@ -10,4 +10,4 @@ export async function POST(req: Request) {
   const items = await list(path || '');
   return NextResponse.json({ items });
 }
-
+  
