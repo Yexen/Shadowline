@@ -1,8 +1,5 @@
-export type OracleInput = { question: string; context?: string };
-export type OracleOutput = { answer: string };
-
-export async function runOracleFlow(_: OracleInput): Promise<OracleOutput> {
-  return { answer: '🔒 Oracle AI is temporarily disabled on this build.' };
+// must export *named* askOracle
+export async function askOracle(input: { question: string; context?: string }) {
+  // TODO: replace with real AI
+  return { answer: '(stub) Oracle is offline right now.' };
 }
-export const oracleFlow = runOracleFlow;
-export default runOracleFlow;
