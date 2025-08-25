@@ -1,16 +1,51 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const ExamplePage: React.FC = () => {
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  const handleShowPreview = () => {
+    setIsPreviewOpen(true);
+  };
+
+  const handleClosePreview = () => {
+    setIsPreviewOpen(false);
+  };
+
   return (
     <div>
-      <header style={{ backgroundImage: 'url(https://firebasestorage.googleapis.com/v0/b/shadows-of-gotham.firebasestorage.app/o/alimoini_Ultra-wide_comic-book_splash_header_on_a_rain-slick__039016ec-7d75-4c0a-8233-4e1ec46921c4_3.png?alt=media&token=0d9079bb-628f-4ac6-92b3-dbc6419fae47)', backgroundSize: 'cover', height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <h1 style={{ color: 'white', textShadow: '2px 2px 4px rgba(0, 0, 0, 0.7)' }}>Welcome to the Example Page</h1>
-      </header>
-      <main>
-        <h2>This is the content of the example page.</h2>
-      </main>
+      <h1>Example Page</h1>
+      <button onClick={handleShowPreview}>Show Preview</button>
+
+      {isPreviewOpen && (
+        <div style={overlayStyle}>
+          <div style={popupStyle}>
+            <h2>Preview</h2>
+            <p>This is a preview of your content.</p>
+            <button onClick={handleClosePreview}>Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
+};
+
+const overlayStyle: React.CSSProperties = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+};
+
+const popupStyle: React.CSSProperties = {
+  backgroundColor: 'white',
+  padding: '20px',
+  borderRadius: '8px',
+  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
 };
 
 export default ExamplePage;
