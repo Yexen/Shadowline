@@ -1,7 +1,6 @@
 'use client';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;                 // number, not a function
 export const fetchCache = 'default-no-store';
 
 import { useEffect, useRef, useState } from 'react';
