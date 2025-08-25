@@ -1,11 +1,16 @@
 'use client';
 
+// --- Force dynamic, disable prerender, and disable caching (number literal!) ---
 export const dynamic = 'force-dynamic';
+export const revalidate = 0 as const;
 export const fetchCache = 'default-no-store';
+// Optional: make sure Next doesn't try to precompute params
+export const generateStaticParams = undefined;
 
 import { useEffect, useRef, useState } from 'react';
 
-type ChatMsg = { role: 'user'|'assistant'|'system'; content: string };
+// ------------ Types ------------
+type ChatMsg = { role: 'user' | 'assistant' | 'system'; content: string };
 type Op =
   | { type: 'write'; path: string; content: string; message?: string }
   | { type: 'mkdir'; path: string; message?: string }
@@ -18,22 +23,25 @@ type PlanResponse = {
   ops: Op[];
 };
 
-/* ---------- gate: read ?key=... safely on client ---------- */
+// ------------ Gate (reads ?key only on client) ------------
 function useGate() {
   const [ok, setOk] = useState(false);
+
   useEffect(() => {
+    // run only on client
     if (typeof window === 'undefined') return;
     const want = new URLSearchParams(window.location.search).get('key');
     const have = process.env.NEXT_PUBLIC_DEV_CONSOLE_KEY || '';
     setOk(Boolean(have) && want === have);
     if (!have) console.warn('NEXT_PUBLIC_DEV_CONSOLE_KEY not set');
   }, []);
+
   return ok;
 }
 
-/* ---------- tiny API helper (optionally sends x-dev-key) ---------- */
+// ------------ Tiny API helper ------------
 async function api(path: string, body: any, key?: string) {
-  const r = await fetch(path, {
+  const res = await fetch(path, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -41,9 +49,9 @@ async function api(path: string, body: any, key?: string) {
     },
     body: JSON.stringify(body ?? {}),
   });
-  const j = await r.json();
-  if (!r.ok) throw new Error(j?.error || `API ${path} failed`);
-  return j;
+  const json = await res.json();
+  if (!res.ok) throw new Error(json?.error || `API ${path} failed`);
+  return json;
 }
 
 export default function DevStudio() {
@@ -56,6 +64,7 @@ export default function DevStudio() {
     setDevKey(new URLSearchParams(window.location.search).get('key') || '');
   }, []);
 
+  // chat + plan state
   const [messages, setMessages] = useState<ChatMsg[]>([
     {
       role: 'system',
@@ -70,20 +79,26 @@ export default function DevStudio() {
   const [applyLog, setApplyLog] = useState<string>('');
 
   const logRef = useRef<HTMLDivElement>(null);
-  useEffect(() => { logRef.current?.scrollTo(0, 9e9); }, [applyLog]);
+  useEffect(() => {
+    logRef.current?.scrollTo(0, 9e9);
+  }, [applyLog]);
 
   async function ask() {
     const msg = input.trim();
     if (!msg) return;
     setInput('');
-    setMessages((m) => [...m, { role: 'user', content: msg }]);
+    setMessages(m => [...m, { role: 'user', content: msg }]);
     setThinking(true);
     try {
-      const res = await api('/api/ai/devchat', { messages: [...messages, { role: 'user', content: msg }] }, devKey);
+      const payload = { messages: [...messages, { role: 'user', content: msg }] };
+      const res = await api('/api/ai/devchat', payload, devKey);
       setPlan(res.plan as PlanResponse);
-      setMessages((m) => [...m, { role: 'assistant', content: res.explainer || 'I prepared a plan. Review and Apply when ready.' }]);
+      setMessages(m => [
+        ...m,
+        { role: 'assistant', content: res.explainer || 'I prepared a plan. Review and Apply when ready.' },
+      ]);
     } catch (e: any) {
-      setMessages((m) => [...m, { role: 'assistant', content: '❌ ' + (e?.message || 'AI error') }]);
+      setMessages(m => [...m, { role: 'assistant', content: '❌ ' + (e?.message || 'AI error') }]);
     } finally {
       setThinking(false);
     }
@@ -94,12 +109,12 @@ export default function DevStudio() {
     setApplyLog('Applying changes…\n');
     try {
       const res = await api('/api/repo/apply', { ops: plan.ops }, devKey);
-      setApplyLog((s) => s + (res?.log || 'Committed changes.\n'));
+      setApplyLog(s => s + (res?.log || 'Committed changes.\n'));
       if (res?.deployTriggered) {
-        setApplyLog((s) => s + '\nTriggered Vercel deploy hook.');
+        setApplyLog(s => s + '\nTriggered Vercel deploy hook.');
       }
     } catch (e: any) {
-      setApplyLog((s) => s + '\n❌ ' + (e?.message || 'apply failed'));
+      setApplyLog(s => s + '\n❌ ' + (e?.message || 'apply failed'));
     }
   }
 
@@ -121,22 +136,28 @@ export default function DevStudio() {
       {/* Chat */}
       <section className="rounded border border-neutral-800 bg-neutral-950/60 p-3">
         <div className="space-y-2 max-h-[320px] overflow-auto">
-          {messages.filter(m => m.role !== 'system').map((m, i) => (
-            <div key={i} className="text-sm">
-              <span className="opacity-60">{m.role === 'user' ? 'You' : 'AI'}:</span>{' '}
-              <span>{m.content}</span>
-            </div>
-          ))}
+          {messages
+            .filter(m => m.role !== 'system')
+            .map((m, i) => (
+              <div key={i} className="text-sm">
+                <span className="opacity-60">{m.role === 'user' ? 'You' : 'AI'}:</span>{' '}
+                <span>{m.content}</span>
+              </div>
+            ))}
         </div>
         <div className="flex gap-2 mt-3">
           <input
             className="border rounded px-3 py-2 bg-neutral-950/70 border-neutral-800 flex-1"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={e => setInput(e.target.value)}
             placeholder="e.g. Create a new /about page with dark hero and add a Card component…"
-            onKeyDown={(e) => e.key === 'Enter' && ask()}
+            onKeyDown={e => e.key === 'Enter' && ask()}
           />
-          <button className="px-3 py-2 rounded bg-black text-white disabled:opacity-50" disabled={thinking} onClick={ask}>
+          <button
+            className="px-3 py-2 rounded bg-black text-white disabled:opacity-50"
+            disabled={thinking}
+            onClick={ask}
+          >
             {thinking ? 'Thinking…' : 'Send'}
           </button>
         </div>
@@ -150,20 +171,25 @@ export default function DevStudio() {
         ) : (
           <>
             <p className="text-sm whitespace-pre-wrap">{plan.summary}</p>
+
             {plan.reasoning && (
               <details className="mt-2">
                 <summary className="cursor-pointer text-sm opacity-80">More details</summary>
                 <pre className="text-xs opacity-80 whitespace-pre-wrap mt-1">{plan.reasoning}</pre>
               </details>
             )}
+
             {plan.files?.length ? (
               <div className="mt-3">
                 <h3 className="font-semibold text-sm">Files:</h3>
                 <ul className="text-sm list-disc pl-5">
-                  {plan.files.map((f) => <li key={f}>{f}</li>)}
+                  {plan.files.map(f => (
+                    <li key={f}>{f}</li>
+                  ))}
                 </ul>
               </div>
             ) : null}
+
             <div className="mt-3">
               <h3 className="font-semibold text-sm">Operations:</h3>
               {!plan.ops.length ? (
@@ -178,8 +204,13 @@ export default function DevStudio() {
                 </ul>
               )}
             </div>
+
             <div className="mt-3 flex gap-2">
-              <button className="px-3 py-2 rounded bg-black text-white" disabled={!plan.ops.length} onClick={applyOps}>
+              <button
+                className="px-3 py-2 rounded bg-black text-white"
+                disabled={!plan.ops.length}
+                onClick={applyOps}
+              >
                 Apply {plan.ops.length} change{plan.ops.length === 1 ? '' : 's'}
               </button>
             </div>
@@ -190,7 +221,10 @@ export default function DevStudio() {
       {/* Apply log */}
       <section className="rounded border border-neutral-800 bg-neutral-950/60 p-3">
         <h2 className="font-semibold">Apply Log</h2>
-        <div ref={logRef} className="border border-neutral-800 rounded p-3 min-h-[120px] max-h-[240px] overflow-auto whitespace-pre-wrap font-mono text-xs bg-neutral-950 text-neutral-100">
+        <div
+          ref={logRef}
+          className="border border-neutral-800 rounded p-3 min-h-[120px] max-h-[240px] overflow-auto whitespace-pre-wrap font-mono text-xs bg-neutral-950 text-neutral-100"
+        >
           {applyLog || '—'}
         </div>
       </section>
