@@ -1,14 +1,10 @@
 'use client';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;            // no static cache
+export const revalidate = 0;                 // number, not a function
 export const fetchCache = 'default-no-store';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-
-// --- keep your existing code below ---
-// Important: any use of `location`, `window`, etc. must be inside `useEffect`
-// or guarded with `typeof window !== 'undefined'`.
+import { useEffect, useRef, useState } from 'react';
 
 type ChatMsg = { role: 'user'|'assistant'|'system'; content: string };
 type Op =
@@ -17,23 +13,26 @@ type Op =
   | { type: 'delete'; path: string; message?: string };
 
 type PlanResponse = {
-  summary: string;          // high-level plan
-  reasoning?: string;       // optional extra notes
-  files?: string[];         // files involved
-  ops: Op[];                // the actual operations to apply
+  summary: string;
+  reasoning?: string;
+  files?: string[];
+  ops: Op[];
 };
 
+/* ---------- gate: read ?key=... safely on client ---------- */
 function useGate() {
   const [ok, setOk] = useState(false);
   useEffect(() => {
-    const want = new URLSearchParams(location.search).get('key');
+    if (typeof window === 'undefined') return;
+    const want = new URLSearchParams(window.location.search).get('key');
     const have = process.env.NEXT_PUBLIC_DEV_CONSOLE_KEY || '';
-    setOk(!!have && want === have);
+    setOk(Boolean(have) && want === have);
     if (!have) console.warn('NEXT_PUBLIC_DEV_CONSOLE_KEY not set');
   }, []);
   return ok;
 }
 
+/* ---------- tiny API helper (optionally sends x-dev-key) ---------- */
 async function api(path: string, body: any, key?: string) {
   const r = await fetch(path, {
     method: 'POST',
@@ -50,7 +49,14 @@ async function api(path: string, body: any, key?: string) {
 
 export default function DevStudio() {
   const gateOk = useGate();
-  const devKey = useMemo(() => new URLSearchParams(location.search).get('key') || '', []);
+
+  // read ?key only on client
+  const [devKey, setDevKey] = useState('');
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setDevKey(new URLSearchParams(window.location.search).get('key') || '');
+  }, []);
+
   const [messages, setMessages] = useState<ChatMsg[]>([
     {
       role: 'system',
@@ -103,7 +109,7 @@ export default function DevStudio() {
       <main className="max-w-xl mx-auto p-6">
         <h1 className="text-2xl font-bold">Dev Studio Locked</h1>
         <p className="opacity-70 mt-2">
-          Open with <code>/dev/studio?key=YOUR_KEY</code> and set <code>NEXT_PUBLIC_DEV_CONSOLE_KEY</code>.
+          Open with <code>/dev/console/studio?key=YOUR_KEY</code> and set <code>NEXT_PUBLIC_DEV_CONSOLE_KEY</code>.
         </p>
       </main>
     );
