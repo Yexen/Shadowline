@@ -2,10 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-/** ---------------------------
- *  Simple guard (same as before)
- *  ---------------------------
- */
+/** ---------- guard ---------- */
 function useGate() {
   const [ok, setOk] = useState(false);
   useEffect(() => {
@@ -17,10 +14,7 @@ function useGate() {
   return ok;
 }
 
-/** ---------------------------
- *  Tiny helpers for API calls
- *  ---------------------------
- */
+/** ---------- tiny API helpers ---------- */
 async function api(path: string, body: any) {
   const r = await fetch(path, {
     method: 'POST',
@@ -36,56 +30,54 @@ async function ls(path = ''): Promise<{name: string; type: 'file'|'dir'}[]> {
   const j = await api('/api/repo/ls', { path });
   return j.items as {name:string; type:'file'|'dir'}[];
 }
-
 async function cat(path: string): Promise<string|null> {
   const j = await api('/api/repo/read', { path });
   return j.content ?? null;
 }
-
 async function write(path: string, content: string, message?: string) {
   return api('/api/repo/write', { path, content, message: message || `update ${path} (console)` });
 }
-
+async function writeMany(files: {path: string; content: string}[], message?: string) {
+  return api('/api/repo/write-many', { files, message });
+}
 async function mkdirp(path: string) {
   return api('/api/repo/mkdir', { path });
 }
-
 async function rm(path: string) {
   return api('/api/repo/rm', { path });
 }
-
 async function aiGenerate(prompt: string, targetPath: string) {
   const j = await api('/api/ai/generate', { prompt, targetPath });
   return j.code as string;
 }
-
-// NEW: planner
-async function aiPlan(prompt: string): Promise<{ targetPath: string; action: 'create'|'edit'; reason: string; currentContent?: string|null }> {
+// planner
+type Plan = { targetPath: string; action: 'create'|'edit'; reason: string; currentContent?: string|null };
+async function aiPlan(prompt: string): Promise<Plan> {
   const j = await api('/api/ai/plan', { prompt });
-  return { targetPath: j.plan?.targetPath, action: j.plan?.action, reason: j.plan?.reason, currentContent: j.currentContent ?? null };
+  return {
+    targetPath: j.plan?.targetPath,
+    action: j.plan?.action,
+    reason: j.plan?.reason,
+    currentContent: j.currentContent ?? null,
+  };
+}
+// multi-file AI
+async function aiGenerateMulti(prompt: string) {
+  const j = await api('/api/ai/generate', { prompt, mode: 'multi' });
+  return j.files as { path: string; content: string }[];
 }
 
-/** ---------------------------
- *  Minimal styles (Tailwind classes assumed in your app)
- *  ---------------------------
- */
+/** ---------- styles ---------- */
 const paneCls = 'rounded border border-neutral-800 bg-neutral-950/60 backdrop-blur p-3';
 const btn = 'px-3 py-2 rounded bg-black text-white hover:bg-neutral-800 disabled:opacity-50';
 const btnGhost = 'px-3 py-2 rounded border border-neutral-700 hover:bg-neutral-900 disabled:opacity-50';
 const input = 'border rounded px-3 py-2 bg-neutral-950/70 border-neutral-800';
 
-/** ---------------------------
- *  File Explorer
- *  ---------------------------
- */
+/** ---------- explorer row ---------- */
 type NodeKind = { name: string; type: 'file'|'dir' };
-
-function NodeRow(props: {
-  node: NodeKind;
-  root: string;
-  onOpen: (fullPath: string, isDir: boolean) => void;
+function NodeRow({ node, root, onOpen }: {
+  node: NodeKind; root: string; onOpen: (fullPath: string, isDir: boolean) => void;
 }) {
-  const { node, root, onOpen } = props;
   const rel = node.name;
   const base = root ? `${root.replace(/\/+$/,'')}/` : '';
   const full = `${base}${rel}`;
@@ -105,10 +97,7 @@ function NodeRow(props: {
   );
 }
 
-/** ---------------------------
- *  Preset prompts for AI
- *  ---------------------------
- */
+/** ---------- presets ---------- */
 const PRESETS: { label: string; target: string; prompt: string }[] = [
   {
     label: '🧱 Component: Card',
@@ -135,30 +124,29 @@ It renders a basic modal with a file input and two buttons. No external UI libs.
   },
 ];
 
-/** ---------------------------
- *  Main Console
- *  ---------------------------
- */
+/** ---------- main ---------- */
 export default function DevConsole() {
   const gateOk = useGate();
 
-  // explorer state
-  const [cwd, setCwd] = useState<string>('');           // current folder path ('', 'src', 'public', etc.)
+  // explorer
+  const [cwd, setCwd] = useState<string>('');
   const [items, setItems] = useState<NodeKind[]>([]);
   const [loadingLS, setLoadingLS] = useState(false);
 
-  // editor state
+  // editor (single-file)
   const [targetPath, setTargetPath] = useState('src/app/example/page.tsx');
   const [code, setCode] = useState('');
   const [dirty, setDirty] = useState(false);
 
-  // ai state
+  // ai + planner
   const [prompt, setPrompt] = useState('Make a simple TSX component that says Hello Gotham.');
   const [thinking, setThinking] = useState(false);
-
-  // NEW: planner UI state
   const [planning, setPlanning] = useState(false);
   const [planReason, setPlanReason] = useState('');
+
+  // multi-file
+  const [multiMode, setMultiMode] = useState(false);
+  const [multiFiles, setMultiFiles] = useState<{ path: string; content: string }[]>([]);
 
   // preview
   const [previewHtml, setPreviewHtml] = useState<string>('');
@@ -170,7 +158,6 @@ export default function DevConsole() {
   useEffect(() => { logRef.current?.scrollTo(0, 1e9); }, [log]);
   const append = (s: string) => setLog(l => [...l, s]);
 
-  // load root on mount
   useEffect(() => { refreshLS(''); }, []);
 
   async function refreshLS(dir: string) {
@@ -207,11 +194,10 @@ export default function DevConsole() {
     }
   }
 
-  // NEW: Ask AI to suggest the best file path (and action)
-  async function suggestPath() {
+  async function suggestPath(): Promise<Plan | null> {
     if (!prompt.trim()) {
       alert('Write your idea in the prompt first.');
-      return;
+      return null;
     }
     try {
       setPlanning(true);
@@ -220,41 +206,42 @@ export default function DevConsole() {
       if (plan.targetPath) {
         setTargetPath(plan.targetPath);
         setPlanReason(`(${plan.action}) ${plan.reason}`);
-        // if editing, optionally preload the existing file into the editor
         if (plan.action === 'edit' && plan.currentContent != null) {
           setCode(plan.currentContent);
           setDirty(false);
         }
         append(`🧭 planned → ${plan.targetPath} (${plan.action})`);
+        return plan;
       } else {
         setPlanReason('No plan returned.');
+        return null;
       }
     } catch (e:any) {
       setPlanReason('❌ ' + (e.message || 'plan failed'));
       append(`! plan error: ${e.message || e}`);
+      return null;
     } finally {
       setPlanning(false);
     }
   }
 
-  async function handleGen() {
+  async function handleGenSingle() {
     try {
-      // auto-plan if the path looks empty
-      if (!targetPath.trim()) {
-        await suggestPath();
-        if (!targetPath.trim()) return; // still no path
-      }
+      const plan = await suggestPath(); // always plan
+      const path = plan?.targetPath || targetPath;
+      if (!path) { append('! no target path chosen'); return; }
 
       setThinking(true);
-      append(`> ai → ${targetPath}`);
-      const out = await aiGenerate(prompt, targetPath);
+      append(`> ai (single) → ${path}`);
+      const out = await aiGenerate(prompt, path);
+      setTargetPath(path);
       setCode(out || '');
       setDirty(true);
-      // naive static preview for raw HTML (not React)
+
       if (/<\/?html|<\/?main|<\/?section|<\/?article/i.test(out) && !/export\s+default|import\s+React/i.test(out)) {
         setPreviewHtml(out);
       } else {
-        setPreviewHtml(`<pre style="white-space:pre-wrap;color:#0f0;background:#111;padding:12px;">(Static preview only shows raw HTML)\n\n${escapeHtml(out).slice(0,20000)}</pre>`);
+        setPreviewHtml(`<pre style="white-space:pre-wrap;color:#0f0;background:#111;padding:12px;">(Static preview shows raw HTML only)\n\n${escapeHtml(out).slice(0,20000)}</pre>`);
       }
       append(`✓ generated (${(out||'').length} bytes)`);
     } catch (e:any) {
@@ -264,7 +251,21 @@ export default function DevConsole() {
     }
   }
 
-  async function handleSave() {
+  async function handleGenMulti() {
+    try {
+      setThinking(true);
+      append(`> ai (multi)`);
+      const files = await aiGenerateMulti(prompt);
+      setMultiFiles(files);
+      append(`✓ generated ${files.length} file(s)`);
+    } catch (e:any) {
+      append(`! ai error: ${e.message || e}`);
+    } finally {
+      setThinking(false);
+    }
+  }
+
+  async function handleSaveSingle() {
     try {
       append(`> save ${targetPath}`);
       await write(targetPath, code, `update ${targetPath} (console)`);
@@ -272,6 +273,20 @@ export default function DevConsole() {
       append(`✓ committed`);
     } catch (e:any) {
       append(`! save error: ${e.message || e}`);
+    }
+  }
+
+  async function handleSaveMulti() {
+    if (!multiFiles.length) {
+      alert('No generated files to save.');
+      return;
+    }
+    try {
+      append(`> save many (${multiFiles.length})`);
+      await writeMany(multiFiles, 'update multiple files (console)');
+      append(`✓ committed ${multiFiles.length} file(s)`);
+    } catch (e:any) {
+      append(`! save-many error: ${e.message || e}`);
     }
   }
 
@@ -305,7 +320,6 @@ export default function DevConsole() {
     }
   }
 
-  // tiny terminal commands backed by the same APIs
   async function runCmd() {
     const line = cmd.trim();
     setCmd('');
@@ -336,7 +350,7 @@ export default function DevConsole() {
         if (!p || !pr) return append('usage: gen <path> <prompt text>');
         setTargetPath(p);
         setPrompt(pr);
-        await handleGen();
+        await handleGenSingle();
       } else {
         append('commands: ls [path], cat <path>, mkdir <path>, rm <path>, gen <path> <prompt>');
       }
@@ -345,17 +359,16 @@ export default function DevConsole() {
     }
   }
 
-  // keyboard shortcuts
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const meta = e.metaKey || e.ctrlKey;
       if (meta && e.key.toLowerCase() === 's') {
         e.preventDefault();
-        if (dirty) handleSave();
+        if (dirty) handleSaveSingle();
       }
       if (meta && e.key === 'Enter') {
         e.preventDefault();
-        handleGen();
+        multiMode ? handleGenMulti() : handleGenSingle();
       }
       if (e.key === '`') {
         (document.getElementById('console-cmd') as HTMLInputElement)?.focus();
@@ -363,13 +376,13 @@ export default function DevConsole() {
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [dirty, prompt, targetPath, code]);
+  }, [dirty, prompt, targetPath, code, multiMode, multiFiles]);
 
-  // helper: apply a preset
   function usePreset(p: typeof PRESETS[number]) {
     setTargetPath(p.target);
     setPrompt(p.prompt);
-    setPlanReason(''); // clear old plan hint
+    setPlanReason('');
+    setMultiFiles([]);
   }
 
   const previewUrlHint = useMemo(() => {
@@ -429,24 +442,40 @@ export default function DevConsole() {
           <h2 className="font-semibold mb-2">Shortcuts</h2>
           <ul className="text-sm space-y-1 opacity-80">
             <li><kbd className="px-1 py-0.5 border rounded">⌘/Ctrl</kbd> + <kbd className="px-1 py-0.5 border rounded">Enter</kbd> Generate</li>
-            <li><kbd className="px-1 py-0.5 border rounded">⌘/Ctrl</kbd> + <kbd className="px-1 py-0.5 border rounded">S</kbd> Save</li>
+            <li><kbd className="px-1 py-0.5 border rounded">⌘/Ctrl</kbd> + <kbd className="px-1 py-0.5 border rounded">S</kbd> Save (single)</li>
             <li><kbd className="px-1 py-0.5 border rounded">`</kbd> Focus terminal</li>
           </ul>
         </div>
       </aside>
 
-      {/* Main panes */}
+      {/* Main */}
       <section className="grid grid-rows-[auto_auto_1fr_auto] gap-4">
-        {/* AI input */}
         <div className={paneCls}>
-          <div className="grid gap-2">
-            <label className="font-mono text-xs">target path</label>
-            <input
-              className={input}
-              value={targetPath}
-              onChange={e=>{ setTargetPath(e.target.value); setPreviewHtml(''); setPlanReason(''); }}
-              placeholder="e.g. src/components/MyCard.tsx"
-            />
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold">AI Builder</h2>
+            <label className="text-sm flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={multiMode}
+                onChange={e => { setMultiMode(e.target.checked); setMultiFiles([]); }}
+              />
+              Multi-file mode
+            </label>
+          </div>
+
+          <div className="grid gap-2 mt-3">
+            {!multiMode && (
+              <>
+                <label className="font-mono text-xs">target path</label>
+                <input
+                  className={input}
+                  value={targetPath}
+                  onChange={e=>{ setTargetPath(e.target.value); setPreviewHtml(''); setPlanReason(''); }}
+                  placeholder="e.g. src/components/MyCard.tsx"
+                />
+              </>
+            )}
+
             <label className="font-mono text-xs">prompt</label>
             <textarea
               className={`${input} min-h-[100px]`}
@@ -454,52 +483,86 @@ export default function DevConsole() {
               onChange={e=>setPrompt(e.target.value)}
               placeholder="Describe what you want…"
             />
+
             <div className="flex gap-2 items-center">
-              <button className={btnGhost} disabled={planning} onClick={suggestPath}>🧭 Suggest path</button>
-              <button className={btn} disabled={thinking} onClick={handleGen}>✨ Generate</button>
-              <button className={btnGhost} disabled={!dirty && !code} onClick={handleSave}>💾 Save to GitHub</button>
-              <button className={btnGhost} disabled={!targetPath} onClick={handleDelete}>🗑 Delete file</button>
-              {previewUrlHint && <span className="text-xs opacity-70 ml-auto">after deploy: {previewUrlHint}</span>}
+              {!multiMode && (
+                <>
+                  <button className={btnGhost} disabled={planning} onClick={suggestPath}>🧭 Suggest path</button>
+                  <button className={btn} disabled={thinking} onClick={handleGenSingle}>✨ Generate</button>
+                  <button className={btnGhost} disabled={!dirty && !code} onClick={handleSaveSingle}>💾 Save to GitHub</button>
+                  <button className={btnGhost} disabled={!targetPath} onClick={handleDelete}>🗑 Delete file</button>
+                  {previewUrlHint && <span className="text-xs opacity-70 ml-auto">after deploy: {previewUrlHint}</span>}
+                </>
+              )}
+              {multiMode && (
+                <>
+                  <button className={btn} disabled={thinking} onClick={handleGenMulti}>✨ Generate (multi)</button>
+                  <button className={btnGhost} disabled={!multiFiles.length} onClick={handleSaveMulti}>💾 Save ALL to GitHub</button>
+                </>
+              )}
             </div>
-            {!!planReason && (
+
+            {!!planReason && !multiMode && (
               <p className="text-xs opacity-70 font-mono mt-1">{planReason}</p>
             )}
           </div>
         </div>
 
-        {/* Editor */}
-        <div className={paneCls}>
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="font-semibold">Editor</h2>
-            <span className="text-xs opacity-70">{dirty ? '• unsaved' : 'saved'}</span>
-          </div>
-          <textarea
-            className={`${input} font-mono min-h-[240px]`}
-            value={code}
-            onChange={e=>{ setCode(e.target.value); setDirty(true); }}
-            placeholder="// AI output or file content will appear here"
-          />
-        </div>
-
-        {/* Preview */}
-        <div className={paneCls}>
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="font-semibold">Preview</h2>
-            <span className="text-xs opacity-70">(static HTML only)</span>
-          </div>
-          <div className="rounded border border-neutral-800 overflow-hidden min-h-[220px] bg-white">
-            {previewHtml ? (
-              <iframe
-                title="preview"
-                sandbox="allow-same-origin"
-                className="w-full h-[320px] bg-white"
-                srcDoc={previewHtml}
+        {!multiMode && (
+          <>
+            {/* Editor (single file) */}
+            <div className={paneCls}>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="font-semibold">Editor</h2>
+                <span className="text-xs opacity-70">{dirty ? '• unsaved' : 'saved'}</span>
+              </div>
+              <textarea
+                className={`${input} font-mono min-h-[240px]`}
+                value={code}
+                onChange={e=>{ setCode(e.target.value); setDirty(true); }}
+                placeholder="// AI output or file content will appear here"
               />
+            </div>
+
+            {/* Preview */}
+            <div className={paneCls}>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="font-semibold">Preview</h2>
+                <span className="text-xs opacity-70">(static HTML only)</span>
+              </div>
+              <div className="rounded border border-neutral-800 overflow-hidden min-h-[220px] bg-white">
+                {previewHtml ? (
+                  <iframe
+                    title="preview"
+                    sandbox="allow-same-origin"
+                    className="w-full h-[320px] bg-white"
+                    srcDoc={previewHtml}
+                  />
+                ) : (
+                  <div className="p-4 text-sm text-neutral-600">No preview yet. Generate HTML or paste raw HTML.</div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {multiMode && (
+          <div className={paneCls}>
+            <h2 className="font-semibold mb-2">Generated Files</h2>
+            {!multiFiles.length ? (
+              <div className="text-sm opacity-70">No files yet. Click “Generate (multi)”.</div>
             ) : (
-              <div className="p-4 text-sm text-neutral-600">No preview yet. Generate HTML or paste raw HTML.</div>
+              <ul className="text-sm grid gap-2">
+                {multiFiles.map((f, i) => (
+                  <li key={i} className="p-2 rounded border border-neutral-800">
+                    <div className="text-xs opacity-70 mb-1">{f.path}</div>
+                    <pre className="max-h-48 overflow-auto whitespace-pre-wrap">{f.content.slice(0, 4000)}</pre>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
-        </div>
+        )}
 
         {/* Terminal */}
         <div className={paneCls}>
@@ -527,18 +590,15 @@ export default function DevConsole() {
   );
 }
 
-/** escape for static preview */
+/** helpers */
 function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (ch) =>
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'} as any)[ch]
   );
 }
-
-/** super tiny prompt modal */
 function promptModal(msg: string) {
   // eslint-disable-next-line no-alert
   const v = prompt(msg);
   if (!v) return '';
   return v.trim();
 }
-
