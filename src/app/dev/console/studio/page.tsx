@@ -1,6 +1,14 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;            // no static cache
+export const fetchCache = 'default-no-store';
+
 import { useEffect, useMemo, useRef, useState } from 'react';
+
+// --- keep your existing code below ---
+// Important: any use of `location`, `window`, etc. must be inside `useEffect`
+// or guarded with `typeof window !== 'undefined'`.
 
 type ChatMsg = { role: 'user'|'assistant'|'system'; content: string };
 type Op =
