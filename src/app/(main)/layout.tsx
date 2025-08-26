@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -16,9 +15,29 @@ import {
 import { BatLogo } from '@/components/bat-logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Home, PenSquare, BrainCircuit, Info, LogOut, FileText, Images, Settings, BookCopy, ClipboardList, Map as MapIcon, Search, Library, Book, MessageSquare, Globe, User, Gamepad2, TerminalSquare } from 'lucide-react'; // ADDED TerminalSquare
-import { useRouter, usePathname, redirect } from 'next/navigation';
-import { useEffect, useState } from 'react'; // already present
+import {
+  Home,
+  PenSquare,
+  BrainCircuit,
+  Info,
+  LogOut,
+  FileText,
+  Images,
+  Settings,
+  BookCopy,
+  ClipboardList,
+  Map as MapIcon,
+  Search,
+  Library,
+  Book,
+  MessageSquare,
+  Globe,
+  User,
+  Gamepad2,
+  TerminalSquare,
+} from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation'; // <-- removed `redirect` import
+import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useBible, type BibleEntry } from '@/hooks/use-bible';
@@ -34,26 +53,35 @@ import { useModalStore } from '@/hooks/use-modal-store';
 import { VolumesSidebar } from '@/components/volumes-sidebar';
 import { useVolumes } from '@/hooks/use-volumes';
 import { ChapterEditor } from '@/components/chapter-editor';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+  DropdownMenuPortal,
+} from '@/components/ui/dropdown-menu';
 import { useTimer } from '@/hooks/use-timer';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  useTimer(); // Initialize the timer hook to start tracking time.
+  useTimer();
 
-  // ADDED: compute Dev Console URL (uses public key env var)
+  // Dev Console URL with key (hidden if not set)
   const devKey = process.env.NEXT_PUBLIC_DEV_CONSOLE_KEY || '';
-  const devConsoleUrl = `/dev/console?key=${encodeURIComponent(devKey)}`;
+  const devConsoleUrl = `/dev/console/studio?key=${encodeURIComponent(devKey)}`;
 
-  // ADDED: keyboard shortcut to open Dev Console
+  // Keyboard shortcut: ⌘/Ctrl + Alt + D
   useEffect(() => {
     function handler(e: KeyboardEvent) {
-      const isMac = navigator.platform.toUpperCase().includes('MAC');
-      const combo = isMac
-        ? e.metaKey && e.altKey && e.key.toLowerCase() === 'd'   // ⌘+Option+D
-        : e.ctrlKey && e.altKey && e.key.toLowerCase() === 'd'; // Ctrl+Alt+D
-      if (combo) {
+      const meta = e.metaKey || e.ctrlKey;
+      const alt = e.altKey;
+      if (meta && alt && e.key.toLowerCase() === 'd') {
         e.preventDefault();
         if (devKey) {
           window.open(devConsoleUrl, '_blank', 'noopener,noreferrer');
@@ -75,11 +103,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [writerProfileOpen, setWriterProfileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [volumesSidebarOpen, setVolumesSidebarOpen] = useState(false);
-  const [language, setLanguage] = useState('en');
+  const [language, setLanguage] = useState<'en' | 'fa'>('en');
 
   const { getChapter, updateChapter, isLoaded: volumesLoaded } = useVolumes();
-  const [editingChapter, setEditingChapter] = useState<{volumeId: string, chapterId: string} | null>(null);
-  
+  const [editingChapter, setEditingChapter] = useState<{ volumeId: string; chapterId: string } | null>(null);
+
   // Keep document dir/lang in sync with selected language
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -88,18 +116,19 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     }
   }, [language]);
 
+  // Auth guard (client-side)
   useEffect(() => {
     if (authLoaded && !activeWriter) {
-      redirect('/auth');
+      router.push('/auth'); // <-- use router.push on client
     }
-  }, [authLoaded, activeWriter]);
+  }, [authLoaded, activeWriter, router]);
 
   useEffect(() => {
     if (modalType === 'bible' && modalData?.bible) {
       setEditingEntry(modalData.bible);
     }
     if (modalType === 'chapter' && modalData?.chapter) {
-        setEditingChapter(modalData.chapter);
+      setEditingChapter(modalData.chapter);
     }
   }, [modalType, modalData]);
 
@@ -117,264 +146,272 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { href: '/sources', label: 'Sources', icon: Book },
   ];
 
-  // ADDED: inject a Dev Console menu item when the key exists
+  // Inject Dev Console item only if the key exists
   const menuItemsWithDev = devKey
-    ? [
-        ...menuItems,
-        { href: devConsoleUrl, label: 'Dev Console', icon: TerminalSquare }, // opens with key param
-      ]
+    ? [...menuItems, { href: devConsoleUrl, label: 'Dev Console', icon: TerminalSquare }]
     : menuItems;
 
   const handleSaveEntry = (category: string, entry: BibleEntry) => {
     addOrUpdateEntry(category, entry, editingEntry?.entry.title);
     setEditingEntry(null);
     closeModal();
-  }
+  };
 
   const handleAddNewEntry = (category: string) => {
-    setEditingEntry({ category, entry: { title: 'New Entry', fields: [{label: "Description", value: ""}] } });
-  }
+    setEditingEntry({
+      category,
+      entry: { title: 'New Entry', fields: [{ label: 'Description', value: '' }] },
+    });
+  };
 
   const handleAddNewCategory = () => {
     if (newCategory.trim()) {
-        addCategory(newCategory.trim());
-        setNewCategory('');
+      addCategory(newCategory.trim());
+      setNewCategory('');
     }
-  }
+  };
 
   const handleCloseEditor = () => {
     setEditingEntry(null);
     closeModal();
-  }
+  };
 
   const handleSaveChapter = (volumeId: string, chapterId: string, title: string, content: string) => {
     updateChapter(volumeId, chapterId, { title, content });
     closeModal();
     setEditingChapter(null);
   };
-  
+
   if (!authLoaded || !activeWriter) {
     return (
-        <div className="flex h-screen w-full items-center justify-center bg-background">
-            <BatLogo className="w-24 h-12 text-primary animate-pulse" />
-        </div>
-    )
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <BatLogo className="w-24 h-12 text-primary animate-pulse" />
+      </div>
+    );
   }
 
   return (
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-            <div className="flex items-center group-data-[state=expanded]:justify-center group-data-[state=collapsed]:justify-center w-full p-2">
-                 <SidebarTrigger asChild>
-                    <div className="group-data-[state=expanded]:w-32 group-data-[state=expanded]:h-20 group-data-[state=collapsed]:w-6 group-data-[state=collapsed]:h-3 cursor-pointer">
-                        <BatLogo />
-                    </div>
-                 </SidebarTrigger>
-            </div>
+          <div className="flex items-center group-data-[state=expanded]:justify-center group-data-[state=collapsed]:justify-center w-full p-2">
+            <SidebarTrigger asChild>
+              <div className="group-data-[state=expanded]:w-32 group-data-[state=expanded]:h-20 group-data-[state=collapsed]:w-6 group-data-[state=collapsed]:h-3 cursor-pointer">
+                <BatLogo />
+              </div>
+            </SidebarTrigger>
+          </div>
         </SidebarHeader>
+
         <SidebarContent>
-            <SidebarMenu>
-                {menuItemsWithDev
-                  .filter(i => !['/nyxen'].includes(i.href))
-                  .map((item) => (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton
-                        onClick={() => {
-                          // open Dev Console in a new tab; others navigate in-app
-                          if (item.label === 'Dev Console') {
-                            window.open(item.href, '_blank', 'noopener,noreferrer'); // ADDED
-                          } else {
-                            router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href);
-                          }
-                        }}
-                        isActive={item.label !== 'Dev Console' && pathname.startsWith(item.href)}
-                        tooltip={{ children: item.label, side: "right", align: "center" }}
-                      >
-                        <item.icon />
-                        <span>{item.label}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                ))}
-
-                <SidebarMenuItem>
-                    <Sheet>
-                        <SidebarMenuButton asChild tooltip={{ children: "Bible", side: "right", align: "center" }}>
-                            <SheetTrigger asChild>
-                                 <button className="flex w-full items-center gap-2">
-                                    <BookCopy />
-                                    <span>Bible</span>
-                                 </button>
-                             </SheetTrigger>
-                        </SidebarMenuButton>
-                        <SheetContent className="flex flex-col">
-                            <SheetHeader>
-                                <SheetTitle className="font-headline">GOTHAM BIBLE</SheetTitle>
-                            </SheetHeader>
-                            {!bibleLoaded ? (
-                                <div className="space-y-4 mt-4">
-                                    <Skeleton className="h-12 w-full" />
-                                    <Skeleton className="h-12 w-full" />
-                                    <Skeleton className="h-12 w-full" />
-                                </div>
-                            ) : (
-                            <Accordion type="single" collapsible className="w-full mt-4 flex-grow overflow-y-auto">
-                                {bibleData.map(entry => (
-                                    <AccordionItem value={entry.category} key={entry.category}>
-                                        <AccordionTrigger className="font-headline text-base">{entry.category}</AccordionTrigger>
-                                        <AccordionContent>
-                                            <ul className="space-y-2">
-                                                {entry.items.map(item => (
-                                                    <li key={item.title} className="p-2 rounded-md hover:bg-accent cursor-pointer" onClick={() => setEditingEntry({ category: entry.category, entry: item })}>
-                                                        <h4 className="font-bold">{item.title}</h4>
-                                                        <p className="text-sm text-muted-foreground truncate">{item.fields?.[0]?.value || 'No description'}</p>
-                                                    </li>
-                                                ))}
-                                                <li>
-                                                    <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => handleAddNewEntry(entry.category)}>
-                                                        <PlusCircle className="mr-2" /> Add New Entry
-                                                    </Button>
-                                                </li>
-                                            </ul>
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                ))}
-                            </Accordion>
-                            )}
-                            <div className="mt-auto border-t pt-4">
-                                <div className="flex gap-2">
-                                    <Input
-                                        placeholder="New Category Name..."
-                                        value={newCategory}
-                                        onChange={(e) => setNewCategory(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleAddNewCategory()}
-                                    />
-                                    <Button onClick={handleAddNewCategory}>Add</Button>
-                                </div>
-                            </div>
-                        </SheetContent>
-                    </Sheet>
+          <SidebarMenu>
+            {menuItemsWithDev
+              .filter((i) => !['/nyxen'].includes(i.href))
+              .map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    onClick={() => {
+                      if (item.label === 'Dev Console') {
+                        window.open(item.href, '_blank', 'noopener,noreferrer');
+                      } else {
+                        router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href);
+                      }
+                    }}
+                    isActive={item.label !== 'Dev Console' && pathname.startsWith(item.href)}
+                    tooltip={{ children: item.label, side: 'right', align: 'center' }}
+                  >
+                    <item.icon />
+                    <span>{item.label}</span>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
+              ))}
 
-                 <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => setVolumesSidebarOpen(true)} tooltip={{ children: "Volumes", side: "right", align: "center" }}>
-                        <Library />
-                        <span>Volumes</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
+            <SidebarMenuItem>
+              <Sheet>
+                <SidebarMenuButton asChild tooltip={{ children: 'Bible', side: 'right', align: 'center' }}>
+                  <SheetTrigger asChild>
+                    <button className="flex w-full items-center gap-2">
+                      <BookCopy />
+                      <span>Bible</span>
+                    </button>
+                  </SheetTrigger>
+                </SidebarMenuButton>
+                <SheetContent className="flex flex-col">
+                  <SheetHeader>
+                    <SheetTitle className="font-headline">GOTHAM BIBLE</SheetTitle>
+                  </SheetHeader>
 
-                <SidebarMenuItem>
-                    <SidebarMenuButton
-                        onClick={() => router.push('/about')}
-                        isActive={pathname.startsWith('/about')}
-                        tooltip={{ children: 'About', side: "right", align: "center" }}
-                    >
-                        <Info />
-                        <span>About</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
+                  {!bibleLoaded ? (
+                    <div className="space-y-4 mt-4">
+                      <Skeleton className="h-12 w-full" />
+                      <Skeleton className="h-12 w-full" />
+                      <Skeleton className="h-12 w-full" />
+                    </div>
+                  ) : (
+                    <Accordion type="single" collapsible className="w-full mt-4 flex-grow overflow-y-auto">
+                      {bibleData.map((entry) => (
+                        <AccordionItem value={entry.category} key={entry.category}>
+                          <AccordionTrigger className="font-headline text-base">{entry.category}</AccordionTrigger>
+                          <AccordionContent>
+                            <ul className="space-y-2">
+                              {entry.items.map((item) => (
+                                <li
+                                  key={item.title}
+                                  className="p-2 rounded-md hover:bg-accent cursor-pointer"
+                                  onClick={() => setEditingEntry({ category: entry.category, entry: item })}
+                                >
+                                  <h4 className="font-bold">{item.title}</h4>
+                                  <p className="text-sm text-muted-foreground truncate">
+                                    {item.fields?.[0]?.value || 'No description'}
+                                  </p>
+                                </li>
+                              ))}
+                              <li>
+                                <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => handleAddNewEntry(entry.category)}>
+                                  <PlusCircle className="mr-2" /> Add New Entry
+                                </Button>
+                              </li>
+                            </ul>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                  )}
 
-            </SidebarMenu>
+                  <div className="mt-auto border-t pt-4">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="New Category Name..."
+                        value={newCategory}
+                        onChange={(e) => setNewCategory(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddNewCategory()}
+                      />
+                      <Button onClick={handleAddNewCategory}>Add</Button>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
+              <SidebarMenuButton onClick={() => setVolumesSidebarOpen(true)} tooltip={{ children: 'Volumes', side: 'right', align: 'center' }}>
+                <Library />
+                <span>Volumes</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => router.push('/about')}
+                isActive={pathname.startsWith('/about')}
+                tooltip={{ children: 'About', side: 'right', align: 'center' }}
+              >
+                <Info />
+                <span>About</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
         </SidebarContent>
+
         <SidebarFooter>
-            <div className="p-2 border-t border-sidebar-border">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <div role="button" className="flex items-center p-2 rounded-md hover:bg-accent w-full group cursor-pointer">
-                            <div className="flex items-center gap-2">
-                                <Avatar className="h-8 w-8">
-                                    <AvatarImage src={activeWriter?.avatarUrl} alt={activeWriter?.name} data-ai-hint={activeWriter?.dataAiHint} key={activeWriter?.avatarUrl} />
-                                    <AvatarFallback>{activeWriter?.name?.charAt(0) || 'W'}</AvatarFallback>
-                                </Avatar>
-                                <span className="text-sm font-semibold group-data-[state=collapsed]:hidden">{activeWriter?.name || 'The Writer'}</span>
-                            </div>
-                        </div>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56" align="end" forceMount>
-                        <DropdownMenuLabel className="font-normal">
-                          <div className="flex flex-col space-y-1">
-                            <p className="text-sm font-medium leading-none">{activeWriter.name}</p>
-                            <p className="text-xs leading-none text-muted-foreground">
-                              {activeWriter.email}
-                            </p>
-                          </div>
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {/* ADDED: quick Dev Console launcher */}
-                        {devKey && (
-                          <>
-                            <DropdownMenuItem onClick={() => window.open(devConsoleUrl, '_blank', 'noopener,noreferrer')}>
-                              <TerminalSquare className="mr-2" />
-                              Dev Console
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                          </>
-                        )}
-                        <DropdownMenuItem onClick={() => setWriterProfileOpen(true)}>
-                            <User className="mr-2"/>
-                            Profile
-                        </DropdownMenuItem>
-                        <DropdownMenuSub>
-                            <DropdownMenuSubTrigger>
-                                <Globe className="mr-2"/>
-                                Language
-                            </DropdownMenuSubTrigger>
-                            <DropdownMenuPortal>
-                                <DropdownMenuSubContent>
-                                    <DropdownMenuItem onClick={() => setLanguage('en')}>English</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setLanguage('fa')}>فارسی (Farsi)</DropdownMenuItem>
-                                </DropdownMenuSubContent>
-                            </DropdownMenuPortal>
-                        </DropdownMenuSub>
-                        <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
-                            <Settings className="mr-2"/>
-                            Settings
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={logout}>
-                             <LogOut className="mr-2"/>
-                             Logout
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
+          <div className="p-2 border-t border-sidebar-border">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <div role="button" className="flex items-center p-2 rounded-md hover:bg-accent w-full group cursor-pointer">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={activeWriter?.avatarUrl} alt={activeWriter?.name} data-ai-hint={activeWriter?.dataAiHint} key={activeWriter?.avatarUrl} />
+                      <AvatarFallback>{activeWriter?.name?.charAt(0) || 'W'}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-semibold group-data-[state=collapsed]:hidden">{activeWriter?.name || 'The Writer'}</span>
+                  </div>
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{activeWriter.name}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{activeWriter.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+
+                {/* Quick Dev Console launcher */}
+                {devKey && (
+                  <>
+                    <DropdownMenuItem onClick={() => window.open(devConsoleUrl, '_blank', 'noopener,noreferrer')}>
+                      <TerminalSquare className="mr-2" />
+                      Dev Console
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+
+                <DropdownMenuItem onClick={() => setWriterProfileOpen(true)}>
+                  <User className="mr-2" />
+                  Profile
+                </DropdownMenuItem>
+
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Globe className="mr-2" />
+                    Language
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuItem onClick={() => setLanguage('en')}>English</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setLanguage('fa')}>فارسی (Farsi)</DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+
+                <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+                  <Settings className="mr-2" />
+                  Settings
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout}>
+                  <LogOut className="mr-2" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </SidebarFooter>
       </Sidebar>
+
       <SidebarInset>
         <div className="p-4 md:p-6">
-            <AppHeader />
-            {children}
+          <AppHeader />
+          {children}
         </div>
       </SidebarInset>
 
-      <BibleEditor 
+      <BibleEditor
         entry={editingEntry?.entry ?? null}
         category={editingEntry?.category ?? ''}
         onClose={handleCloseEditor}
         onSave={handleSaveEntry}
       />
-      
-      <WriterProfile 
-        isOpen={writerProfileOpen}
-        onClose={() => setWriterProfileOpen(false)}
-      />
 
-      <SettingsDialog
-        isOpen={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        onOpenUserManagement={() => setWriterProfileOpen(true)}
-      />
+      <WriterProfile isOpen={writerProfileOpen} onClose={() => setWriterProfileOpen(false)} />
+
+      <SettingsDialog isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} onOpenUserManagement={() => setWriterProfileOpen(true)} />
 
       <VolumesSidebar open={volumesSidebarOpen} onOpenChange={setVolumesSidebarOpen} />
-      
+
       {editingChapter && volumesLoaded && (
         <ChapterEditor
-            chapter={getChapter(editingChapter.volumeId, editingChapter.chapterId)}
-            volumeId={editingChapter.volumeId}
-            onSave={handleSaveChapter}
-            onClose={() => { closeModal(); setEditingChapter(null); }}
+          chapter={getChapter(editingChapter.volumeId, editingChapter.chapterId)}
+          volumeId={editingChapter.volumeId}
+          onSave={handleSaveChapter}
+          onClose={() => {
+            closeModal();
+            setEditingChapter(null);
+          }}
         />
-       )}
+      )}
     </SidebarProvider>
   );
 }
