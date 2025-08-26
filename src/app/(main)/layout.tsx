@@ -1,5 +1,8 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+
 import {
   SidebarProvider,
   Sidebar,
@@ -12,9 +15,43 @@ import {
   SidebarInset,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
+
 import { BatLogo } from '@/components/bat-logo';
+import { AppHeader } from '@/components/app-header';
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+  DropdownMenuPortal,
+} from '@/components/ui/dropdown-menu';
+
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+
+import { useBible, type BibleEntry } from '@/hooks/use-bible';
+import { useWriters } from '@/hooks/use-writers';
+import { useModalStore } from '@/hooks/use-modal-store';
+import { useVolumes } from '@/hooks/use-volumes';
+import { useTimer } from '@/hooks/use-timer';
+
+import { BibleEditor } from '@/components/bible-editor';
+import { WriterProfile } from '@/components/writer-profile';
+import { SettingsDialog } from '@/components/settings-dialog';
+import { VolumesSidebar } from '@/components/volumes-sidebar';
+import { ChapterEditor } from '@/components/chapter-editor';
+
 import {
   Home,
   PenSquare,
@@ -34,105 +71,66 @@ import {
   Globe,
   User,
   Gamepad2,
-  TerminalSquare,
+  Terminal, // <-- terminal icon
+  PlusCircle,
 } from 'lucide-react';
-import { useRouter, usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { useBible, type BibleEntry } from '@/hooks/use-bible';
-import { BibleEditor } from '@/components/bible-editor';
-import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
-import { AppHeader } from '@/components/app-header';
-import { useWriters } from '@/hooks/use-writers';
-import { WriterProfile } from '@/components/writer-profile';
-import { SettingsDialog } from '@/components/settings-dialog';
-import { PlusCircle } from 'lucide-react';
-import { useModalStore } from '@/hooks/use-modal-store';
-import { VolumesSidebar } from '@/components/volumes-sidebar';
-import { useVolumes } from '@/hooks/use-volumes';
-import { ChapterEditor } from '@/components/chapter-editor';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-  DropdownMenuPortal,
-} from '@/components/ui/dropdown-menu';
-import { useTimer } from '@/hooks/use-timer';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   useTimer();
 
-  // Dev Console URL with key (hidden if not set)
+  // --- Dev Console path (same-tab). Hidden if no key set.
   const devKey = process.env.NEXT_PUBLIC_DEV_CONSOLE_KEY || '';
-  const devConsoleUrl = `/dev/console/studio?key=${encodeURIComponent(devKey)}`;
+  const devConsolePath = `/dev-console${devKey ? `?key=${encodeURIComponent(devKey)}` : ''}`;
 
   // Keyboard shortcut: ⌘/Ctrl + Alt + D
   useEffect(() => {
-    function handler(e: KeyboardEvent) {
-      const meta = e.metaKey || e.ctrlKey;
-      const alt = e.altKey;
-      if (meta && alt && e.key.toLowerCase() === 'd') {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.altKey && e.key.toLowerCase() === 'd') {
         e.preventDefault();
-        if (devKey) {
-          window.open(devConsoleUrl, '_blank', 'noopener,noreferrer');
-        } else {
-          alert('Dev Console key not set (NEXT_PUBLIC_DEV_CONSOLE_KEY).');
-        }
+        if (devKey) router.push(devConsolePath);
+        else alert('Dev Console key not set (NEXT_PUBLIC_DEV_CONSOLE_KEY).');
       }
-    }
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [devKey, devConsoleUrl]);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [devKey, devConsolePath, router]);
 
+  // ---- app data/hooks
   const { isLoaded: bibleLoaded, bibleData, addCategory, addOrUpdateEntry } = useBible();
   const { activeWriter, isLoaded: authLoaded, logout } = useWriters();
   const { modalType, modalData, closeModal } = useModalStore();
+  const { getChapter, updateChapter, isLoaded: volumesLoaded } = useVolumes();
 
+  // ---- local ui state
   const [editingEntry, setEditingEntry] = useState<{ category: string; entry: BibleEntry } | null>(null);
   const [newCategory, setNewCategory] = useState('');
   const [writerProfileOpen, setWriterProfileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [volumesSidebarOpen, setVolumesSidebarOpen] = useState(false);
   const [language, setLanguage] = useState<'en' | 'fa'>('en');
-
-  const { getChapter, updateChapter, isLoaded: volumesLoaded } = useVolumes();
   const [editingChapter, setEditingChapter] = useState<{ volumeId: string; chapterId: string } | null>(null);
 
-  // Keep document dir/lang in sync with selected language
+  // dir/lang sync
   useEffect(() => {
-    if (typeof document !== 'undefined') {
-      document.documentElement.dir = language === 'fa' ? 'rtl' : 'ltr';
-      document.documentElement.lang = language;
-    }
+    document.documentElement.dir = language === 'fa' ? 'rtl' : 'ltr';
+    document.documentElement.lang = language;
   }, [language]);
 
-  // Auth guard (client-side)
+  // client auth guard
   useEffect(() => {
-    if (authLoaded && !activeWriter) {
-      router.push('/auth');
-    }
+    if (authLoaded && !activeWriter) router.push('/auth');
   }, [authLoaded, activeWriter, router]);
 
+  // modal plumbing
   useEffect(() => {
-    if (modalType === 'bible' && modalData?.bible) {
-      setEditingEntry(modalData.bible);
-    }
-    if (modalType === 'chapter' && modalData?.chapter) {
-      setEditingChapter(modalData.chapter);
-    }
+    if (modalType === 'bible' && modalData?.bible) setEditingEntry(modalData.bible);
+    if (modalType === 'chapter' && modalData?.chapter) setEditingChapter(modalData.chapter);
   }, [modalType, modalData]);
 
-  const menuItems = [
+  // --- menu
+  const baseMenu = [
     { href: '/home', label: 'Home', icon: Home },
     { href: '/search', label: 'Search', icon: Search },
     { href: '/editor', label: 'Editor', icon: PenSquare },
@@ -145,43 +143,34 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { href: '/messages', label: 'Messages', icon: MessageSquare },
     { href: '/sources', label: 'Sources', icon: Book },
   ];
+  const menuItems = devKey
+    ? [...baseMenu, { href: devConsolePath, label: 'Dev Console', icon: Terminal }]
+    : baseMenu;
 
-  // Inject Dev Console item only if the key exists
-  const menuItemsWithDev = devKey
-    ? [...menuItems, { href: devConsoleUrl, label: 'Dev Console', icon: TerminalSquare }]
-    : menuItems;
-
+  // --- handlers
   const handleSaveEntry = (category: string, entry: BibleEntry) => {
     addOrUpdateEntry(category, entry, editingEntry?.entry.title);
     setEditingEntry(null);
     closeModal();
   };
-
-  const handleAddNewEntry = (category: string) => {
-    setEditingEntry({
-      category,
-      entry: { title: 'New Entry', fields: [{ label: 'Description', value: '' }] },
-    });
-  };
-
+  const handleAddNewEntry = (category: string) =>
+    setEditingEntry({ category, entry: { title: 'New Entry', fields: [{ label: 'Description', value: '' }] } });
   const handleAddNewCategory = () => {
-    if (newCategory.trim()) {
-      addCategory(newCategory.trim());
-      setNewCategory('');
-    }
+    if (!newCategory.trim()) return;
+    addCategory(newCategory.trim());
+    setNewCategory('');
   };
-
   const handleCloseEditor = () => {
     setEditingEntry(null);
     closeModal();
   };
-
   const handleSaveChapter = (volumeId: string, chapterId: string, title: string, content: string) => {
     updateChapter(volumeId, chapterId, { title, content });
     closeModal();
     setEditingChapter(null);
   };
 
+  // splash while auth loads
   if (!authLoaded || !activeWriter) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -194,9 +183,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <div className="flex items-center group-data-[state=expanded]:justify-center group-data-[state=collapsed]:justify-center w-full p-2">
+          <div className="flex items-center w-full p-2 group-data-[state=expanded]:justify-center group-data-[state=collapsed]:justify-center">
             <SidebarTrigger asChild>
-              <div className="group-data-[state=expanded]:w-32 group-data-[state=expanded]:h-20 group-data-[state=collapsed]:w-6 group-data-[state=collapsed]:h-3 cursor-pointer">
+              <div className="cursor-pointer group-data-[state=expanded]:w-32 group-data-[state=expanded]:h-20 group-data-[state=collapsed]:w-6 group-data-[state=collapsed]:h-3">
                 <BatLogo />
               </div>
             </SidebarTrigger>
@@ -205,18 +194,16 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
         <SidebarContent>
           <SidebarMenu>
-            {menuItemsWithDev
+            {menuItems
               .filter((i) => !['/nyxen'].includes(i.href))
               .map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
-                    onClick={() => {
-                      if (item.label === 'Dev Console') {
-                        window.open(item.href, '_blank', 'noopener,noreferrer');
-                      } else {
-                        router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href);
-                      }
-                    }}
+                    onClick={() =>
+                      item.label === 'Dev Console'
+                        ? router.push(item.href)
+                        : router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href)
+                    }
                     isActive={item.label !== 'Dev Console' && pathname.startsWith(item.href)}
                     tooltip={{ children: item.label, side: 'right', align: 'center' }}
                   >
@@ -226,6 +213,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 </SidebarMenuItem>
               ))}
 
+            {/* Bible sheet */}
             <SidebarMenuItem>
               <Sheet>
                 <SidebarMenuButton asChild tooltip={{ children: 'Bible', side: 'right', align: 'center' }}>
@@ -236,6 +224,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </button>
                   </SheetTrigger>
                 </SidebarMenuButton>
+
                 <SheetContent className="flex flex-col">
                   <SheetHeader>
                     <SheetTitle className="font-headline">GOTHAM BIBLE</SheetTitle>
@@ -267,7 +256,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                                 </li>
                               ))}
                               <li>
-                                <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => handleAddNewEntry(entry.category)}>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full mt-2"
+                                  onClick={() => handleAddNewEntry(entry.category)}
+                                >
                                   <PlusCircle className="mr-2" /> Add New Entry
                                 </Button>
                               </li>
@@ -320,13 +314,21 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <div role="button" className="flex items-center p-2 rounded-md hover:bg-accent w-full group cursor-pointer">
                   <div className="flex items-center gap-2">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={activeWriter?.avatarUrl} alt={activeWriter?.name || 'Writer'} data-ai-hint={activeWriter?.dataAiHint} key={activeWriter?.avatarUrl} />
+                      <AvatarImage
+                        src={activeWriter?.avatarUrl}
+                        alt={activeWriter?.name || 'Writer'}
+                        data-ai-hint={activeWriter?.dataAiHint}
+                        key={activeWriter?.avatarUrl}
+                      />
                       <AvatarFallback>{activeWriter?.name?.charAt(0) || 'W'}</AvatarFallback>
                     </Avatar>
-                    <span className="text-sm font-semibold group-data-[state=collapsed]:hidden">{activeWriter?.name || 'The Writer'}</span>
+                    <span className="text-sm font-semibold group-data-[state=collapsed]:hidden">
+                      {activeWriter?.name || 'The Writer'}
+                    </span>
                   </div>
                 </div>
               </DropdownMenuTrigger>
+
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
@@ -336,11 +338,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
 
-                {/* Quick Dev Console launcher */}
                 {devKey && (
                   <>
-                    <DropdownMenuItem onClick={() => window.open(devConsoleUrl, '_blank', 'noopener,noreferrer')}>
-                      <TerminalSquare className="mr-2" />
+                    <DropdownMenuItem onClick={() => router.push(devConsolePath)}>
+                      <Terminal className="mr-2" />
                       Dev Console
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -397,7 +398,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
       <WriterProfile isOpen={writerProfileOpen} onClose={() => setWriterProfileOpen(false)} />
 
-      <SettingsDialog isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} onOpenUserManagement={() => setWriterProfileOpen(true)} />
+      <SettingsDialog
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onOpenUserManagement={() => setWriterProfileOpen(true)}
+      />
 
       <VolumesSidebar open={volumesSidebarOpen} onOpenChange={setVolumesSidebarOpen} />
 
