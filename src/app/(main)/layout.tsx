@@ -36,7 +36,7 @@ import {
   Gamepad2,
   TerminalSquare,
 } from 'lucide-react';
-import { useRouter, usePathname } from 'next/navigation'; // <-- removed `redirect` import
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -119,7 +119,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   // Auth guard (client-side)
   useEffect(() => {
     if (authLoaded && !activeWriter) {
-      router.push('/auth'); // <-- use router.push on client
+      router.push('/auth');
     }
   }, [authLoaded, activeWriter, router]);
 
@@ -320,7 +320,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <div role="button" className="flex items-center p-2 rounded-md hover:bg-accent w-full group cursor-pointer">
                   <div className="flex items-center gap-2">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={activeWriter?.avatarUrl} alt={activeWriter?.name} data-ai-hint={activeWriter?.dataAiHint} key={activeWriter?.avatarUrl} />
+                      <AvatarImage src={activeWriter?.avatarUrl} alt={activeWriter?.name || 'Writer'} data-ai-hint={activeWriter?.dataAiHint} key={activeWriter?.avatarUrl} />
                       <AvatarFallback>{activeWriter?.name?.charAt(0) || 'W'}</AvatarFallback>
                     </Avatar>
                     <span className="text-sm font-semibold group-data-[state=collapsed]:hidden">{activeWriter?.name || 'The Writer'}</span>
@@ -330,8 +330,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{activeWriter.name}</p>
-                    <p className="text-xs leading-none text-muted-foreground">{activeWriter.email}</p>
+                    <p className="text-sm font-medium leading-none">{activeWriter?.name || 'The Writer'}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{activeWriter?.email || ''}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -415,4 +415,3 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     </SidebarProvider>
   );
 }
-
