@@ -7,9 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import {
   Paperclip, Undo2, Send, Search, FileText, Folder,
-  ChevronRight, ChevronDown, Play, GitCommitVertical,
+  ChevronRight, ChevronDown, Play, GitCommitVertical, X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// ---- Env / endpoints ----
+const AI_BASE = process.env.NEXT_PUBLIC_DEV_RUNNER_URL || '';           // e.g. https://your-runner.up.railway.app
+const DEV_KEY = process.env.NEXT_PUBLIC_DEV_CONSOLE_KEY || '';          // must match your runner’s check
 
 // ---- Types ----
 type ChatMsg = { role: 'user' | 'assistant' | 'system'; content: string; ts: number };
@@ -33,17 +37,21 @@ export default function DevConsolePage() {
   const [activeTab, setActiveTab] = useState<'chat'|'editor'|'terminal'>('chat');
 
   // Preview
-  const [preview, setPreview] = useState(''); const [previewOpen, setPreviewOpen] = useState(true);
+  const [preview, setPreview] = useState('');
+  const [previewOpen, setPreviewOpen] = useState(true);
 
   // Chat
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [activeThreadId, setActiveThreadId] = useState('');
   const [draft, setDraft] = useState('');
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]); // <— NEW
+  const [sending, setSending] = useState(false);                // <— NEW
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
   // Editor (UI stub)
-  const [openPath, setOpenPath] = useState(''); const [openContent, setOpenContent] = useState('');
+  const [openPath, setOpenPath] = useState('');
+  const [openContent, setOpenContent] = useState('');
   const [unsaved, setUnsaved] = useState(false);
 
   // Terminal (sim)
@@ -84,108 +92,100 @@ export default function DevConsolePage() {
     const next = [t, ...threads]; setThreads(next); saveThreads(next);
     setActiveThreadId(t.id); localStorage.setItem(LS_ACTIVE_THREAD, t.id);
   };
-const sendChat = async (text: string) => {
-  if (!text.trim() || !activeThread) return;
 
-  // push the user message immediately (optimistic UI)
-  const user: ChatMsg = { role: 'user', content: text.trim(), ts: Date.now() };
-  const optimistic = threads.map(t =>
-    t.id === activeThread.id ? { ...t, messages: [...t.messages, user] } : t
-  );
-  setThreads(optimistic); saveThreads(optimistic); setDraft('');
-
-  try {
-    const res = await fetch(`${AI_BASE}/api/ai`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: DEV_KEY, message: text.trim() }),
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err?.error || `HTTP ${res.status}`);
+  const sendChat = async (text: string) => {
+    if (!text.trim() || !activeThread || !AI_BASE || !DEV_KEY) {
+      // still store locally so the UI doesn't feel blocked, but also warn if misconfigured
+      if (!AI_BASE || !DEV_KEY) {
+        const aiWarn: ChatMsg = { role: 'assistant', ts: Date.now()+1, content: '⚠️ Runner URL or KEY missing. Set NEXT_PUBLIC_DEV_RUNNER_URL and NEXT_PUBLIC_DEV_CONSOLE_KEY.' };
+        const nextLocal = threads.map(t => t.id===activeThread.id ? { ...t, messages:[...t.messages, aiWarn] } : t);
+        setThreads(nextLocal); saveThreads(nextLocal);
+      }
+      return;
     }
 
-    const data = await res.json();
-    const ai: ChatMsg = {
-      role: 'assistant',
-      content: data.reply ?? '(no reply)',
-      ts: Date.now() + 1,
-    };
+    setSending(true);
 
-    const next = threads.map(t =>
-      t.id === activeThread.id ? { ...t, messages: [...t.messages, user, ai] } : t
+    // push the user message immediately (optimistic UI)
+    const user: ChatMsg = { role: 'user', content: text.trim(), ts: Date.now() };
+    const optimistic = threads.map(t =>
+      t.id === activeThread.id ? { ...t, messages: [...t.messages, user] } : t
     );
-    setThreads(next); saveThreads(next);
-  } catch (e: any) {
-    const aiErr: ChatMsg = {
-      role: 'assistant',
-      content: `⚠️ AI request failed: ${e?.message ?? e}`,
-      ts: Date.now() + 1,
-    };
-    const next = threads.map(t =>
-      t.id === activeThread.id ? { ...t, messages: [...t.messages, aiErr] } : t
-    );
-    setThreads(next); saveThreads(next);
-  }
-};
+    setThreads(optimistic); saveThreads(optimistic); setDraft('');
 
+    try {
+      let res: Response;
 
-  // push the user message immediately (optimistic UI)
-  const user: ChatMsg = { role: 'user', content: text.trim(), ts: Date.now() };
-  const optimistic = threads.map(t =>
-    t.id === activeThread.id ? { ...t, messages: [...t.messages, user] } : t
-  );
-  setThreads(optimistic); saveThreads(optimistic); setDraft('');
+      if (pendingFiles.length > 0) {
+        // multipart with files
+        const form = new FormData();
+        form.set('key', DEV_KEY);
+        form.set('message', text.trim());
+        // include thread id so backend can thread if it wants
+        form.set('threadId', activeThread.id);
+        pendingFiles.forEach((f, idx) => form.append('files', f, f.name || `file-${idx}`));
 
-  try {
-    const res = await fetch(`${AI_BASE}/api/ai`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: DEV_KEY, message: text.trim() }),
-    });
+        res = await fetch(`${AI_BASE}/api/ai`, { method: 'POST', body: form });
+      } else {
+        // JSON payload
+        res = await fetch(`${AI_BASE}/api/ai`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: DEV_KEY, message: text.trim(), threadId: activeThread.id }),
+        });
+      }
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err?.error || `HTTP ${res.status}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      const ai: ChatMsg = {
+        role: 'assistant',
+        content: data.reply ?? '(no reply)',
+        ts: Date.now() + 1,
+      };
+
+      // clear attachments on success
+      setPendingFiles([]);
+
+      const next = (cur: ChatThread[]) =>
+        cur.map(t => t.id === activeThread.id ? { ...t, messages: [...t.messages, ai] } : t);
+
+      setThreads(next); saveThreads(next(threads));
+    } catch (e: any) {
+      const aiErr: ChatMsg = {
+        role: 'assistant',
+        content: `⚠️ AI request failed: ${e?.message ?? e}`,
+        ts: Date.now() + 1,
+      };
+      const next = threads.map(t =>
+        t.id === activeThread.id ? { ...t, messages: [...t.messages, aiErr] } : t
+      );
+      setThreads(next); saveThreads(next);
+    } finally {
+      setSending(false);
     }
+  };
 
-    const data = await res.json();
-    const ai: ChatMsg = {
-      role: 'assistant',
-      content: data.reply ?? '(no reply)',
-      ts: Date.now() + 1,
-    };
-
-    const next = threads.map(t =>
-      t.id === activeThread.id ? { ...t, messages: [...t.messages, user, ai] } : t
-    );
-    setThreads(next); saveThreads(next);
-  } catch (e: any) {
-    const aiErr: ChatMsg = {
-      role: 'assistant',
-      content: `⚠️ AI request failed: ${e?.message ?? e}`,
-      ts: Date.now() + 1,
-    };
-    const next = threads.map(t =>
-      t.id === activeThread.id ? { ...t, messages: [...t.messages, aiErr] } : t
-    );
-    setThreads(next); saveThreads(next);
-  }
-};
   const undoLast = () => {
     if (!activeThread) return;
-    const msgs = [...activeThread.messages]; if (!msgs.length) return;
+    const msgs = [...activeThread.messages];
+    if (!msgs.length) return;
     const nextThread = { ...activeThread, messages: msgs.slice(0, msgs.length - 1) };
     const next = threads.map(t => t.id===activeThread.id ? nextThread : t);
     setThreads(next); saveThreads(next);
   };
+
   const attachFiles = (fl: FileList | null) => {
-    if (!fl?.length || !activeThread) return;
-    const names = Array.from(fl).map(f=>f.name).join(', ');
-    const note: ChatMsg = { role:'user', content:`Attached: ${names}`, ts: Date.now() };
-    const next = threads.map(t => t.id===activeThread.id ? { ...t, messages:[...t.messages, note] } : t);
-    setThreads(next); saveThreads(next);
+    if (!fl?.length) return;
+    // add to pending files (not sent yet)
+    setPendingFiles(prev => [...prev, ...Array.from(fl)]);
+  };
+
+  const removePending = (idx: number) => {
+    setPendingFiles(prev => prev.filter((_, i) => i !== idx));
   };
 
   // Editor actions (stub)
@@ -264,24 +264,59 @@ const sendChat = async (text: string) => {
                             ))
                           : <div className="p-3 text-sm opacity-70">Start a conversation. I can propose code edits, diffs, and terminal commands.</div>}
                       </div>
+
+                      {/* pending file chips */}
+                      {!!pendingFiles.length && (
+                        <div className="border-t border-white/10 px-2 pt-2 flex flex-wrap gap-2">
+                          {pendingFiles.map((f, i)=>(
+                            <span key={i} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-amber-500/50 text-amber-300">
+                              {f.name}
+                              <button onClick={()=>removePending(i)} className="opacity-70 hover:opacity-100">
+                                <X className="h-3 w-3" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
                       <div className="border-t border-white/10 p-2 flex items-center gap-2">
-                        <Button variant="ghost" className="text-amber-400 hover:text-amber-300" onClick={()=>fileInputRef.current?.click()} title="Attach files">
+                        <Button
+                          variant="ghost"
+                          className="text-amber-400 hover:text-amber-300"
+                          onClick={()=>fileInputRef.current?.click()}
+                          title="Attach files"
+                        >
                           <Paperclip className="h-4 w-4" />
                         </Button>
-                        <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e)=>attachFiles(e.target.files)} />
-                        <Button variant="ghost" className="text-amber-400 hover:text-amber-300" onClick={undoLast} title="Undo last">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          multiple
+                          className="hidden"
+                          onChange={(e)=>attachFiles(e.target.files)}
+                          // Accept anything; tighten if desired: accept="image/*,.pdf,.txt,.md,.json,.ts,.tsx,.js"
+                        />
+                        <Button
+                          variant="ghost"
+                          className="text-amber-400 hover:text-amber-300"
+                          onClick={undoLast}
+                          title="Undo last"
+                        >
                           <Undo2 className="h-4 w-4" />
                         </Button>
                         <Input
-                          value={draft} onChange={(e)=>setDraft(e.target.value)}
-                          onKeyDown={(e)=>e.key==='Enter' && sendChat(draft)}
-                          placeholder="Ask the Bat Computer to modify the app…" className="flex-1"
+                          value={draft}
+                          onChange={(e)=>setDraft(e.target.value)}
+                          onKeyDown={(e)=>e.key==='Enter' && !sending && sendChat(draft)}
+                          placeholder="Ask the Bat Computer to modify the app…"
+                          className="flex-1"
                         />
-                        <Button onClick={()=>sendChat(draft)}>
-                          <Send className="h-4 w-4 mr-1" /> Send
+                        <Button onClick={()=>sendChat(draft)} disabled={sending || !draft.trim()}>
+                          <Send className="h-4 w-4 mr-1" /> {sending ? 'Sending…' : 'Send'}
                         </Button>
                       </div>
                     </div>
+
                     {/* Threads */}
                     <div className="col-span-12 lg:col-span-4">
                       <div className="p-3 space-y-2">
