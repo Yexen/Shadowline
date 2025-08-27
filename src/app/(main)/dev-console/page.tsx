@@ -84,8 +84,52 @@ export default function DevConsolePage() {
     const next = [t, ...threads]; setThreads(next); saveThreads(next);
     setActiveThreadId(t.id); localStorage.setItem(LS_ACTIVE_THREAD, t.id);
   };
-  const sendChat = async (text: string) => {
+const sendChat = async (text: string) => {
   if (!text.trim() || !activeThread) return;
+
+  // push the user message immediately (optimistic UI)
+  const user: ChatMsg = { role: 'user', content: text.trim(), ts: Date.now() };
+  const optimistic = threads.map(t =>
+    t.id === activeThread.id ? { ...t, messages: [...t.messages, user] } : t
+  );
+  setThreads(optimistic); saveThreads(optimistic); setDraft('');
+
+  try {
+    const res = await fetch(`${AI_BASE}/api/ai`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: DEV_KEY, message: text.trim() }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    const ai: ChatMsg = {
+      role: 'assistant',
+      content: data.reply ?? '(no reply)',
+      ts: Date.now() + 1,
+    };
+
+    const next = threads.map(t =>
+      t.id === activeThread.id ? { ...t, messages: [...t.messages, user, ai] } : t
+    );
+    setThreads(next); saveThreads(next);
+  } catch (e: any) {
+    const aiErr: ChatMsg = {
+      role: 'assistant',
+      content: `⚠️ AI request failed: ${e?.message ?? e}`,
+      ts: Date.now() + 1,
+    };
+    const next = threads.map(t =>
+      t.id === activeThread.id ? { ...t, messages: [...t.messages, aiErr] } : t
+    );
+    setThreads(next); saveThreads(next);
+  }
+};
+
 
   // push the user message immediately (optimistic UI)
   const user: ChatMsg = { role: 'user', content: text.trim(), ts: Date.now() };
