@@ -84,14 +84,51 @@ export default function DevConsolePage() {
     const next = [t, ...threads]; setThreads(next); saveThreads(next);
     setActiveThreadId(t.id); localStorage.setItem(LS_ACTIVE_THREAD, t.id);
   };
-  const sendChat = (text: string) => {
-    if (!text.trim() || !activeThread) return;
-    const user: ChatMsg = { role:'user', content:text.trim(), ts: Date.now() };
-    const ai: ChatMsg = { role:'assistant', ts:Date.now()+1,
-      content:`🤖 (demo) I’ll plan file edits & diffs here. Connect me to /api/ai/devchat to go live.` };
-    const next = threads.map(t => t.id===activeThread.id ? { ...t, messages:[...t.messages, user, ai] } : t);
-    setThreads(next); saveThreads(next); setDraft('');
-  };
+  const sendChat = async (text: string) => {
+  if (!text.trim() || !activeThread) return;
+
+  // push the user message immediately (optimistic UI)
+  const user: ChatMsg = { role: 'user', content: text.trim(), ts: Date.now() };
+  const optimistic = threads.map(t =>
+    t.id === activeThread.id ? { ...t, messages: [...t.messages, user] } : t
+  );
+  setThreads(optimistic); saveThreads(optimistic); setDraft('');
+
+  try {
+    const res = await fetch(`${AI_BASE}/api/ai`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: DEV_KEY, message: text.trim() }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    const ai: ChatMsg = {
+      role: 'assistant',
+      content: data.reply ?? '(no reply)',
+      ts: Date.now() + 1,
+    };
+
+    const next = threads.map(t =>
+      t.id === activeThread.id ? { ...t, messages: [...t.messages, user, ai] } : t
+    );
+    setThreads(next); saveThreads(next);
+  } catch (e: any) {
+    const aiErr: ChatMsg = {
+      role: 'assistant',
+      content: `⚠️ AI request failed: ${e?.message ?? e}`,
+      ts: Date.now() + 1,
+    };
+    const next = threads.map(t =>
+      t.id === activeThread.id ? { ...t, messages: [...t.messages, aiErr] } : t
+    );
+    setThreads(next); saveThreads(next);
+  }
+};
   const undoLast = () => {
     if (!activeThread) return;
     const msgs = [...activeThread.messages]; if (!msgs.length) return;
