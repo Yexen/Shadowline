@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,11 +11,18 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// ---- Env / endpoints ----
-const AI_BASE = process.env.NEXT_PUBLIC_DEV_RUNNER_URL || '';           // e.g. https://runner.up.railway.app
-const DEV_KEY = process.env.NEXT_PUBLIC_DEV_CONSOLE_KEY || '';          // must match runner
+// ---------- Local API endpoints (your existing routes) ----------
+const API = {
+  ls: '/api/repo/ls',
+  read: '/api/repo/read',
+  write: '/api/repo/write',
+  preview: '/api/repo/preview',     // keep if you add later; safe no-op otherwise
+  commit: '/api/repo/commit',       // keep if you add later; safe no-op otherwise
+  chatUpload: '/api/ai/chat',       // accepts multipart (files)
+  devchat: '/api/ai/devchat',       // repo-aware JSON chat
+};
 
-// ---- Types ----
+// ---------- Types ----------
 type ChatMsg = { role: 'user' | 'assistant' | 'system'; content: string; ts: number };
 type ChatThread = { id: string; title: string; messages: ChatMsg[] };
 const LS_THREADS_KEY = 'devconsole_threads_v1';
@@ -23,12 +30,48 @@ const LS_ACTIVE_THREAD = 'devconsole_active_thread_v1';
 
 type FsItem = { name: string; path: string; type: 'dir' | 'file'; children?: FsItem[] };
 
-// ---- Helpers ----
+// ---------- Helpers ----------
 const uid = (p='id') => `${p}_${Math.random().toString(36).slice(2,10)}`;
 const loadThreads = (): ChatThread[] => {
   try { return JSON.parse(localStorage.getItem(LS_THREADS_KEY) || '[]'); } catch { return []; }
 };
 const saveThreads = (t: ChatThread[]) => localStorage.setItem(LS_THREADS_KEY, JSON.stringify(t));
+
+// Build a tree from a flat list of file paths, safely
+function buildTree(paths: string[]): FsItem[] {
+  const root: Record<string, any> = {};
+  (paths || []).forEach((p) => {
+    if (!p || typeof p !== 'string') return;
+    const segs = p.replace(/^\/+/, '').split('/').filter(Boolean);
+    let cur = root;
+    segs.forEach((seg, i) => {
+      cur[seg] = cur[seg] || { __children: {}, __file: false };
+      if (i === segs.length - 1) cur[seg].__file = true;
+      cur = cur[seg].__children;
+    });
+  });
+
+  const toItems = (node: Record<string, any>, base = ''): FsItem[] =>
+    Object.keys(node || {}).sort((a,b)=>a.localeCompare(b)).map((name) => {
+      const n = node[name] || {};
+      const hasKids = n.__children && Object.keys(n.__children).length > 0;
+      const full = base ? `${base}/${name}` : name;
+      if (n.__file && !hasKids) return { name, path: `/${full}`, type: 'file' };
+      return {
+        name,
+        path: `/${full}`,
+        type: 'dir',
+        children: toItems(n.__children || {}, full),
+      };
+    });
+
+  return [{
+    name: process.env.NEXT_PUBLIC_REPO_NAME || 'repo',
+    path: '/',
+    type: 'dir',
+    children: toItems(root),
+  }];
+}
 
 export default function DevConsolePage() {
   // global/search
@@ -51,10 +94,11 @@ export default function DevConsolePage() {
   // Editor
   const [openPath, setOpenPath] = useState('');
   const [openContent, setOpenContent] = useState('');
+  const [openSha, setOpenSha] = useState<string | undefined>(undefined);
   const [unsaved, setUnsaved] = useState(false);
   const [busyEditor, setBusyEditor] = useState(false);
 
-  // Terminal
+  // Terminal (local sim for now)
   const [termLog, setTermLog] = useState<string[]>(['Bat Computer CLI v1.0. Type "help" for commands.']);
   const [termDraft, setTermDraft] = useState('');
   const [termBusy, setTermBusy] = useState(false);
@@ -63,7 +107,7 @@ export default function DevConsolePage() {
   const [tree, setTree] = useState<FsItem[] | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ '/': true });
 
-  // ---- Boot: chats and FS tree ----
+  // ---------- Boot: chats ----------
   useEffect(() => {
     const t = loadThreads();
     if (t.length === 0) {
@@ -79,44 +123,29 @@ export default function DevConsolePage() {
   }, []);
   useEffect(() => { chatScrollRef.current?.scrollTo({ top: 9e9 }); }, [threads, activeThreadId]);
 
-  // Load FS tree from runner (fallback to stub if fails)
+  // ---------- Boot: file tree from /api/repo/ls ----------
   useEffect(() => {
-    let cancelled = false;
+    let stop = false;
     (async () => {
-      if (!AI_BASE || !DEV_KEY) {
-        // fallback stub
-        setTree([{
-          name: 'shadows-of-gotham', path: '/', type: 'dir',
-          children: [
-            { name: 'src', path: '/src', type: 'dir', children: [{ name: 'app', path: '/src/app', type: 'dir' }]},
-            { name: 'public', path: '/public', type: 'dir' },
-            { name: 'next.config.ts', path: '/next.config.ts', type: 'file' },
-          ],
-        }]);
-        return;
-      }
       try {
-        const res = await fetch(`${AI_BASE}/api/fs/tree?key=${encodeURIComponent(DEV_KEY)}`, { cache: 'no-store' });
-        if (!res.ok) throw new Error(`Tree HTTP ${res.status}`);
-        const json = await res.json();
-        if (!cancelled) setTree(json.tree || json || []);
+        const res = await fetch(API.ls, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`ls HTTP ${res.status}`);
+        const data = await res.json();
+        const files: string[] = Array.isArray(data?.files) ? data.files : Array.isArray(data) ? data : [];
+        if (!stop) setTree(buildTree(files));
       } catch (e:any) {
-        if (!cancelled) {
-          setTree([{
-            name: 'workspace', path: '/', type: 'dir',
-            children: [{ name: 'README.md', path: '/README.md', type: 'file' }],
-          }]);
-          setPreview(`⚠️ Could not load file tree: ${e?.message ?? e}`);
-          setPreviewOpen(true);
+        if (!stop) {
+          setTree([{ name: 'error (tree)', path: '/', type: 'dir', children: [] }]);
+          setPreview(`⚠️ Could not load file tree: ${e?.message ?? e}`); setPreviewOpen(true);
         }
       }
     })();
-    return () => { cancelled = true; };
+    return () => { stop = true; };
   }, []);
 
   const activeThread = threads.find(t => t.id === activeThreadId)!;
 
-  // ---- Chat actions ----
+  // ---------- Chat actions ----------
   const newThread = () => {
     const t = { id: uid('thread'), title: 'New chat', messages: [] } as ChatThread;
     const next = [t, ...threads]; setThreads(next); saveThreads(next);
@@ -125,17 +154,9 @@ export default function DevConsolePage() {
 
   const sendChat = async (text: string) => {
     if (!text.trim() || !activeThread) return;
-
-    if (!AI_BASE || !DEV_KEY) {
-      const warn: ChatMsg = { role: 'assistant', ts: Date.now()+1, content: '⚠️ Set NEXT_PUBLIC_DEV_RUNNER_URL and NEXT_PUBLIC_DEV_CONSOLE_KEY.' };
-      const nextWarn = threads.map(t => t.id===activeThread.id ? { ...t, messages:[...t.messages, warn] } : t);
-      setThreads(nextWarn); saveThreads(nextWarn);
-      return;
-    }
-
     setSending(true);
 
-    // optimistic user message
+    // optimistic user
     const user: ChatMsg = { role: 'user', content: text.trim(), ts: Date.now() };
     const optimistic = threads.map(t =>
       t.id === activeThread.id ? { ...t, messages: [...t.messages, user] } : t
@@ -143,33 +164,40 @@ export default function DevConsolePage() {
     setThreads(optimistic); saveThreads(optimistic); setDraft('');
 
     try {
-      let res: Response;
+      let aiReply = '';
 
       if (pendingFiles.length > 0) {
+        // multipart upload to /api/ai/chat
         const form = new FormData();
-        form.set('key', DEV_KEY);
         form.set('message', text.trim());
         form.set('threadId', activeThread.id);
         pendingFiles.forEach((f, i) => form.append('files', f, f.name || `file-${i}`));
-        res = await fetch(`${AI_BASE}/api/ai`, { method: 'POST', body: form });
+        const up = await fetch(API.chatUpload, { method: 'POST', body: form });
+        if (!up.ok) throw new Error(`chat upload HTTP ${up.status}`);
+        const jd = await up.json();
+        aiReply = jd.reply ?? '(no reply)';
+        setPendingFiles([]);
       } else {
-        res = await fetch(`${AI_BASE}/api/ai`, {
+        // repo-aware dev chat with context
+        const r = await fetch(API.devchat, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key: DEV_KEY, message: text.trim(), threadId: activeThread.id }),
+          body: JSON.stringify({
+            message: text.trim(),
+            context: openPath ? { openPath, openContent } : undefined,
+            threadId: activeThread.id,
+          }),
         });
+        if (!r.ok) throw new Error(`devchat HTTP ${r.status}`);
+        const jd = await r.json();
+        aiReply = jd.reply ?? '(no reply)';
       }
 
-      if (!res.ok) throw new Error(`AI HTTP ${res.status}`);
-
-      const data = await res.json();
-      const ai: ChatMsg = { role: 'assistant', content: data.reply ?? '(no reply)', ts: Date.now()+1 };
-
-      setPendingFiles([]); // clear on success
+      const ai: ChatMsg = { role: 'assistant', content: aiReply, ts: Date.now()+1 };
       const next = threads.map(t => t.id===activeThread.id ? { ...t, messages:[...t.messages, ai] } : t);
       setThreads(next); saveThreads(next);
     } catch (e:any) {
-      const aiErr: ChatMsg = { role: 'assistant', content:`⚠️ AI request failed: ${e?.message ?? e}`, ts: Date.now()+1 };
+      const aiErr: ChatMsg = { role: 'assistant', content:`⚠️ Chat failed: ${e?.message ?? e}`, ts: Date.now()+1 };
       const next = threads.map(t => t.id===activeThread.id ? { ...t, messages:[...t.messages, aiErr] } : t);
       setThreads(next); saveThreads(next);
     } finally {
@@ -191,26 +219,26 @@ export default function DevConsolePage() {
   };
   const removePending = (idx: number) => setPendingFiles(prev => prev.filter((_, i) => i !== idx));
 
-  // ---- Editor actions (wired) ----
+  // ---------- Editor actions (wired to /api/repo/*) ----------
   const openFile = async (p: string) => {
     if (!p) return;
     setActiveTab('editor');
     setBusyEditor(true);
     try {
-      if (!AI_BASE || !DEV_KEY) throw new Error('Runner/key not set');
-      const res = await fetch(`${AI_BASE}/api/repo/open?path=${encodeURIComponent(p)}&key=${encodeURIComponent(DEV_KEY)}`, {
-        cache: 'no-store',
+      const res = await fetch(API.read, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: p }),
       });
-      if (!res.ok) throw new Error(`open HTTP ${res.status}`);
+      if (!res.ok) throw new Error(`read HTTP ${res.status}`);
       const json = await res.json();
       setOpenPath(json.path || p);
       setOpenContent(json.content ?? '');
+      setOpenSha(json.sha);         // keep sha if your API returns it
       setUnsaved(false);
-      setPreview(`Opened ${json.path || p}`);
-      setPreviewOpen(true);
+      setPreview(`Opened ${json.path || p}`); setPreviewOpen(true);
     } catch (e:any) {
-      setPreview(`⚠️ Open failed: ${e?.message ?? e}`);
-      setPreviewOpen(true);
+      setPreview(`⚠️ Open failed: ${e?.message ?? e}`); setPreviewOpen(true);
     } finally {
       setBusyEditor(false);
     }
@@ -220,20 +248,23 @@ export default function DevConsolePage() {
     if (!openPath) return;
     setBusyEditor(true);
     try {
-      if (!AI_BASE || !DEV_KEY) throw new Error('Runner/key not set');
-      const res = await fetch(`${AI_BASE}/api/repo/save`, {
+      const res = await fetch(API.write, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: DEV_KEY, path: openPath, content: openContent }),
+        body: JSON.stringify({
+          path: openPath,
+          content: openContent,
+          sha: openSha,
+          message: `dev-console: update ${openPath}`,
+        }),
       });
-      if (!res.ok) throw new Error(`save HTTP ${res.status}`);
+      if (!res.ok) throw new Error(`write HTTP ${res.status}`);
       const json = await res.json();
       setUnsaved(false);
-      setPreview(`Saved ${json.path || openPath}`);
-      setPreviewOpen(true);
+      if (json.sha) setOpenSha(json.sha);
+      setPreview(`✅ Saved ${json.path || openPath}`); setPreviewOpen(true);
     } catch (e:any) {
-      setPreview(`⚠️ Save failed: ${e?.message ?? e}`);
-      setPreviewOpen(true);
+      setPreview(`❌ Save failed: ${e?.message ?? e}`); setPreviewOpen(true);
     } finally {
       setBusyEditor(false);
     }
@@ -242,23 +273,19 @@ export default function DevConsolePage() {
   const execPreview = async () => {
     setBusyEditor(true);
     try {
-      if (!AI_BASE || !DEV_KEY) throw new Error('Runner/key not set');
-      const res = await fetch(`${AI_BASE}/api/repo/preview`, {
+      const res = await fetch(API.preview, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          key: DEV_KEY,
           path: openPath || null,
           content: openPath ? openContent : null,
         }),
       });
       if (!res.ok) throw new Error(`preview HTTP ${res.status}`);
       const json = await res.json();
-      setPreview(json.output || '(no preview output)');
-      setPreviewOpen(true);
+      setPreview(json.output || '(no preview output)'); setPreviewOpen(true);
     } catch (e:any) {
-      setPreview(`⚠️ Preview failed: ${e?.message ?? e}`);
-      setPreviewOpen(true);
+      setPreview(`⚠️ Preview failed: ${e?.message ?? e}`); setPreviewOpen(true);
     } finally {
       setBusyEditor(false);
     }
@@ -267,47 +294,35 @@ export default function DevConsolePage() {
   const commitChanges = async () => {
     setBusyEditor(true);
     try {
-      if (!AI_BASE || !DEV_KEY) throw new Error('Runner/key not set');
-      const res = await fetch(`${AI_BASE}/api/repo/commit`, {
+      const res = await fetch(API.commit, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          key: DEV_KEY,
-          message: `BatConsole commit ${new Date().toISOString()}`,
-        }),
+        body: JSON.stringify({ message: `BatConsole commit ${new Date().toISOString()}` }),
       });
       if (!res.ok) throw new Error(`commit HTTP ${res.status}`);
       const json = await res.json();
-      setPreview(json.result || 'Committed.');
-      setPreviewOpen(true);
+      setPreview(json.result || 'Committed.'); setPreviewOpen(true);
     } catch (e:any) {
-      setPreview(`⚠️ Commit failed: ${e?.message ?? e}`);
-      setPreviewOpen(true);
+      setPreview(`⚠️ Commit failed: ${e?.message ?? e}`); setPreviewOpen(true);
     } finally {
       setBusyEditor(false);
     }
   };
 
-  // ---- Terminal actions (wired) ----
+  // ---------- Terminal (local demo) ----------
   const runTerm = async (cmd: string) => {
     if (!cmd.trim()) return;
     setTermLog(l => [...l, `❯ ${cmd}`]);
     setTermDraft('');
-    if (!AI_BASE || !DEV_KEY) {
-      setTermLog(l => [...l, '⚠️ Set NEXT_PUBLIC_DEV_RUNNER_URL and NEXT_PUBLIC_DEV_CONSOLE_KEY']);
-      return;
-    }
     setTermBusy(true);
     try {
-      const res = await fetch(`${AI_BASE}/api/term`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: DEV_KEY, cmd }),
-      });
-      const text = res.ok ? await res.text() : `term HTTP ${res.status}`;
-      setTermLog(l => [...l, text || '(no output)']);
-    } catch (e:any) {
-      setTermLog(l => [...l, `⚠️ ${e?.message ?? e}`]);
+      const out =
+        cmd === 'help' ? 'commands: help, ls, build, deploy'
+        : cmd === 'ls' ? 'src  public  next.config.ts'
+        : cmd === 'build' ? 'Building… (demo)'
+        : cmd === 'deploy' ? 'Triggering deploy… (demo)'
+        : `Unknown command: ${cmd}`;
+      setTermLog(l => [...l, out]);
     } finally {
       setTermBusy(false);
     }
@@ -528,7 +543,7 @@ export default function DevConsolePage() {
   );
 }
 
-// ---- Explorer Tree ----
+// ---------- Explorer Tree ----------
 function ExplorerTree({
   nodes, expanded, onToggle, onOpenFile, depth = 0,
 }: {
@@ -539,7 +554,7 @@ function ExplorerTree({
   depth?: number;
 }) {
   if (!nodes?.length) {
-    return <div className="text-xs opacity-60 px-3 py-2">No files (yet). Make sure your runner exposes /api/fs/tree.</div>;
+    return <div className="text-xs opacity-60 px-3 py-2">No files yet. Is <code>/api/repo/ls</code> returning a list?</div>;
   }
   return (
     <div className="space-y-1">
