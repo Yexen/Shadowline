@@ -1,39 +1,46 @@
+
 import { NextResponse } from 'next/server';
 
-const GH = 'https://api.github.com';
+export const dynamic = 'force-dynamic'; // don't prerender
+
+function env(name: string, fallback?: string) {
+  const val = process.env[name] ?? fallback;
+  if (!val) throw new Error(`Missing env ${name}`);
+  return val;
+}
 
 export async function GET() {
-  const owner = process.env.GITHUB_OWNER!;
-  const repo = process.env.GITHUB_REPO!;
-  const branch = process.env.GITHUB_BRANCH || 'main';
-  const token = process.env.GITHUB_TOKEN!;
   try {
-    // 1) get branch SHA
-    const refRes = await fetch(`${GH}/repos/${owner}/${repo}/git/refs/heads/${branch}`, {
-      headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'dev-console' },
+    const repo = env('GITHUB_REPO');       // e.g. "Yexen/Shadowline"
+    const branch = env('GITHUB_BRANCH', 'main');
+    const token = env('GITHUB_TOKEN');     // PAT with read access
+
+    // 1) get tree SHA of the branch
+    const br = await fetch(`https://api.github.com/repos/${repo}/branches/${branch}`, {
+      headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'shadowline-devconsole' },
       cache: 'no-store',
     });
-    if (!refRes.ok) throw new Error(`refs: ${refRes.status}`);
-    const ref = await refRes.json();
-    const sha = ref.object.sha;
+    if (!br.ok) throw new Error(`branch ${br.status}: ${await br.text()}`);
+    const bj = await br.json();
+    const treeSha = bj?.commit?.commit?.tree?.sha || bj?.commit?.sha;
+    if (!treeSha) throw new Error('Could not resolve tree SHA');
 
-    // 2) get full tree
-    const treeRes = await fetch(`${GH}/repos/${owner}/${repo}/git/trees/${sha}?recursive=1`, {
-      headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'dev-console' },
+    // 2) fetch recursive tree
+    const tr = await fetch(`https://api.github.com/repos/${repo}/git/trees/${treeSha}?recursive=1`, {
+      headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'shadowline-devconsole' },
       cache: 'no-store',
     });
-    if (!treeRes.ok) throw new Error(`tree: ${treeRes.status}`);
-    const tree = await treeRes.json();
+    if (!tr.ok) throw new Error(`tree ${tr.status}: ${await tr.text()}`);
+    const tj = await tr.json();
 
-    // only files
-    const files = (tree.tree || [])
-      .filter((n: any) => n.type === 'blob')
-      .map((n: any) => n.path as string);
+    const files: string[] = (tj?.tree || [])
+      .filter((n: any) => n.type === 'blob' && typeof n.path === 'string')
+      .map((n: any) => `/${n.path}`);
 
-    return NextResponse.json({ sha, branch, files });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message || String(e) }, { status: 500 });
+    return NextResponse.json({ files });
+  } catch (err: any) {
+    return NextResponse.json({ error: err?.message ?? String(err), files: [] }, { status: 500 });
   }
 }
-v
+
   
