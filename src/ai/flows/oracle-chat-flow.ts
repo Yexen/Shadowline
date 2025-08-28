@@ -1,6 +1,6 @@
-type ChatMsg = { role: 'system'|'user'|'assistant'; content: string };
+export type ChatMsg = { role: 'system' | 'user' | 'assistant'; content: string };
 
-export async function oracleChat(history: ChatMsg[]): Promise<string> {
+export async function runOracleChat(history: ChatMsg[]): Promise<string> {
   const r = await fetch('/api/ai/simple', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -10,6 +10,7 @@ export async function oracleChat(history: ChatMsg[]): Promise<string> {
       history,
     }),
   });
+
   const j = await r.json();
   if (!r.ok) throw new Error(j?.error || 'oracle chat failed');
   return String(j.reply || '');
