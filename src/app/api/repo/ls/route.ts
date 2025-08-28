@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/image.jpg';
+import { NextResponse } from 'next/server';
 
 // Ensure this runs at request time, not at build time
 export const dynamic = 'force-dynamic';
