@@ -10,8 +10,8 @@ export async function runOracleChat(history: ChatMsg[]): Promise<string> {
       history,
     }),
   });
-
   const j = await r.json();
   if (!r.ok) throw new Error(j?.error || 'oracle chat failed');
   return String(j.reply || '');
 }
+
