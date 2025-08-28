@@ -10,7 +10,6 @@ export async function runNyxenChat(history: ChatMsg[]): Promise<string> {
       history,
     }),
   });
-
   const j = await r.json();
   if (!r.ok) throw new Error(j?.error || 'nyxen chat failed');
   return String(j.reply || '');
