@@ -1,6 +1,6 @@
-type ChatMsg = { role: 'system'|'user'|'assistant'; content: string };
+export type ChatMsg = { role: 'system' | 'user' | 'assistant'; content: string };
 
-export async function nyxenChat(history: ChatMsg[]): Promise<string> {
+export async function runNyxenChat(history: ChatMsg[]): Promise<string> {
   const r = await fetch('/api/ai/simple', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -10,8 +10,10 @@ export async function nyxenChat(history: ChatMsg[]): Promise<string> {
       history,
     }),
   });
+
   const j = await r.json();
   if (!r.ok) throw new Error(j?.error || 'nyxen chat failed');
   return String(j.reply || '');
 }
+
 
