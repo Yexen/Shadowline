@@ -30,7 +30,8 @@ const pathToTitle: { [key: string]: string } = {
     '/sources/media': "Media Database",
     '/sources': "Intel",
     '/about': "Project Intel",
-    '/nyxen': "Nyxen Chat"
+    '/nyxen': "Nyxen Chat",
+    '/dev-console': "Batcomputer"
 };
 
 export function AppHeader() {
