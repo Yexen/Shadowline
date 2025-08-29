@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -18,9 +19,10 @@ import {
   Library, 
   Clock, 
   TrendingUp,
+  Filter,
+  X,
   Loader2,
-  Command,
-  X
+  Command
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -47,12 +49,6 @@ const translations = {
     untitledDraft: "Untitled Draft",
     bibleEntry: "Bible Entry",
     imageInFolder: "Image in folder",
-    recentSearches: "Recent Searches",
-    sortBy: "Sort by",
-    relevance: "Relevance",
-    title: "Title",
-    keyboardShortcut: "Press Ctrl+K to search",
-    searching: "Searching..."
   },
   fa: {
     searchOptions: "گزینه‌های جستجو",
@@ -70,17 +66,11 @@ const translations = {
     untitledDraft: "پیش‌نویس بدون عنوان",
     bibleEntry: "ورودی کتاب مقدس",
     imageInFolder: "تصویر در پوشه",
-    recentSearches: "جستجوهای اخیر",
-    sortBy: "مرتب‌سازی بر اساس",
-    relevance: "ارتباط",
-    title: "عنوان",
-    keyboardShortcut: "Ctrl+K برای جستجو فشار دهید",
-    searching: "در حال جستجو..."
   }
 };
 
 type SearchScope = 'all' | 'drafts' | 'bible' | 'gallery' | 'volumes';
-type SortOption = 'relevance' | 'title';
+type SortOption = 'relevance' | 'date' | 'title';
 
 interface SearchResult {
     id: string;
@@ -91,16 +81,20 @@ interface SearchResult {
     url: string;
     data?: any;
     relevanceScore?: number;
+    lastModified?: Date;
+    highlights?: string[];
 }
 
-// Simple fuzzy search utility
-const fuzzySearch = (text: string, query: string): number => {
+// Fuzzy search utility
+const fuzzySearch = (text: string, query: string): { score: number; highlights: string[] } => {
   const lowerText = text.toLowerCase();
   const lowerQuery = query.toLowerCase();
+  const highlights: string[] = [];
   
   // Exact match gets highest score
   if (lowerText.includes(lowerQuery)) {
-    return 100;
+    highlights.push(query);
+    return { score: 100, highlights };
   }
   
   // Word boundary matches
@@ -110,10 +104,50 @@ const fuzzySearch = (text: string, query: string): number => {
   words.forEach(word => {
     if (lowerText.includes(word)) {
       score += 50 / words.length;
+      highlights.push(word);
     }
   });
   
-  return score;
+  // Character similarity for typos
+  if (score === 0 && query.length > 2) {
+    const similarity = calculateSimilarity(lowerText, lowerQuery);
+    if (similarity > 0.6) {
+      score = similarity * 30;
+    }
+  }
+  
+  return { score, highlights };
+};
+
+const calculateSimilarity = (str1: string, str2: string): number => {
+  const longer = str1.length > str2.length ? str1 : str2;
+  const shorter = str1.length > str2.length ? str2 : str1;
+  const editDistance = levenshteinDistance(longer, shorter);
+  return (longer.length - editDistance) / longer.length;
+};
+
+const levenshteinDistance = (str1: string, str2: string): number => {
+  const matrix: number[][] = [];
+  for (let i = 0; i <= str2.length; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= str1.length; j++) {
+    matrix[0][j] = j;
+  }
+  for (let i = 1; i <= str2.length; i++) {
+    for (let j = 1; j <= str1.length; j++) {
+      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+  return matrix[str2.length][str1.length];
 };
 
 // Debounce hook
@@ -155,7 +189,7 @@ export default function SearchPage() {
         else setLang('en');
         
         // Load recent searches
-        const saved = localStorage.getItem('shadowline-search-recent');
+        const saved = localStorage.getItem('search-recent');
         if (saved) {
           try {
             setRecentSearches(JSON.parse(saved));
@@ -201,25 +235,23 @@ export default function SearchPage() {
         ];
     }, [t]);
 
-    // Enhanced search with fuzzy matching and debouncing
+    // Enhanced search with fuzzy matching
     const performSearch = useCallback(async (searchQuery: string) => {
         if (!searchQuery.trim()) {
             setResults([]);
             setIsLoading(false);
-            setShowRecentSearches(false);
             return;
         }
 
         setIsLoading(true);
-        setShowRecentSearches(false);
         const newResults: SearchResult[] = [];
 
         // Search Drafts
         if (scope === 'all' || scope === 'drafts') {
             drafts.forEach(draft => {
-                const titleScore = fuzzySearch(draft.title || t.untitledDraft, searchQuery);
-                const contentScore = fuzzySearch(draft.content, searchQuery);
-                const maxScore = Math.max(titleScore, contentScore);
+                const titleSearch = fuzzySearch(draft.title || t.untitledDraft, searchQuery);
+                const contentSearch = fuzzySearch(draft.content, searchQuery);
+                const maxScore = Math.max(titleSearch.score, contentSearch.score);
                 
                 if (maxScore > 20) {
                     newResults.push({
@@ -229,7 +261,9 @@ export default function SearchPage() {
                         source: t.draftSource,
                         sourceType: 'draft',
                         url: `/editor/${draft.id}`,
-                        relevanceScore: maxScore
+                        relevanceScore: maxScore,
+                        highlights: [...titleSearch.highlights, ...contentSearch.highlights],
+                        lastModified: draft.updatedAt ? new Date(draft.updatedAt) : new Date()
                     });
                 }
             });
@@ -240,9 +274,9 @@ export default function SearchPage() {
             bibleData.forEach(category => {
                 category.items.forEach(item => {
                     const fullText = item.title + ' ' + (item.fields || []).map(f => `${f.label} ${f.value}`).join(' ');
-                    const score = fuzzySearch(fullText, searchQuery);
+                    const search = fuzzySearch(fullText, searchQuery);
                     
-                    if (score > 20) {
+                    if (search.score > 20) {
                         newResults.push({
                             id: `bible-${category.category}-${item.title}`,
                             title: item.title,
@@ -251,7 +285,8 @@ export default function SearchPage() {
                             sourceType: 'bible',
                             url: '#',
                             data: { bible: { category: category.category, entry: item } },
-                            relevanceScore: score
+                            relevanceScore: search.score,
+                            highlights: search.highlights
                         });
                     }
                 });
@@ -262,8 +297,8 @@ export default function SearchPage() {
         if (scope === 'all' || scope === 'gallery') {
             folders.forEach(folder => {
                 folder.items.forEach(image => {
-                    const score = fuzzySearch(image.caption, searchQuery);
-                    if (score > 20) {
+                    const search = fuzzySearch(image.caption, searchQuery);
+                    if (search.score > 20) {
                         newResults.push({
                             id: `gallery-${image.id}`,
                             title: image.caption,
@@ -271,7 +306,8 @@ export default function SearchPage() {
                             source: t.gallerySource,
                             sourceType: 'gallery',
                             url: '/gallery',
-                            relevanceScore: score
+                            relevanceScore: search.score,
+                            highlights: search.highlights
                         });
                     }
                 });
@@ -282,9 +318,9 @@ export default function SearchPage() {
         if (scope === 'all' || scope === 'volumes') {
             volumes.forEach(volume => {
                 const fullText = volume.title + ' ' + volume.description + ' ' + volume.chapters.map(c => c.title).join(' ');
-                const score = fuzzySearch(fullText, searchQuery);
+                const search = fuzzySearch(fullText, searchQuery);
                 
-                if (score > 20) {
+                if (search.score > 20) {
                     newResults.push({
                         id: `volume-${volume.id}`,
                         title: volume.title,
@@ -293,7 +329,8 @@ export default function SearchPage() {
                         sourceType: 'volume',
                         url: '#',
                         data: { volume: { id: volume.id } },
-                        relevanceScore: score
+                        relevanceScore: search.score,
+                        highlights: search.highlights
                     });
                 }
             });
@@ -301,10 +338,16 @@ export default function SearchPage() {
 
         // Sort results
         newResults.sort((a, b) => {
-            if (sortBy === 'relevance') {
-                return (b.relevanceScore || 0) - (a.relevanceScore || 0);
+            switch (sortBy) {
+                case 'relevance':
+                    return (b.relevanceScore || 0) - (a.relevanceScore || 0);
+                case 'date':
+                    return (b.lastModified || new Date()).getTime() - (a.lastModified || new Date()).getTime();
+                case 'title':
+                    return a.title.localeCompare(b.title);
+                default:
+                    return 0;
             }
-            return a.title.localeCompare(b.title);
         });
 
         setResults(newResults);
@@ -314,7 +357,7 @@ export default function SearchPage() {
         if (searchQuery && !recentSearches.includes(searchQuery)) {
             const newRecent = [searchQuery, ...recentSearches.slice(0, 4)];
             setRecentSearches(newRecent);
-            localStorage.setItem('shadowline-search-recent', JSON.stringify(newRecent));
+            localStorage.setItem('search-recent', JSON.stringify(newRecent));
         }
     }, [scope, bibleData, drafts, folders, volumes, t, sortBy, recentSearches]);
 
@@ -334,17 +377,8 @@ export default function SearchPage() {
                 openModal('volume', result.data.volume);
             }
         }
-    };
+    }
 
-    const handleRecentSearch = (recentQuery: string) => {
-        setQuery(recentQuery);
-        setShowRecentSearches(false);
-    };
-
-    const clearRecentSearches = () => {
-        setRecentSearches([]);
-        localStorage.removeItem('shadowline-search-recent');
-    };
 
     return (
         <div className="flex flex-col md:flex-row gap-8 h-[calc(100vh-14rem)]">
@@ -361,107 +395,34 @@ export default function SearchPage() {
                         </div>
                     ))}
                 </RadioGroup>
-                
-                <div className="mt-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h3 className="font-headline text-sm font-bold">{t.sortBy}</h3>
-                        <Badge variant="outline" className="text-xs">
-                            <Command className="w-3 h-3 mr-1" />
-                            K
-                        </Badge>
-                    </div>
-                    <RadioGroup value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)} className="space-y-1">
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="relevance" id="relevance" />
-                            <Label htmlFor="relevance" className="text-sm cursor-pointer">{t.relevance}</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="title" id="title-sort" />
-                            <Label htmlFor="title-sort" className="text-sm cursor-pointer">{t.title}</Label>
-                        </div>
-                    </RadioGroup>
-                </div>
             </aside>
 
             <main className="flex-1 flex flex-col min-w-0">
                 <div className="relative">
                     <SearchIcon className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
-                        ref={inputRef}
                         type="search"
                         placeholder={t.searchPlaceholder}
                         className="w-full pl-10 rtl:pr-10 rtl:pl-4 text-lg h-12"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        onFocus={() => setShowRecentSearches(!query && recentSearches.length > 0)}
                     />
-                    {isLoading && (
-                        <Loader2 className="absolute right-3 rtl:left-3 rtl:right-auto top-1/2 -translate-y-1/2 h-5 w-5 animate-spin text-muted-foreground" />
-                    )}
                 </div>
-
-                {/* Recent Searches */}
-                {showRecentSearches && recentSearches.length > 0 && (
-                    <Card className="mt-2 p-3">
-                        <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-sm font-medium flex items-center gap-2">
-                                <Clock className="w-4 h-4" />
-                                {t.recentSearches}
-                            </h4>
-                            <Button variant="ghost" size="sm" onClick={clearRecentSearches}>
-                                <X className="w-4 h-4" />
-                            </Button>
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                            {recentSearches.map((recent, index) => (
-                                <Button
-                                    key={index}
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-7 text-xs"
-                                    onClick={() => handleRecentSearch(recent)}
-                                >
-                                    {recent}
-                                </Button>
-                            ))}
-                        </div>
-                    </Card>
-                )}
 
                 <ScrollArea className="flex-grow mt-6">
                     <div className="space-y-4 pr-4 rtl:pl-4 rtl:pr-0">
-                        {isLoading && query ? (
-                            <div className="space-y-4">
-                                {Array.from({ length: 3 }).map((_, i) => (
-                                    <Card key={i}>
-                                        <CardContent className="p-4">
-                                            <Skeleton className="h-4 w-20 mb-2" />
-                                            <Skeleton className="h-5 w-3/4 mb-2" />
-                                            <Skeleton className="h-4 w-full" />
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                            </div>
-                        ) : results.length > 0 ? (
+                        {results.length > 0 ? (
                             results.map(result => (
                                 <Card key={result.id} className="hover:border-primary/50 transition-colors cursor-pointer" onClick={() => handleResultClick(result)}>
                                     <CardContent className="p-4">
-                                        <div className="flex items-center justify-between mb-1">
-                                            <p className="text-xs text-primary font-bold uppercase">{result.source}</p>
-                                            {result.relevanceScore && (
-                                                <Badge variant="secondary" className="text-xs">
-                                                    <TrendingUp className="w-3 h-3 mr-1" />
-                                                    {Math.round(result.relevanceScore)}%
-                                                </Badge>
-                                            )}
-                                        </div>
-                                        <h3 className="font-headline font-semibold mb-1">{result.title}</h3>
+                                        <p className="text-xs text-primary font-bold uppercase">{result.source}</p>
+                                        <h3 className="font-headline font-semibold">{result.title}</h3>
                                         <p className="text-sm text-muted-foreground line-clamp-2">{result.snippet}</p>
                                     </CardContent>
                                 </Card>
                             ))
                         ) : (
-                            query && !isLoading && <p className="text-center text-muted-foreground py-8">{t.noResults} "{query}".</p>
+                            query && <p className="text-center text-muted-foreground py-8">{t.noResults} "{query}".</p>
                         )}
                     </div>
                 </ScrollArea>
