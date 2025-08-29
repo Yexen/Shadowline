@@ -82,7 +82,7 @@ export function AppHeader() {
     }
 
     return (
-        <div className="relative w-full h-48 rounded-lg overflow-hidden mb-6 group">
+        <div className="relative w-full h-64 md:h-80 lg:h-96 rounded-lg overflow-hidden mb-6 group">
             <Image 
                 src={coverImage}
                 alt="Gotham City skyline with Bat-signal"

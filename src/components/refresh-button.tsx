@@ -1,21 +1,17 @@
 
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { Button } from './ui/button';
 import { RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 
 export function RefreshButton() {
-  const router = useRouter();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleClick = () => {
     setIsRefreshing(true);
-    router.refresh();
-    // The refresh happens very quickly, but we can add a small delay 
-    // to the loading state to provide visual feedback.
-    setTimeout(() => setIsRefreshing(false), 500);
+    // Force a hard refresh of the page to reload all data
+    window.location.reload();
   };
 
   return (
