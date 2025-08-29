@@ -16,19 +16,19 @@ import { EnhancedTerminal, EnhancedTerminalHandle } from '@/components/dev-conso
 import { MonacoCodeEditor } from '@/components/dev-console/monaco-editor';
 import { FirebaseManager } from '@/components/dev-console/firebase-manager';
 
-// API endpoints
+// ---------- Local API endpoints (your existing routes) ----------
 const API = {
   ls: '/api/repo/ls',
-  tree: '/api/repo/tree',
+  tree: '/api/repo/tree',           // full repo tree
   read: '/api/repo/read',
   write: '/api/repo/write',
-  preview: '/api/repo/preview',
-  commit: '/api/repo/commit',
-  chatUpload: '/api/ai/chat',
-  devchat: '/api/ai/devchat',
+  preview: '/api/repo/preview',     // keep if you add later; safe no-op otherwise
+  commit: '/api/repo/commit',       // keep if you add later; safe no-op otherwise
+  chatUpload: '/api/ai/chat',       // accepts multipart (files)
+  devchat: '/api/ai/devchat',       // repo-aware JSON chat
 };
 
-// Types
+// ---------- Types ----------
 type ChatMsg = { role: 'user' | 'assistant' | 'system'; content: string; ts: number };
 type ChatThread = { id: string; title: string; messages: ChatMsg[] };
 const LS_THREADS_KEY = 'devconsole_threads_v1';
@@ -36,14 +36,14 @@ const LS_ACTIVE_THREAD = 'devconsole_active_thread_v1';
 
 type FsItem = { name: string; path: string; type: 'dir' | 'file'; children?: FsItem[] };
 
-// Helpers
+// ---------- Helpers ----------
 const uid = (p='id') => `${p}_${Math.random().toString(36).slice(2,10)}`;
 const loadThreads = (): ChatThread[] => {
   try { return JSON.parse(localStorage.getItem(LS_THREADS_KEY) || '[]'); } catch { return []; }
 };
 const saveThreads = (t: ChatThread[]) => localStorage.setItem(LS_THREADS_KEY, JSON.stringify(t));
 
-// Build tree from paths
+// Build a tree from a flat list of file paths, safely
 function buildTree(paths: string[]): FsItem[] {
   const root: Record<string, any> = {};
   (paths || []).forEach((p) => {
@@ -79,9 +79,10 @@ function buildTree(paths: string[]): FsItem[] {
   }];
 }
 
-export default function EnhancedDevConsolePage() {
+export default function DevConsolePage() {
+  // global/search
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<'chat'|'editor'|'terminal'|'firebase'|'system'>('terminal');
+  const [activeTab, setActiveTab] = useState<'chat'|'editor'|'terminal'|'firebase'|'system'>('chat');
   const { selectedProvider, getCurrentApiKey } = useAiProvider();
   const terminalRef = useRef<EnhancedTerminalHandle>(null);
 
@@ -118,7 +119,7 @@ export default function EnhancedDevConsolePage() {
   const [tree, setTree] = useState<FsItem[] | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ '/': true });
 
-  // Boot: chats
+  // ---------- Boot: chats ----------
   useEffect(() => {
     const t = loadThreads();
     if (t.length === 0) {
@@ -134,7 +135,7 @@ export default function EnhancedDevConsolePage() {
   }, []);
   useEffect(() => { chatScrollRef.current?.scrollTo({ top: 9e9 }); }, [threads, activeThreadId]);
 
-  // Boot: file tree
+  // ---------- Boot: file tree from /api/repo/tree ----------
   useEffect(() => {
     let stop = false;
     (async () => {
@@ -156,7 +157,7 @@ export default function EnhancedDevConsolePage() {
       } catch (e:any) {
         if (!stop) {
           setTree([{ name: 'error (tree)', path: '/', type: 'dir', children: [] }]);
-          setPreview(`⚠️ Could not load file tree: ${e?.message ?? e}`); 
+          setPreview(`⚠️ Could not load file tree: ${e?.message ?? e}\n\nCheck your GitHub environment variables:\n- GITHUB_OWNER\n- GITHUB_REPO\n- GITHUB_TOKEN`); 
           setPreviewOpen(true);
         }
       }
@@ -166,7 +167,7 @@ export default function EnhancedDevConsolePage() {
 
   const activeThread = threads.find(t => t.id === activeThreadId)!;
 
-  // Chat actions
+  // ---------- Chat actions ----------
   const newThread = () => {
     const t = { id: uid('thread'), title: 'New chat', messages: [] } as ChatThread;
     const next = [t, ...threads]; setThreads(next); saveThreads(next);
@@ -177,6 +178,7 @@ export default function EnhancedDevConsolePage() {
     if (!text.trim() || !activeThread) return;
     setSending(true);
 
+    // optimistic user
     const user: ChatMsg = { role: 'user', content: text.trim(), ts: Date.now() };
     const optimistic = threads.map(t =>
       t.id === activeThread.id ? { ...t, messages: [...t.messages, user] } : t
@@ -187,6 +189,7 @@ export default function EnhancedDevConsolePage() {
       let aiReply = '';
 
       if (pendingFiles.length > 0) {
+        // For file uploads, convert to a text-based approach since our API expects JSON
         let fileContents = '';
         for (const file of pendingFiles) {
           if (file.type.startsWith('text/') || file.name.match(/\.(js|ts|tsx|jsx|css|html|json|md)$/i)) {
@@ -219,6 +222,7 @@ export default function EnhancedDevConsolePage() {
         aiReply = jd.reply ?? '(no reply)';
         setPendingFiles([]);
       } else {
+        // repo-aware dev chat with context
         const r = await fetch(API.devchat, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -263,7 +267,7 @@ export default function EnhancedDevConsolePage() {
   };
   const removePending = (idx: number) => setPendingFiles(prev => prev.filter((_, i) => i !== idx));
 
-  // Editor actions
+  // ---------- Editor actions (wired to /api/repo/*) ----------
   const openFile = async (p: string) => {
     if (!p) return;
     setActiveTab('editor');
@@ -278,7 +282,7 @@ export default function EnhancedDevConsolePage() {
       const json = await res.json();
       setOpenPath(json.path || p);
       setOpenContent(json.content ?? '');
-      setOpenSha(json.sha);
+      setOpenSha(json.sha);         // keep sha if your API returns it
       setUnsaved(false);
       setPreview(`Opened ${json.path || p}`); setPreviewOpen(true);
     } catch (e:any) {
@@ -353,7 +357,7 @@ export default function EnhancedDevConsolePage() {
     }
   };
 
-  // Enhanced Terminal Handler
+  // ---------- Enhanced Terminal Handler ----------
   const runTerm = async (cmd: string): Promise<string> => {
     if (!cmd.trim()) return '';
     
@@ -361,14 +365,13 @@ export default function EnhancedDevConsolePage() {
     const command = args[0].toLowerCase();
     
     let output = '';
-    
-    try {
+      
       switch (command) {
         case 'help':
-          output = `🦇 Bat Computer Enhanced CLI v2.0 Commands:
+          output = `Bat Computer CLI v1.0 Commands:
 • help - Show this help
 • ls [path] - List files
-• cat <file> - Show file contents  
+• cat <file> - Show file contents
 • pwd - Show current directory
 • whoami - Show current user
 • date - Show current date/time
@@ -379,16 +382,18 @@ export default function EnhancedDevConsolePage() {
 • top - Show system info
 • git <command> - Git commands
 • npm <command> - NPM commands
+• node <file> - Run Node.js
 • build - Build the project
 • deploy - Deploy the project
-• status - Show system status
-• firebase - Open Firebase manager`;
+• ping <host> - Ping a host
+• curl <url> - Make HTTP request`;
           break;
           
         case 'ls':
           const path = args[1] || '/';
           try {
             if (path === '/' || path === '') {
+              // For root, use tree API to get all files
               const res = await fetch(API.tree);
               if (!res.ok) throw new Error(`ls: ${res.status}`);
               const data = await res.json();
@@ -404,6 +409,7 @@ export default function EnhancedDevConsolePage() {
                 ...rootFiles.map((f: string) => `📄 ${f}`)
               ].join('\n') || 'No files found';
             } else {
+              // For specific path, use ls API
               const res = await fetch(`${API.ls}?path=${encodeURIComponent(path)}`);
               if (!res.ok) throw new Error(`ls: ${res.status}`);
               const data = await res.json();
@@ -478,19 +484,49 @@ export default function EnhancedDevConsolePage() {
           }
           break;
           
-        case 'status':
-          output = `🦇 Bat Computer System Status:
-CPU: ${systemStats.cpu}
-Memory: ${systemStats.memory}
-Uptime: ${systemStats.uptime}
-Active Connections: ${systemStats.activeConnections}
-Last Deployment: ${new Date(systemStats.lastDeployment).toLocaleString()}
-Status: 🟢 All systems operational`;
+        case 'ps':
+          output = `PID    COMMAND
+1      /init
+42     batcomputer-os
+123    shadowline-editor
+456    next-dev-server
+789    node /app/server.js`;
           break;
           
-        case 'firebase':
-          setActiveTab('firebase');
-          output = 'Opening Firebase management console...';
+        case 'top':
+          output = `Bat Computer System Status:
+CPU: 23.4% (Wayne Enterprises Quantum Processor)
+Memory: 2.1GB / 16GB (13% used)
+Uptime: 42 days, 13 hours
+Power: 98.7% (Arc Reactor)
+Network: Connected to WayneNet
+Security: All systems nominal`;
+          break;
+          
+        case 'git':
+          const gitCmd = args.slice(1).join(' ');
+          if (!gitCmd) {
+            output = 'git: missing command. Try: git status, git log, git branch';
+          } else {
+            output = `Running: git ${gitCmd}\n(Demo) Git operation completed`;
+          }
+          break;
+          
+        case 'npm':
+          const npmCmd = args.slice(1).join(' ');
+          if (!npmCmd) {
+            output = 'npm: missing command. Try: npm install, npm run dev, npm build';
+          } else {
+            output = `Running: npm ${npmCmd}\n(Demo) NPM operation completed`;
+          }
+          break;
+          
+        case 'node':
+          if (!args[1]) {
+            output = 'node: missing file argument';
+          } else {
+            output = `Running: node ${args[1]}\n(Demo) Node.js execution completed`;
+          }
           break;
           
         case 'build':
@@ -499,7 +535,7 @@ Status: 🟢 All systems operational`;
 ✓ Bundling assets  
 ✓ Optimizing images
 ✓ Generating pages
-✅ Build completed successfully!`;
+Build completed successfully!`;
           break;
           
         case 'deploy':
@@ -511,9 +547,37 @@ Status: 🟢 All systems operational`;
 🌐 Live at: https://shadowline.wayne-enterprises.com`;
           break;
           
+        case 'ping':
+          const host = args[1] || 'localhost';
+          output = `PING ${host} (127.0.0.1): 56 data bytes
+64 bytes from 127.0.0.1: icmp_seq=0 time=0.123ms
+64 bytes from 127.0.0.1: icmp_seq=1 time=0.089ms
+64 bytes from 127.0.0.1: icmp_seq=2 time=0.091ms
+--- ${host} ping statistics ---
+3 packets transmitted, 3 packets received, 0.0% packet loss`;
+          break;
+          
+        case 'curl':
+          const url = args[1];
+          if (!url) {
+            output = 'curl: missing URL';
+          } else {
+            output = `Fetching: ${url}\n(Demo) HTTP/1.1 200 OK\nContent-Type: text/html\n\n<html>Demo response</html>`;
+          }
+          break;
+          
         default:
-          output = `bash: ${command}: command not found
+          // Check for common shell patterns
+          if (cmd.includes('&&')) {
+            const commands = cmd.split('&&').map(c => c.trim());
+            output = `Executing chain: ${commands.join(' && ')}\n(Demo) All commands completed`;
+          } else if (cmd.includes('|')) {
+            const commands = cmd.split('|').map(c => c.trim());
+            output = `Piping: ${commands.join(' | ')}\n(Demo) Pipeline completed`;
+          } else {
+            output = `bash: ${command}: command not found
 Type 'help' to see available commands`;
+          }
       }
       
       return output;
@@ -523,7 +587,7 @@ Type 'help' to see available commands`;
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 md:px-6 pb-10">
+    <div className="mx-auto w-full max-w-[1300px] px-4 md:px-6 pb-10">
       <div className="grid grid-cols-12 gap-4 mt-6">
         {/* Main */}
         <div className="col-span-12 lg:col-span-9">
@@ -572,7 +636,7 @@ Type 'help' to see available commands`;
                 <TabsContent value="chat" className="p-0 m-0">
                   <div className="grid grid-cols-12">
                     <div className="col-span-12 lg:col-span-8 border-r border-white/10">
-                      <div ref={chatScrollRef} className="h-[450px] overflow-auto p-3 space-y-3">
+                      <div ref={chatScrollRef} className="h-[420px] overflow-auto p-3 space-y-3">
                         {activeThread?.messages.length
                           ? activeThread.messages.map((m,i)=>(
                               <div key={i} className="text-sm leading-6">
@@ -582,7 +646,7 @@ Type 'help' to see available commands`;
                                 <span className={m.role==='assistant' ? 'text-amber-300/90' : ''}>{m.content}</span>
                               </div>
                             ))
-                          : <div className="p-3 text-sm opacity-70">Start a conversation. I can help with code edits, terminal commands, and Firebase management.</div>}
+                          : <div className="p-3 text-sm opacity-70">Start a conversation. I can propose code edits, diffs, and terminal commands.</div>}
                       </div>
 
                       {/* Attachment chips */}
@@ -671,7 +735,7 @@ Type 'help' to see available commands`;
                       onCommit={commitChanges}
                       unsaved={unsaved}
                       busy={busyEditor}
-                      height="450px"
+                      height="420px"
                     />
                   </div>
                 </TabsContent>
@@ -682,7 +746,7 @@ Type 'help' to see available commands`;
                     <EnhancedTerminal
                       ref={terminalRef}
                       onCommand={runTerm}
-                      height="h-[480px]"
+                      height="h-[450px]"
                     />
                   </div>
                 </TabsContent>
@@ -728,7 +792,7 @@ Type 'help' to see available commands`;
                         </div>
                         <div>
                           <div className="text-gray-400">Version</div>
-                          <div className="text-white">Shadowline v2.0.0</div>
+                          <div className="text-white">Shadowline v1.0.0</div>
                         </div>
                         <div>
                           <div className="text-gray-400">Last Deployment</div>
@@ -761,7 +825,7 @@ Type 'help' to see available commands`;
           </div>
         </div>
 
-        {/* Right sidebar */}
+        {/* Right sidebar (amber) */}
         <div className="col-span-12 lg:col-span-3 space-y-4">
           <div className="rounded border border-amber-500/40 bg-black/40">
             <div className="px-3 py-2 text-xs font-semibold tracking-wider text-amber-400">FILE EXPLORER</div>
@@ -777,7 +841,7 @@ Type 'help' to see available commands`;
           </div>
 
           <div className="rounded border border-amber-500/40 bg-black/40">
-            <div className="px-3 py-2 text-xs font-semibold tracking-wider text-amber-400">SYSTEM MONITOR</div>
+            <div className="px-3 py-2 text-xs font-semibold tracking-wider text-amber-400">LIVE LOG</div>
             <Separator className="bg-amber-500/30" />
             <div className="p-3 font-mono text-xs space-y-1 text-amber-200/80">
               <div className="flex items-center justify-between">
@@ -797,7 +861,7 @@ Type 'help' to see available commands`;
   );
 }
 
-// Explorer Tree Component
+// ---------- Explorer Tree ----------
 function ExplorerTree({
   nodes, expanded, onToggle, onOpenFile, depth = 0,
 }: {
@@ -808,7 +872,7 @@ function ExplorerTree({
   depth?: number;
 }) {
   if (!nodes?.length) {
-    return <div className="text-xs opacity-60 px-3 py-2">No files yet. Loading file tree...</div>;
+    return <div className="text-xs opacity-60 px-3 py-2">No files yet. Is <code>/api/repo/ls</code> returning a list?</div>;
   }
   return (
     <div className="space-y-1">
