@@ -1,9 +1,25 @@
-export type SceneGenInput = { prompt: string; context?: string };
-export type SceneGenOutput = { text: string };
+import { getAiProviderSettings } from '@/lib/ai-provider-client';
 
-export async function generateScene(_: SceneGenInput): Promise<SceneGenOutput> {
-  return { text: '🔒 Scene generator AI is temporarily disabled on this build.' };
+export async function generateScene(prompt: string, context?: string): Promise<string> {
+  const { provider, apiKey } = getAiProviderSettings();
+  
+  const response = await fetch('/api/ai/simple', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+      mode: 'scene', 
+      prompt, 
+      context, 
+      provider, 
+      apiKey 
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Scene generation failed');
+  }
+
+  const data = await response.json();
+  return data.text || 'Scene generation failed';
 }
-
-export const sceneGenFlow = generateScene;
-export default generateScene;
