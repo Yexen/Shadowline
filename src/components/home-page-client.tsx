@@ -51,6 +51,7 @@ const translations = {
 export function HomePageClient({ initialVideos, initialNews, videoError, newsError }: HomePageClientProps) {
   const [videos, setVideos] = React.useState(initialVideos);
   const [news, setNews] = React.useState(initialNews);
+  const [feedErrors, setFeedErrors] = React.useState({ video: videoError, news: newsError });
   
   const [activeVideo, setActiveVideo] = React.useState<{ id: string; title: string } | null>(null);
   const [activeArticle, setActiveArticle] = React.useState<{ url: string; title: string } | null>(null);
@@ -93,13 +94,21 @@ export function HomePageClient({ initialVideos, initialNews, videoError, newsErr
   const openVideo = (id: string, title: string) => setActiveVideo({ id, title });
   const openArticle = (url: string, title: string) => setActiveArticle({ url, title });
 
+  const handleRefreshFeeds = (data: { videos: any[], news: any[] }) => {
+    console.log('Refreshing feeds with new data:', data);
+    setVideos(data.videos);
+    setNews(data.news);
+    setFeedErrors({ video: undefined, news: undefined });
+    setLastRefresh(Date.now());
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-start">
         <p className="mt-2 text-muted-foreground">
           {t.pageDescription}
         </p>
-        <RefreshButton />
+        <RefreshButton onRefresh={handleRefreshFeeds} />
       </div>
 
       <section>
@@ -108,18 +117,18 @@ export function HomePageClient({ initialVideos, initialNews, videoError, newsErr
             {t.surveillanceTitle}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {videoError && (
+          {feedErrors.video && (
              <Card className="col-span-full bg-destructive/10 border-destructive/50">
                 <CardHeader className="flex-row items-center gap-4">
                     <AlertTriangle className="w-10 h-10 text-destructive" />
                     <div>
                         <CardTitle className="text-destructive">{t.videoErrorTitle}</CardTitle>
-                        <CardDescription className="text-destructive/80">{videoError}</CardDescription>
+                        <CardDescription className="text-destructive/80">{feedErrors.video}</CardDescription>
                     </div>
                 </CardHeader>
             </Card>
           )}
-          {videos.length === 0 && !videoError ? (
+          {videos.length === 0 && !feedErrors.video ? (
              Array.from({ length: 6 }).map((_, index) => (
                 <Card key={`skeleton-vid-${index}`} className="overflow-hidden bg-card">
                     <CardContent className="p-0">
@@ -182,13 +191,13 @@ export function HomePageClient({ initialVideos, initialNews, videoError, newsErr
             {t.intelTitle}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {newsError ? (
+            {feedErrors.news ? (
               <Card className="col-span-full bg-destructive/10 border-destructive/50">
                   <CardHeader className="flex-row items-center gap-4">
                       <AlertTriangle className="w-10 h-10 text-destructive" />
                       <div>
                           <CardTitle className="text-destructive">{t.intelErrorTitle}</CardTitle>
-                          <CardDescription className="text-destructive/80">{newsError}</CardDescription>
+                          <CardDescription className="text-destructive/80">{feedErrors.news}</CardDescription>
                       </div>
                   </CardHeader>
               </Card>
