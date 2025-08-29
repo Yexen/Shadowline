@@ -10,8 +10,9 @@ import { Download, Shield, Bot, Save } from "lucide-react";
 import { useWriters } from "@/hooks/use-writers";
 import { PasswordInput } from "./password-input";
 import { useToast } from "@/hooks/use-toast";
-import { useAiProvider } from "@/hooks/use-ai-provider";
+import { useAiProvider, type AiProvider } from "@/hooks/use-ai-provider";
 import { Label } from "./ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
 interface SettingsDialogProps {
     isOpen: boolean;
@@ -24,15 +25,29 @@ export function SettingsDialog({ isOpen, onClose, onOpenUserManagement }: Settin
     const logoFileInputRef = useRef<HTMLInputElement>(null);
     const { activeWriter } = useWriters();
     const { toast } = useToast();
-    const { openAiApiKey, setOpenAiApiKey, isLoaded } = useAiProvider();
+    const { 
+        selectedProvider, 
+        setSelectedProvider,
+        openAiApiKey, 
+        claudeApiKey, 
+        geminiApiKey,
+        setOpenAiApiKey, 
+        setClaudeApiKey, 
+        setGeminiApiKey,
+        isLoaded 
+    } = useAiProvider();
     
-    const [apiKey, setApiKey] = useState('');
+    const [openAiKey, setOpenAiKey] = useState('');
+    const [claudeKey, setClaudeKey] = useState('');
+    const [geminiKey, setGeminiKey] = useState('');
     
     useEffect(() => {
         if(isLoaded) {
-            setApiKey(openAiApiKey);
+            setOpenAiKey(openAiApiKey);
+            setClaudeKey(claudeApiKey);
+            setGeminiKey(geminiApiKey);
         }
-    }, [isLoaded, openAiApiKey, isOpen]);
+    }, [isLoaded, openAiApiKey, claudeApiKey, geminiApiKey, isOpen]);
 
     const handleLogoFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -74,9 +89,20 @@ export function SettingsDialog({ isOpen, onClose, onOpenUserManagement }: Settin
     };
 
     const handleSaveAiSettings = () => {
-        setOpenAiApiKey(apiKey);
-        toast({ title: "AI Settings Saved", description: "Your API key has been updated." });
+        setOpenAiApiKey(openAiKey);
+        setClaudeApiKey(claudeKey);
+        setGeminiApiKey(geminiKey);
+        toast({ 
+            title: "AI Settings Saved", 
+            description: `Your API keys have been updated. Currently using: ${selectedProvider.toUpperCase()}.` 
+        });
     }
+
+    const providerLabels = {
+        openai: 'OpenAI (GPT)',
+        claude: 'Claude (Anthropic)', 
+        gemini: 'Gemini (Google)'
+    };
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -104,13 +130,47 @@ export function SettingsDialog({ isOpen, onClose, onOpenUserManagement }: Settin
                     )}
 
                     <div>
-                        <h3 className="font-bold flex items-center gap-2"><Bot /> AI & Image Generation</h3>
+                        <h3 className="font-bold flex items-center gap-2"><Bot /> AI Provider Settings</h3>
                          <div className="space-y-4 mt-2 p-3 border rounded-md">
                             <div className="space-y-2">
-                                <Label htmlFor="openai-key">OpenAI API Key</Label>
-                                <p className="text-xs text-muted-foreground">This key is stored locally and never shared. It is currently only used for certain image generation features.</p>
-                                <PasswordInput id="openai-key" placeholder="sk-..." value={apiKey} onChange={e => setApiKey(e.target.value)} />
+                                <Label htmlFor="ai-provider">AI Provider</Label>
+                                <p className="text-xs text-muted-foreground">Choose which AI provider to use for chat and other AI features.</p>
+                                <Select value={selectedProvider} onValueChange={(value: AiProvider) => setSelectedProvider(value)}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select AI provider" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="openai">{providerLabels.openai}</SelectItem>
+                                        <SelectItem value="claude">{providerLabels.claude}</SelectItem>
+                                        <SelectItem value="gemini">{providerLabels.gemini}</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="openai-key">OpenAI API Key</Label>
+                                <p className="text-xs text-muted-foreground">For GPT-4, GPT-3.5, and DALL-E image generation.</p>
+                                <PasswordInput id="openai-key" placeholder="sk-..." value={openAiKey} onChange={e => setOpenAiKey(e.target.value)} />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="claude-key">Claude API Key</Label>
+                                <p className="text-xs text-muted-foreground">For Claude 3.5 Sonnet and other Anthropic models.</p>
+                                <PasswordInput id="claude-key" placeholder="sk-ant-..." value={claudeKey} onChange={e => setClaudeKey(e.target.value)} />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="gemini-key">Gemini API Key</Label>
+                                <p className="text-xs text-muted-foreground">For Gemini Pro and other Google AI models.</p>
+                                <PasswordInput id="gemini-key" placeholder="..." value={geminiKey} onChange={e => setGeminiKey(e.target.value)} />
+                            </div>
+
+                            <div className="text-xs text-muted-foreground p-2 bg-muted/30 rounded">
+                                <strong>Currently active:</strong> {providerLabels[selectedProvider]}
+                                <br />
+                                <strong>Note:</strong> All API keys are stored locally and never shared with servers.
+                            </div>
+
                             <Button onClick={handleSaveAiSettings} className="w-full"><Save className="mr-2"/> Save AI Settings</Button>
                         </div>
                     </div>

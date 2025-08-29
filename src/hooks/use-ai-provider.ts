@@ -3,18 +3,54 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
+export type AiProvider = 'openai' | 'claude' | 'gemini';
+
 interface AiProviderState {
+  // Provider selection
+  selectedProvider: AiProvider;
+  setSelectedProvider: (provider: AiProvider) => void;
+  
+  // API keys
   openAiApiKey: string;
-  isLoaded: boolean;
+  claudeApiKey: string;
+  geminiApiKey: string;
   setOpenAiApiKey: (key: string) => void;
+  setClaudeApiKey: (key: string) => void;
+  setGeminiApiKey: (key: string) => void;
+  
+  // Helper to get current API key
+  getCurrentApiKey: () => string;
+  
+  isLoaded: boolean;
 }
 
 export const useAiProvider = create<AiProviderState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
+      // Default to OpenAI
+      selectedProvider: 'openai',
+      setSelectedProvider: (provider) => set({ selectedProvider: provider }),
+      
+      // API keys
       openAiApiKey: '',
-      isLoaded: false,
+      claudeApiKey: '',
+      geminiApiKey: '',
       setOpenAiApiKey: (key) => set({ openAiApiKey: key }),
+      setClaudeApiKey: (key) => set({ claudeApiKey: key }),
+      setGeminiApiKey: (key) => set({ geminiApiKey: key }),
+      
+      // Helper to get current key based on selected provider
+      getCurrentApiKey: () => {
+        const state = get();
+        switch (state.selectedProvider) {
+          case 'openai': return state.openAiApiKey;
+          case 'claude': return state.claudeApiKey;
+          case 'gemini': return state.geminiApiKey;
+          default: return '';
+        }
+      },
+      
+      isLoaded: false,
     }),
     {
       name: 'gotham-ai-provider-storage',

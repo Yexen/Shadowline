@@ -1,9 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { callAiProvider, type AiMessage } from '@/lib/ai-providers';
+import type { AiProvider } from '@/hooks/use-ai-provider';
 export const runtime = 'edge';
 
 export async function POST(req: NextRequest) {
-  const { message, context } = await req.json();
+  const { message, context, provider = 'openai', apiKey } = await req.json();
   if (!message) return NextResponse.json({ error: 'Missing message' }, { status: 400 });
+  
+  // If no local API key provided, fall back to server environment variables
+  let effectiveApiKey = apiKey;
+  if (!effectiveApiKey) {
+    switch (provider) {
+      case 'openai':
+        effectiveApiKey = process.env.OPENAI_API_KEY;
+        break;
+      case 'claude':
+        effectiveApiKey = process.env.CLAUDE_API_KEY;
+        break;
+      case 'gemini':
+        effectiveApiKey = process.env.GEMINI_API_KEY;
+        break;
+    }
+  }
+  
+  if (!effectiveApiKey) {
+    return NextResponse.json({ 
+      error: `${provider.toUpperCase()} API key not configured. Please set it in settings or as an environment variable.` 
+    }, { status: 503 });
+  }
 
   // Always fetch the tree first so the model knows the project
   const treeRes = await fetch(new URL('/api/repo/tree', req.url), { cache: 'no-store' });
@@ -25,30 +49,24 @@ export async function POST(req: NextRequest) {
     context?.openPath ? `${context.openPath}\n\n${context.openContent ?? ''}` : '(none)',
   ].join('\n');
 
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) {
-    return NextResponse.json({ error: 'OpenAI API key not configured. Please set OPENAI_API_KEY environment variable.' }, { status: 503 });
+  try {
+    const messages: AiMessage[] = [
+      { role: 'system', content: system },
+      { role: 'user', content: `${message}\n\n${repoCtx}` },
+    ];
+
+    const result = await callAiProvider(provider as AiProvider, effectiveApiKey, messages, 0.2);
+    
+    return NextResponse.json({ 
+      reply: result.content || '(no reply)', 
+      saw: files.length,
+      model: result.model,
+      provider: provider.toUpperCase()
+    });
+  } catch (error: any) {
+    console.error('AI Provider error:', error);
+    return NextResponse.json({ 
+      error: `AI Error: ${error.message}` 
+    }, { status: 500 });
   }
-
-  const r = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      temperature: 0.2,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: `${message}\n\n${repoCtx}` },
-      ],
-    }),
-  });
-
-  if (!r.ok) {
-    const err = await r.text().catch(() => '');
-    return NextResponse.json({ error: `OpenAI ${r.status}: ${err}` }, { status: 500 });
-  }
-
-  const json = await r.json();
-  const reply = json?.choices?.[0]?.message?.content ?? '(no reply)';
-  return NextResponse.json({ reply, saw: files.length });
 }

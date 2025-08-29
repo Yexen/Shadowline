@@ -10,6 +10,7 @@ import {
   ChevronRight, ChevronDown, Play, GitCommitVertical, X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAiProvider } from '@/hooks/use-ai-provider';
 
 // ---------- Local API endpoints (your existing routes) ----------
 const API = {
@@ -78,6 +79,7 @@ export default function DevConsolePage() {
   // global/search
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'chat'|'editor'|'terminal'>('chat');
+  const { selectedProvider, getCurrentApiKey } = useAiProvider();
 
   // Preview panel
   const [preview, setPreview] = useState('');
@@ -199,6 +201,8 @@ export default function DevConsolePage() {
           body: JSON.stringify({
             message: `${text.trim()}\n\nAttached files:${fileContents}`,
             context: openPath ? { openPath, openContent } : undefined,
+            provider: selectedProvider,
+            apiKey: getCurrentApiKey(),
           }),
         });
         if (!r.ok) {
@@ -216,6 +220,8 @@ export default function DevConsolePage() {
           body: JSON.stringify({
             message: text.trim(),
             context: openPath ? { openPath, openContent } : undefined,
+            provider: selectedProvider,
+            apiKey: getCurrentApiKey(),
           }),
         });
         if (!r.ok) {
@@ -645,24 +651,30 @@ Type 'help' to see available commands`;
                         </div>
                       )}
 
-                      <div className="border-t border-white/10 p-2 flex items-center gap-2">
-                        <Button variant="ghost" className="text-amber-400 hover:text-amber-300" onClick={()=>fileInputRef.current?.click()} title="Attach files">
-                          <Paperclip className="h-4 w-4" />
-                        </Button>
-                        <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e)=>attachFiles(e.target.files)} />
-                        <Button variant="ghost" className="text-amber-400 hover:text-amber-300" onClick={undoLast} title="Undo last">
-                          <Undo2 className="h-4 w-4" />
-                        </Button>
-                        <Input
-                          value={draft}
-                          onChange={(e)=>setDraft(e.target.value)}
-                          onKeyDown={(e)=>e.key==='Enter' && !sending && sendChat(draft)}
-                          placeholder="Ask the Bat Computer to modify the app…"
-                          className="flex-1"
-                        />
-                        <Button onClick={()=>sendChat(draft)} disabled={sending || !draft.trim()}>
-                          <Send className="h-4 w-4 mr-1" /> {sending ? 'Sending…' : 'Send'}
-                        </Button>
+                      <div className="border-t border-white/10 p-2 space-y-2">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>AI Provider: {selectedProvider.toUpperCase()}</span>
+                          <span>{getCurrentApiKey() ? '🟢 Connected' : '🔴 Not configured'}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" className="text-amber-400 hover:text-amber-300" onClick={()=>fileInputRef.current?.click()} title="Attach files">
+                            <Paperclip className="h-4 w-4" />
+                          </Button>
+                          <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e)=>attachFiles(e.target.files)} />
+                          <Button variant="ghost" className="text-amber-400 hover:text-amber-300" onClick={undoLast} title="Undo last">
+                            <Undo2 className="h-4 w-4" />
+                          </Button>
+                          <Input
+                            value={draft}
+                            onChange={(e)=>setDraft(e.target.value)}
+                            onKeyDown={(e)=>e.key==='Enter' && !sending && sendChat(draft)}
+                            placeholder="Ask the Bat Computer to modify the app…"
+                            className="flex-1"
+                          />
+                          <Button onClick={()=>sendChat(draft)} disabled={sending || !draft.trim()}>
+                            <Send className="h-4 w-4 mr-1" /> {sending ? 'Sending…' : 'Send'}
+                          </Button>
+                        </div>
                       </div>
                     </div>
 
