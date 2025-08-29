@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/sidebar';
 
 import { BatLogo } from '@/components/bat-logo';
+import { AppHeader } from '@/components/app-header';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -386,6 +387,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
       <SidebarInset>
         <div className="p-4 md:p-6">
+          <AppHeader />
           {children}
         </div>
       </SidebarInset>
