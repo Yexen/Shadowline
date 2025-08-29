@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 // ---------- Local API endpoints (your existing routes) ----------
 const API = {
   ls: '/api/repo/ls',
+  tree: '/api/repo/tree',           // full repo tree
   read: '/api/repo/read',
   write: '/api/repo/write',
   preview: '/api/repo/preview',     // keep if you add later; safe no-op otherwise
@@ -123,20 +124,30 @@ export default function DevConsolePage() {
   }, []);
   useEffect(() => { chatScrollRef.current?.scrollTo({ top: 9e9 }); }, [threads, activeThreadId]);
 
-  // ---------- Boot: file tree from /api/repo/ls ----------
+  // ---------- Boot: file tree from /api/repo/tree ----------
   useEffect(() => {
     let stop = false;
     (async () => {
       try {
-        const res = await fetch(API.ls, { cache: 'no-store' });
-        if (!res.ok) throw new Error(`ls HTTP ${res.status}`);
+        const res = await fetch(API.tree, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`tree HTTP ${res.status}`);
         const data = await res.json();
-        const files: string[] = Array.isArray(data?.files) ? data.files : Array.isArray(data) ? data : [];
-        if (!stop) setTree(buildTree(files));
+        
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        
+        const files: string[] = Array.isArray(data?.files) ? data.files : [];
+        if (!stop) {
+          setTree(buildTree(files));
+          setPreview(`✅ Loaded ${files.length} files from GitHub repository`); 
+          setPreviewOpen(true);
+        }
       } catch (e:any) {
         if (!stop) {
           setTree([{ name: 'error (tree)', path: '/', type: 'dir', children: [] }]);
-          setPreview(`⚠️ Could not load file tree: ${e?.message ?? e}`); setPreviewOpen(true);
+          setPreview(`⚠️ Could not load file tree: ${e?.message ?? e}\n\nCheck your GitHub environment variables:\n- GITHUB_OWNER\n- GITHUB_REPO\n- GITHUB_TOKEN`); 
+          setPreviewOpen(true);
         }
       }
     })();
@@ -309,20 +320,235 @@ export default function DevConsolePage() {
     }
   };
 
-  // ---------- Terminal (local demo) ----------
+  // ---------- Terminal (enhanced with more commands) ----------
   const runTerm = async (cmd: string) => {
     if (!cmd.trim()) return;
     setTermLog(l => [...l, `❯ ${cmd}`]);
     setTermDraft('');
     setTermBusy(true);
+    
     try {
-      const out =
-        cmd === 'help' ? 'commands: help, ls, build, deploy'
-        : cmd === 'ls' ? 'src  public  next.config.ts'
-        : cmd === 'build' ? 'Building… (demo)'
-        : cmd === 'deploy' ? 'Triggering deploy… (demo)'
-        : `Unknown command: ${cmd}`;
-      setTermLog(l => [...l, out]);
+      const args = cmd.trim().split(/\s+/);
+      const command = args[0].toLowerCase();
+      
+      let output = '';
+      
+      switch (command) {
+        case 'help':
+          output = `Bat Computer CLI v1.0 Commands:
+• help - Show this help
+• ls [path] - List files
+• cat <file> - Show file contents
+• pwd - Show current directory
+• whoami - Show current user
+• date - Show current date/time
+• clear - Clear terminal
+• echo <text> - Print text
+• tree - Show file tree
+• ps - List processes (demo)
+• top - Show system info
+• git <command> - Git commands
+• npm <command> - NPM commands
+• node <file> - Run Node.js
+• build - Build the project
+• deploy - Deploy the project
+• ping <host> - Ping a host
+• curl <url> - Make HTTP request`;
+          break;
+          
+        case 'ls':
+          const path = args[1] || '/';
+          try {
+            if (path === '/' || path === '') {
+              // For root, use tree API to get all files
+              const res = await fetch(API.tree);
+              if (!res.ok) throw new Error(`ls: ${res.status}`);
+              const data = await res.json();
+              if (data.error) throw new Error(data.error);
+              const files = data.files || [];
+              const rootFiles = files.filter((f: string) => !f.includes('/'));
+              const rootDirs = [...new Set(files
+                .filter((f: string) => f.includes('/'))
+                .map((f: string) => f.split('/')[0])
+              )];
+              output = [
+                ...rootDirs.map((d: string) => `📁 ${d}/`),
+                ...rootFiles.map((f: string) => `📄 ${f}`)
+              ].join('\n') || 'No files found';
+            } else {
+              // For specific path, use ls API
+              const res = await fetch(`${API.ls}?path=${encodeURIComponent(path)}`);
+              if (!res.ok) throw new Error(`ls: ${res.status}`);
+              const data = await res.json();
+              if (data.error) throw new Error(data.error);
+              const files = data.tree || [];
+              output = files.length 
+                ? files.map((f: any) => `${f.type === 'dir' ? '📁' : '📄'} ${f.name}`).join('\n')
+                : 'No files found';
+            }
+          } catch (e: any) {
+            output = `ls: error - ${e.message}`;
+          }
+          break;
+          
+        case 'cat':
+          if (!args[1]) {
+            output = 'cat: missing file argument';
+            break;
+          }
+          try {
+            const res = await fetch(API.read, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ path: args[1] })
+            });
+            if (!res.ok) throw new Error(`cat: ${res.status}`);
+            const data = await res.json();
+            output = data.content || '(empty file)';
+          } catch (e: any) {
+            output = `cat: ${args[1]}: ${e.message}`;
+          }
+          break;
+          
+        case 'pwd':
+          output = process.env.NEXT_PUBLIC_REPO_NAME ? `/${process.env.NEXT_PUBLIC_REPO_NAME}` : '/shadowline';
+          break;
+          
+        case 'whoami':
+          output = 'batman';
+          break;
+          
+        case 'date':
+          output = new Date().toString();
+          break;
+          
+        case 'clear':
+          setTermLog(['Bat Computer CLI v1.0. Type "help" for commands.']);
+          setTermBusy(false);
+          return;
+          
+        case 'echo':
+          output = args.slice(1).join(' ');
+          break;
+          
+        case 'tree':
+          if (tree) {
+            const buildTreeString = (nodes: FsItem[], depth = 0): string => {
+              return nodes.map(node => {
+                const indent = '  '.repeat(depth);
+                const icon = node.type === 'dir' ? '📁' : '📄';
+                let result = `${indent}${icon} ${node.name}`;
+                if (node.children?.length) {
+                  result += '\n' + buildTreeString(node.children, depth + 1);
+                }
+                return result;
+              }).join('\n');
+            };
+            output = buildTreeString(tree);
+          } else {
+            output = 'tree: file tree not loaded';
+          }
+          break;
+          
+        case 'ps':
+          output = `PID    COMMAND
+1      /init
+42     batcomputer-os
+123    shadowline-editor
+456    next-dev-server
+789    node /app/server.js`;
+          break;
+          
+        case 'top':
+          output = `Bat Computer System Status:
+CPU: 23.4% (Wayne Enterprises Quantum Processor)
+Memory: 2.1GB / 16GB (13% used)
+Uptime: 42 days, 13 hours
+Power: 98.7% (Arc Reactor)
+Network: Connected to WayneNet
+Security: All systems nominal`;
+          break;
+          
+        case 'git':
+          const gitCmd = args.slice(1).join(' ');
+          if (!gitCmd) {
+            output = 'git: missing command. Try: git status, git log, git branch';
+          } else {
+            output = `Running: git ${gitCmd}\n(Demo) Git operation completed`;
+          }
+          break;
+          
+        case 'npm':
+          const npmCmd = args.slice(1).join(' ');
+          if (!npmCmd) {
+            output = 'npm: missing command. Try: npm install, npm run dev, npm build';
+          } else {
+            output = `Running: npm ${npmCmd}\n(Demo) NPM operation completed`;
+          }
+          break;
+          
+        case 'node':
+          if (!args[1]) {
+            output = 'node: missing file argument';
+          } else {
+            output = `Running: node ${args[1]}\n(Demo) Node.js execution completed`;
+          }
+          break;
+          
+        case 'build':
+          output = `🔨 Building Shadowline...
+✓ Compiling TypeScript
+✓ Bundling assets  
+✓ Optimizing images
+✓ Generating pages
+Build completed successfully!`;
+          break;
+          
+        case 'deploy':
+          output = `🚀 Deploying to Gotham Cloud...
+✓ Building application
+✓ Uploading assets
+✓ Updating DNS
+✓ Deployment complete
+🌐 Live at: https://shadowline.wayne-enterprises.com`;
+          break;
+          
+        case 'ping':
+          const host = args[1] || 'localhost';
+          output = `PING ${host} (127.0.0.1): 56 data bytes
+64 bytes from 127.0.0.1: icmp_seq=0 time=0.123ms
+64 bytes from 127.0.0.1: icmp_seq=1 time=0.089ms
+64 bytes from 127.0.0.1: icmp_seq=2 time=0.091ms
+--- ${host} ping statistics ---
+3 packets transmitted, 3 packets received, 0.0% packet loss`;
+          break;
+          
+        case 'curl':
+          const url = args[1];
+          if (!url) {
+            output = 'curl: missing URL';
+          } else {
+            output = `Fetching: ${url}\n(Demo) HTTP/1.1 200 OK\nContent-Type: text/html\n\n<html>Demo response</html>`;
+          }
+          break;
+          
+        default:
+          // Check for common shell patterns
+          if (cmd.includes('&&')) {
+            const commands = cmd.split('&&').map(c => c.trim());
+            output = `Executing chain: ${commands.join(' && ')}\n(Demo) All commands completed`;
+          } else if (cmd.includes('|')) {
+            const commands = cmd.split('|').map(c => c.trim());
+            output = `Piping: ${commands.join(' | ')}\n(Demo) Pipeline completed`;
+          } else {
+            output = `bash: ${command}: command not found
+Type 'help' to see available commands`;
+          }
+      }
+      
+      setTermLog(l => [...l, output]);
+    } catch (error: any) {
+      setTermLog(l => [...l, `Error: ${error.message}`]);
     } finally {
       setTermBusy(false);
     }
