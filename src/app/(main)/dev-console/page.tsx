@@ -178,14 +178,34 @@ export default function DevConsolePage() {
       let aiReply = '';
 
       if (pendingFiles.length > 0) {
-        // multipart upload to /api/ai/chat
-        const form = new FormData();
-        form.set('message', text.trim());
-        form.set('threadId', activeThread.id);
-        pendingFiles.forEach((f, i) => form.append('files', f, f.name || `file-${i}`));
-        const up = await fetch(API.chatUpload, { method: 'POST', body: form });
-        if (!up.ok) throw new Error(`chat upload HTTP ${up.status}`);
-        const jd = await up.json();
+        // For file uploads, convert to a text-based approach since our API expects JSON
+        let fileContents = '';
+        for (const file of pendingFiles) {
+          if (file.type.startsWith('text/') || file.name.match(/\.(js|ts|tsx|jsx|css|html|json|md)$/i)) {
+            try {
+              const content = await file.text();
+              fileContents += `\n\n--- File: ${file.name} ---\n${content}`;
+            } catch (e) {
+              fileContents += `\n\n--- File: ${file.name} (could not read) ---`;
+            }
+          } else {
+            fileContents += `\n\n--- File: ${file.name} (binary file, ${file.size} bytes) ---`;
+          }
+        }
+        
+        const r = await fetch(API.devchat, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: `${text.trim()}\n\nAttached files:${fileContents}`,
+            context: openPath ? { openPath, openContent } : undefined,
+          }),
+        });
+        if (!r.ok) {
+          const errorData = await r.json().catch(() => ({}));
+          throw new Error(`AI Chat Error: ${errorData.error || `HTTP ${r.status}`}`);
+        }
+        const jd = await r.json();
         aiReply = jd.reply ?? '(no reply)';
         setPendingFiles([]);
       } else {
@@ -196,10 +216,12 @@ export default function DevConsolePage() {
           body: JSON.stringify({
             message: text.trim(),
             context: openPath ? { openPath, openContent } : undefined,
-            threadId: activeThread.id,
           }),
         });
-        if (!r.ok) throw new Error(`devchat HTTP ${r.status}`);
+        if (!r.ok) {
+          const errorData = await r.json().catch(() => ({}));
+          throw new Error(`AI Chat Error: ${errorData.error || `HTTP ${r.status}`}`);
+        }
         const jd = await r.json();
         aiReply = jd.reply ?? '(no reply)';
       }

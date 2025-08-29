@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   if (!message) return NextResponse.json({ error: 'Missing message' }, { status: 400 });
 
   // Always fetch the tree first so the model knows the project
-  const treeRes = await fetch(new URL('/api/repo/ls', req.url), { cache: 'no-store' });
+  const treeRes = await fetch(new URL('/api/repo/tree', req.url), { cache: 'no-store' });
   const treeJson = await treeRes.json();
   const files: string[] = Array.isArray(treeJson?.files) ? treeJson.files : [];
   const head = files.slice(0, 500).join('\n');
@@ -25,7 +25,11 @@ export async function POST(req: NextRequest) {
     context?.openPath ? `${context.openPath}\n\n${context.openContent ?? ''}` : '(none)',
   ].join('\n');
 
-  const key = process.env.OPENAI_API_KEY!;
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) {
+    return NextResponse.json({ error: 'OpenAI API key not configured. Please set OPENAI_API_KEY environment variable.' }, { status: 503 });
+  }
+
   const r = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
