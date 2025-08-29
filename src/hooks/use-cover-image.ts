@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { toast } from './use-toast';
 import { getAppStorage } from '@/lib/firebase';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
+import { useUserData } from './use-user-data';
 
 const COVER_IMAGE_STORAGE_KEY = 'gotham-cover-image-url';
 const COVER_IMAGE_HINT_KEY = 'gotham-cover-image-hint';
@@ -33,51 +34,80 @@ export function useCoverImage() {
   const [coverImagePosition, setPosition] = useState<number>(DEFAULT_POSITION);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  useEffect(() => {
-    try {
-      const storedUrl = localStorage.getItem(COVER_IMAGE_STORAGE_KEY);
-      const storedHint = localStorage.getItem(COVER_IMAGE_HINT_KEY);
-      const storedPosition = localStorage.getItem(COVER_IMAGE_POSITION_KEY);
+  const { userData, updateCoverImage, isLoaded: userDataLoaded, isAuthenticated } = useUserData();
 
-      if (storedUrl) {
-        setCoverImage(storedUrl);
-        setDataAiHint(storedHint || DEFAULT_AI_HINT);
-        setPosition(storedPosition ? parseInt(storedPosition, 10) : DEFAULT_POSITION);
+  useEffect(() => {
+    if (userDataLoaded) {
+      // Load from persistent user data first (Firestore or localStorage)
+      if (userData.coverImage) {
+        setCoverImage(userData.coverImage);
+        setDataAiHint(DEFAULT_AI_HINT); // Could be extended to save hint in user data
+        setPosition(DEFAULT_POSITION); // Could be extended to save position in user data
       } else {
-        setCoverImage(DEFAULT_COVER_IMAGE);
-        setDataAiHint(DEFAULT_AI_HINT);
-        setPosition(DEFAULT_POSITION);
+        // Fallback to localStorage for compatibility
+        try {
+          const storedUrl = localStorage.getItem(COVER_IMAGE_STORAGE_KEY);
+          const storedHint = localStorage.getItem(COVER_IMAGE_HINT_KEY);
+          const storedPosition = localStorage.getItem(COVER_IMAGE_POSITION_KEY);
+
+          if (storedUrl) {
+            setCoverImage(storedUrl);
+            setDataAiHint(storedHint || DEFAULT_AI_HINT);
+            setPosition(storedPosition ? parseInt(storedPosition, 10) : DEFAULT_POSITION);
+            // Migrate to user data if authenticated
+            if (isAuthenticated) {
+              updateCoverImage(storedUrl);
+            }
+          } else {
+            setCoverImage(DEFAULT_COVER_IMAGE);
+            setDataAiHint(DEFAULT_AI_HINT);
+            setPosition(DEFAULT_POSITION);
+          }
+        } catch (error) {
+          console.error("Failed to access localStorage for cover image", error);
+          setCoverImage(DEFAULT_COVER_IMAGE);
+          setDataAiHint(DEFAULT_AI_HINT);
+          setPosition(DEFAULT_POSITION);
+        }
       }
-    } catch (error) {
-      console.error("Failed to access localStorage for cover image", error);
-      setCoverImage(DEFAULT_COVER_IMAGE);
-      setDataAiHint(DEFAULT_AI_HINT);
-      setPosition(DEFAULT_POSITION);
-    } finally {
-        setIsLoaded(true);
+      setIsLoaded(true);
     }
-  }, []);
+  }, [userDataLoaded, userData.coverImage, isAuthenticated, updateCoverImage]);
 
   const saveImage = useCallback(async (newImageUrl: string, newHint: string) => {
     try {
         console.log('Saving cover image...', { newImageUrl: newImageUrl.substring(0, 50) + '...', newHint });
+        toast({ title: 'Saving cover image...' });
+        
         let finalUrl = newImageUrl;
         
-        // For now, just save the data URI directly to localStorage to test if the save works
-        // This bypasses Firebase upload which might be causing issues
-        if (newImageUrl.startsWith('data:image')) {
-            console.log('Saving data URI directly to localStorage (bypassing Firebase for testing)...');
-            toast({ title: 'Saving cover image...' });
-            finalUrl = newImageUrl; // Use the data URI directly
-            toast({ title: 'Cover image saved!', description: 'Your new cover image has been saved locally.' });
+        // Upload to Firebase Storage if it's a data URL and user is authenticated
+        if (newImageUrl.startsWith('data:image') && isAuthenticated) {
+            try {
+                console.log('Uploading to Firebase Storage...');
+                finalUrl = await uploadCoverImage(newImageUrl);
+                console.log('Upload successful, URL:', finalUrl);
+            } catch (uploadError) {
+                console.warn('Firebase upload failed, using data URL:', uploadError);
+                finalUrl = newImageUrl; // Fallback to data URL
+            }
         }
       
-      console.log('Saving to localStorage...');
+      // Save to persistent user data (Firestore or localStorage)
+      updateCoverImage(finalUrl);
+      
+      // Also save to localStorage for compatibility
       localStorage.setItem(COVER_IMAGE_STORAGE_KEY, finalUrl);
       localStorage.setItem(COVER_IMAGE_HINT_KEY, newHint);
+      
       setCoverImage(finalUrl);
       setDataAiHint(newHint);
+      
       console.log('Cover image saved successfully!');
+      toast({ 
+          title: 'Cover image saved!', 
+          description: isAuthenticated ? 'Saved to your account and synced across devices.' : 'Saved locally to this device.'
+      });
     } catch (error) {
       console.error("Failed to save cover image:", error);
       toast({
@@ -86,7 +116,7 @@ export function useCoverImage() {
             description: (error as Error).message || 'Could not save the new cover image. Please try again.',
         });
     }
-  }, []);
+  }, [isAuthenticated, updateCoverImage]);
   
   const setCoverImagePosition = useCallback((newPosition: number) => {
     try {
@@ -102,5 +132,13 @@ export function useCoverImage() {
     }
   }, []);
 
-  return { isLoaded, coverImage, dataAiHint, setCoverImage: saveImage, coverImagePosition, setCoverImagePosition };
+  return { 
+    isLoaded: isLoaded && userDataLoaded, 
+    coverImage, 
+    dataAiHint, 
+    setCoverImage: saveImage, 
+    coverImagePosition, 
+    setCoverImagePosition,
+    isAuthenticated 
+  };
 }

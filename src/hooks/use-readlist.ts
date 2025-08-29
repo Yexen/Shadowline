@@ -4,6 +4,8 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { toast } from './use-toast';
+import { useUserData } from './use-user-data';
+import { useEffect } from 'react';
 
 export interface NewsArticle {
   id: string | number;
@@ -21,8 +23,10 @@ interface ReadlistState {
   toggleArticle: (article: NewsArticle) => void;
   removeArticle: (articleId: string | number) => void;
   hasArticle: (articleId: string | number) => boolean;
+  syncFromUserData: (articles: NewsArticle[]) => void;
 }
 
+// Zustand store for local state management
 export const useReadlist = create<ReadlistState>()(
   persist(
     (set, get) => ({
@@ -31,13 +35,19 @@ export const useReadlist = create<ReadlistState>()(
       toggleArticle: (article) => {
         const existing = get().articles.find(a => a.id === article.id);
         if (existing) {
-            set((state) => ({ articles: state.articles.filter((a) => a.id !== article.id) }));
+            const newArticles = get().articles.filter((a) => a.id !== article.id);
+            set({ articles: newArticles });
+            // Sync to persistent storage
+            window.syncReadlist?.(newArticles);
             toast({
                 title: "Removed from Read List",
                 variant: "destructive"
             });
         } else {
-            set((state) => ({ articles: [article, ...state.articles] }));
+            const newArticles = [article, ...get().articles];
+            set({ articles: newArticles });
+            // Sync to persistent storage
+            window.syncReadlist?.(newArticles);
             toast({
                 title: "Added to Read List",
                 description: `"${article.title}" has been added.`,
@@ -45,7 +55,10 @@ export const useReadlist = create<ReadlistState>()(
         }
       },
       removeArticle: (articleId) => {
-        set((state) => ({ articles: state.articles.filter((a) => a.id !== articleId) }));
+        const newArticles = get().articles.filter((a) => a.id !== articleId);
+        set({ articles: newArticles });
+        // Sync to persistent storage
+        window.syncReadlist?.(newArticles);
          toast({
             title: "Removed from Read List",
             variant: "destructive"
@@ -53,6 +66,9 @@ export const useReadlist = create<ReadlistState>()(
       },
       hasArticle: (articleId) => {
         return get().articles.some(a => a.id === articleId);
+      },
+      syncFromUserData: (articles: NewsArticle[]) => {
+        set({ articles, isLoaded: true });
       },
     }),
     {
@@ -66,6 +82,29 @@ export const useReadlist = create<ReadlistState>()(
     }
   )
 );
+
+// Hook to sync with persistent user data
+export function useReadlistSync() {
+  const { userData, updateReadlist, isLoaded: userDataLoaded } = useUserData();
+  const { syncFromUserData } = useReadlist();
+
+  useEffect(() => {
+    if (userDataLoaded && userData.readlist) {
+      // Sync from user data to local store
+      syncFromUserData(userData.readlist);
+    }
+  }, [userDataLoaded, userData.readlist, syncFromUserData]);
+
+  useEffect(() => {
+    // Set up global sync function
+    window.syncReadlist = updateReadlist;
+    return () => {
+      delete window.syncReadlist;
+    };
+  }, [updateReadlist]);
+
+  return { isLoaded: userDataLoaded };
+}
 
 if (typeof window !== 'undefined') {
     useReadlist.setState({ isLoaded: true });
