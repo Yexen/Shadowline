@@ -1,21 +1,72 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { isAllowedPath, normalizePath } from '@/lib/pathPolicy';
 
-// Ensure this runs at request time, not at build time
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
-    // If you intended to read a query param, do it safely here:
-    // const { searchParams } = new URL(req.url);
-    // const path = searchParams.get('path') ?? '/';
+    const { searchParams } = new URL(req.url);
+    const requestedPath = searchParams.get('path') ?? '/';
+    
+    // Normalize and validate the path
+    const normalizedPath = normalizePath(requestedPath);
+    
+    if (!isAllowedPath(normalizedPath)) {
+      return NextResponse.json(
+        { ok: false, error: 'Path not allowed' },
+        { status: 403 }
+      );
+    }
 
-    // Temporary safe response so builds don’t explode.
-    // Replace with your real logic later (fetch from runner, etc).
+    const owner = process.env.GITHUB_OWNER!;
+    const repo = process.env.GITHUB_REPO!;
+    const token = process.env.GITHUB_TOKEN!;
+
+    if (!owner || !repo || !token) {
+      return NextResponse.json(
+        { ok: false, error: 'Missing GitHub configuration' },
+        { status: 500 }
+      );
+    }
+
+    const GH = 'https://api.github.com';
+    const apiPath = normalizedPath === '/' ? '' : encodeURIComponent(normalizedPath);
+    
+    const res = await fetch(`${GH}/repos/${owner}/${repo}/contents/${apiPath}`, {
+      headers: { 
+        Authorization: `Bearer ${token}`, 
+        'User-Agent': 'shadowline-editor',
+        'Accept': 'application/vnd.github+json'
+      },
+      cache: 'no-store',
+    });
+
+    if (!res.ok) {
+      if (res.status === 404) {
+        return NextResponse.json({ ok: true, tree: [] });
+      }
+      throw new Error(`GitHub API error: ${res.status}`);
+    }
+
+    const data = await res.json();
+    const tree = Array.isArray(data) ? data : [data];
+    
+    const files = tree
+      .filter(item => item.type === 'file' || item.type === 'dir')
+      .map(item => ({
+        name: item.name,
+        path: item.path,
+        type: item.type,
+        size: item.size,
+      }));
+
     return NextResponse.json({
       ok: true,
-      tree: [], // or a minimal stub
+      tree: files,
+      path: normalizedPath
     });
   } catch (e: any) {
+    console.error('ls API error:', e);
     return NextResponse.json(
       { ok: false, error: e?.message ?? 'ls failed' },
       { status: 500 }
