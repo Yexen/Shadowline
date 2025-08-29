@@ -17,7 +17,6 @@ import {
 } from '@/components/ui/sidebar';
 
 import { BatLogo } from '@/components/bat-logo';
-import { AppHeader } from '@/components/app-header';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -80,7 +79,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   useTimer();
 
-  // --- Dev Console path (always visible; page can prompt for key itself)
+  // --- Dev Console path (always visible)
   const DEV_CONSOLE_PATH = '/dev-console';
 
   // Keyboard shortcut: ⌘/Ctrl + Alt + D
@@ -98,7 +97,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   // Helper to compare paths ignoring query strings
   const pathOnly = (p?: string | null) => (p || '').split('?')[0];
   const currentPath = pathOnly(pathname);
-  const hideHeader = currentPath === DEV_CONSOLE_PATH;
 
   // ---- app data/hooks
   const { isLoaded: bibleLoaded, bibleData, addCategory, addOrUpdateEntry } = useBible();
@@ -145,32 +143,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { href: '/organization', label: 'Organization', icon: ClipboardList },
     { href: '/messages', label: 'Messages', icon: MessageSquare },
     { href: '/sources', label: 'Sources', icon: Book },
-    // Always show Dev Console
     { href: DEV_CONSOLE_PATH, label: 'Dev Console', icon: Terminal },
   ];
-
-  // --- handlers
-  const handleSaveEntry = (category: string, entry: BibleEntry) => {
-    addOrUpdateEntry(category, entry, editingEntry?.entry.title);
-    setEditingEntry(null);
-    closeModal();
-  };
-  const handleAddNewEntry = (category: string) =>
-    setEditingEntry({ category, entry: { title: 'New Entry', fields: [{ label: 'Description', value: '' }] } });
-  const handleAddNewCategory = () => {
-    if (!newCategory.trim()) return;
-    addCategory(newCategory.trim());
-    setNewCategory('');
-  };
-  const handleCloseEditor = () => {
-    setEditingEntry(null);
-    closeModal();
-  };
-  const handleSaveChapter = (volumeId: string, chapterId: string, title: string, content: string) => {
-    updateChapter(volumeId, chapterId, { title, content });
-    closeModal();
-    setEditingChapter(null);
-  };
 
   // splash while auth loads
   if (!authLoaded || !activeWriter) {
@@ -196,122 +170,28 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
         <SidebarContent>
           <SidebarMenu>
-            {menuItems
-              .filter((i) => !['/nyxen'].includes(i.href))
-              .map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    onClick={() => {
-                      if (item.label !== 'Dev Console' && item.href.startsWith('/editor')) {
-                        router.push('/editor/new');
-                      } else {
-                        router.push(item.href);
-                      }
-                    }}
-                    isActive={
-                      item.label === 'Dev Console'
-                        ? currentPath === DEV_CONSOLE_PATH
-                        : currentPath.startsWith(item.href)
+            {menuItems.map((item) => (
+              <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                  onClick={() => {
+                    if (item.label !== 'Dev Console' && item.href.startsWith('/editor')) {
+                      router.push('/editor/new');
+                    } else {
+                      router.push(item.href);
                     }
-                    tooltip={{ children: item.label, side: 'right', align: 'center' }}
-                  >
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-
-            {/* Bible sheet */}
-            <SidebarMenuItem>
-              <Sheet>
-                <SidebarMenuButton asChild tooltip={{ children: 'Bible', side: 'right', align: 'center' }}>
-                  <SheetTrigger asChild>
-                    <button className="flex w-full items-center gap-2">
-                      <BookCopy />
-                      <span>Bible</span>
-                    </button>
-                  </SheetTrigger>
+                  }}
+                  isActive={
+                    item.label === 'Dev Console'
+                      ? currentPath === DEV_CONSOLE_PATH
+                      : currentPath.startsWith(item.href)
+                  }
+                  tooltip={{ children: item.label, side: 'right', align: 'center' }}
+                >
+                  <item.icon />
+                  <span>{item.label}</span>
                 </SidebarMenuButton>
-
-                <SheetContent className="flex flex-col">
-                  <SheetHeader>
-                    <SheetTitle className="font-headline">GOTHAM BIBLE</SheetTitle>
-                  </SheetHeader>
-
-                  {!bibleLoaded ? (
-                    <div className="space-y-4 mt-4">
-                      <Skeleton className="h-12 w-full" />
-                      <Skeleton className="h-12 w-full" />
-                      <Skeleton className="h-12 w-full" />
-                    </div>
-                  ) : (
-                    <Accordion type="single" collapsible className="w-full mt-4 flex-grow overflow-y-auto">
-                      {bibleData.map((entry) => (
-                        <AccordionItem value={entry.category} key={entry.category}>
-                          <AccordionTrigger className="font-headline text-base">{entry.category}</AccordionTrigger>
-                          <AccordionContent>
-                            <ul className="space-y-2">
-                              {entry.items.map((item) => (
-                                <li
-                                  key={item.title}
-                                  className="p-2 rounded-md hover:bg-accent cursor-pointer"
-                                  onClick={() => setEditingEntry({ category: entry.category, entry: item })}
-                                >
-                                  <h4 className="font-bold">{item.title}</h4>
-                                  <p className="text-sm text-muted-foreground truncate">
-                                    {item.fields?.[0]?.value || 'No description'}
-                                  </p>
-                                </li>
-                              ))}
-                              <li>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="w-full mt-2"
-                                  onClick={() => handleAddNewEntry(entry.category)}
-                                >
-                                  <PlusCircle className="mr-2" /> Add New Entry
-                                </Button>
-                              </li>
-                            </ul>
-                          </AccordionContent>
-                        </AccordionItem>
-                      ))}
-                    </Accordion>
-                  )}
-
-                  <div className="mt-auto border-t pt-4">
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="New Category Name..."
-                        value={newCategory}
-                        onChange={(e) => setNewCategory(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleAddNewCategory()}
-                      />
-                      <Button onClick={handleAddNewCategory}>Add</Button>
-                    </div>
-                  </div>
-                </SheetContent>
-              </Sheet>
-            </SidebarMenuItem>
-
-            <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => setVolumesSidebarOpen(true)} tooltip={{ children: 'Volumes', side: 'right', align: 'center' }}>
-                <Library />
-                <span>Volumes</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                onClick={() => router.push('/about')}
-                isActive={currentPath.startsWith('/about')}
-                tooltip={{ children: 'About', side: 'right', align: 'center' }}
-              >
-                <Info />
-                <span>About</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+              </SidebarMenuItem>
+            ))}
           </SidebarMenu>
         </SidebarContent>
 
@@ -387,17 +267,21 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       </Sidebar>
 
       <SidebarInset>
-        <div className="p-4 md:p-6">
-          {!hideHeader && <AppHeader />}
-          {children}
-        </div>
+        <div className="p-4 md:p-6">{children}</div>
       </SidebarInset>
 
       <BibleEditor
         entry={editingEntry?.entry ?? null}
         category={editingEntry?.category ?? ''}
-        onClose={handleCloseEditor}
-        onSave={handleSaveEntry}
+        onClose={() => {
+          setEditingEntry(null);
+          closeModal();
+        }}
+        onSave={(cat, entry) => {
+          addOrUpdateEntry(cat, entry, editingEntry?.entry.title);
+          setEditingEntry(null);
+          closeModal();
+        }}
       />
 
       <WriterProfile isOpen={writerProfileOpen} onClose={() => setWriterProfileOpen(false)} />
@@ -414,7 +298,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <ChapterEditor
           chapter={getChapter(editingChapter.volumeId, editingChapter.chapterId)}
           volumeId={editingChapter.volumeId}
-          onSave={handleSaveChapter}
+          onSave={(v, c, t, cont) => {
+            updateChapter(v, c, { title: t, content: cont });
+            closeModal();
+            setEditingChapter(null);
+          }}
           onClose={() => {
             closeModal();
             setEditingChapter(null);
