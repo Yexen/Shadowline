@@ -10,8 +10,8 @@ const COVER_IMAGE_STORAGE_KEY = 'gotham-cover-image-url';
 const COVER_IMAGE_HINT_KEY = 'gotham-cover-image-hint';
 const COVER_IMAGE_POSITION_KEY = 'gotham-cover-image-position';
 
-const DEFAULT_COVER_IMAGE = 'https://firebasestorage.googleapis.com/v0/b/shadows-of-gotham.firebasestorage.app/o/alimoini_Ultra-wide_comic-book_splash_header_on_a_rain-slick__039016ec-7d75-4c0a-8233-4e1ec46921c4_3.png?alt=media&token=0d9079bb-628f-4ac6-92b3-dbc6419fae47';
-const DEFAULT_AI_HINT = 'gotham city dark';
+const DEFAULT_COVER_IMAGE = '/alimoini_Ultra-wide_comic-book_splash_header_on_a_rain-slick__039016ec-7d75-4c0a-8233-4e1ec46921c4_3.png';
+const DEFAULT_AI_HINT = 'ultra-wide comic-book splash header on rain-slick night Gotham Batman';
 const DEFAULT_POSITION = 50; // Center
 
 // Helper function to upload image and get URL
@@ -60,40 +60,29 @@ export function useCoverImage() {
 
   const saveImage = useCallback(async (newImageUrl: string, newHint: string) => {
     try {
+        console.log('Saving cover image...', { newImageUrl: newImageUrl.substring(0, 50) + '...', newHint });
         let finalUrl = newImageUrl;
         
-        // If it's a data URI, upload it to Firebase Storage
+        // For now, just save the data URI directly to localStorage to test if the save works
+        // This bypasses Firebase upload which might be causing issues
         if (newImageUrl.startsWith('data:image')) {
-            toast({ title: 'Uploading new cover image...' });
-            
-            // Delete the old image from Firebase storage if it's a firebase URL
-            const oldUrl = localStorage.getItem(COVER_IMAGE_STORAGE_KEY);
-            if(oldUrl && oldUrl.includes('firebasestorage.googleapis.com')) {
-                try {
-                    const storage = getAppStorage();
-                    const oldRef = ref(storage, oldUrl);
-                    await deleteObject(oldRef);
-                } catch (deleteError: any) {
-                    // It's okay if deletion fails (e.g., file not found), just log it
-                    if (deleteError.code !== 'storage/object-not-found') {
-                        console.warn("Could not delete old cover image:", deleteError);
-                    }
-                }
-            }
-            
-            finalUrl = await uploadCoverImage(newImageUrl);
-            toast({ title: 'Upload complete!', description: 'Your new cover image has been saved.' });
+            console.log('Saving data URI directly to localStorage (bypassing Firebase for testing)...');
+            toast({ title: 'Saving cover image...' });
+            finalUrl = newImageUrl; // Use the data URI directly
+            toast({ title: 'Cover image saved!', description: 'Your new cover image has been saved locally.' });
         }
       
+      console.log('Saving to localStorage...');
       localStorage.setItem(COVER_IMAGE_STORAGE_KEY, finalUrl);
       localStorage.setItem(COVER_IMAGE_HINT_KEY, newHint);
       setCoverImage(finalUrl);
       setDataAiHint(newHint);
+      console.log('Cover image saved successfully!');
     } catch (error) {
       console.error("Failed to save cover image:", error);
       toast({
             variant: 'destructive',
-            title: 'Upload Failed',
+            title: 'Save Failed',
             description: (error as Error).message || 'Could not save the new cover image. Please try again.',
         });
     }

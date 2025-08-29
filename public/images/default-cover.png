@@ -1,0 +1,5 @@
+# Placeholder for your ultra-wide comic book splash image
+# 
+# To use your image as the default cover:
+# 1. Save your image as "default-cover.png" in this directory
+# 2. Update the DEFAULT_COVER_IMAGE constant in src/hooks/use-cover-image.ts
