@@ -4,8 +4,8 @@ import Link from 'next/link';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'My App',
-  description: 'This is my app',
+  title: 'Shadowline',
+  description: 'Welcome to the Shadows, Shadows of Gotham',
 };
 
 const DEV_KEY = process.env.NEXT_PUBLIC_DEV_CONSOLE_KEY || '';
