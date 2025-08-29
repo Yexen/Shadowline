@@ -71,7 +71,7 @@ import {
   Globe,
   User,
   Gamepad2,
-  Terminal, // <-- terminal icon
+  Terminal, // terminal icon
   PlusCircle,
 } from 'lucide-react';
 
@@ -80,22 +80,25 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   useTimer();
 
-  // --- Dev Console path (same-tab). Hidden if no key set.
-  const devKey = process.env.NEXT_PUBLIC_DEV_CONSOLE_KEY || '';
-  const devConsolePath = `/dev-console${devKey ? `?key=${encodeURIComponent(devKey)}` : ''}`;
+  // --- Dev Console path (always visible; page can prompt for key itself)
+  const DEV_CONSOLE_PATH = '/dev-console';
 
   // Keyboard shortcut: ⌘/Ctrl + Alt + D
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.altKey && e.key.toLowerCase() === 'd') {
         e.preventDefault();
-        if (devKey) router.push(devConsolePath);
-        else alert('Dev Console key not set (NEXT_PUBLIC_DEV_CONSOLE_KEY).');
+        router.push(DEV_CONSOLE_PATH);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [devKey, devConsolePath, router]);
+  }, [router]);
+
+  // Helper to compare paths ignoring query strings
+  const pathOnly = (p?: string | null) => (p || '').split('?')[0];
+  const currentPath = pathOnly(pathname);
+  const hideHeader = currentPath === DEV_CONSOLE_PATH;
 
   // ---- app data/hooks
   const { isLoaded: bibleLoaded, bibleData, addCategory, addOrUpdateEntry } = useBible();
@@ -130,7 +133,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   }, [modalType, modalData]);
 
   // --- menu
-  const baseMenu = [
+  const menuItems = [
     { href: '/home', label: 'Home', icon: Home },
     { href: '/search', label: 'Search', icon: Search },
     { href: '/editor', label: 'Editor', icon: PenSquare },
@@ -142,10 +145,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { href: '/organization', label: 'Organization', icon: ClipboardList },
     { href: '/messages', label: 'Messages', icon: MessageSquare },
     { href: '/sources', label: 'Sources', icon: Book },
+    // Always show Dev Console
+    { href: DEV_CONSOLE_PATH, label: 'Dev Console', icon: Terminal },
   ];
-  const menuItems = devKey
-    ? [...baseMenu, { href: devConsolePath, label: 'Dev Console', icon: Terminal }]
-    : baseMenu;
 
   // --- handlers
   const handleSaveEntry = (category: string, entry: BibleEntry) => {
@@ -199,12 +201,18 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               .map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
-                    onClick={() =>
+                    onClick={() => {
+                      if (item.label !== 'Dev Console' && item.href.startsWith('/editor')) {
+                        router.push('/editor/new');
+                      } else {
+                        router.push(item.href);
+                      }
+                    }}
+                    isActive={
                       item.label === 'Dev Console'
-                        ? router.push(item.href)
-                        : router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href)
+                        ? currentPath === DEV_CONSOLE_PATH
+                        : currentPath.startsWith(item.href)
                     }
-                    isActive={item.label !== 'Dev Console' && pathname.startsWith(item.href)}
                     tooltip={{ children: item.label, side: 'right', align: 'center' }}
                   >
                     <item.icon />
@@ -297,7 +305,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <SidebarMenuItem>
               <SidebarMenuButton
                 onClick={() => router.push('/about')}
-                isActive={pathname.startsWith('/about')}
+                isActive={currentPath.startsWith('/about')}
                 tooltip={{ children: 'About', side: 'right', align: 'center' }}
               >
                 <Info />
@@ -338,15 +346,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
 
-                {devKey && (
-                  <>
-                    <DropdownMenuItem onClick={() => router.push(devConsolePath)}>
-                      <Terminal className="mr-2" />
-                      Dev Console
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
+                <DropdownMenuItem onClick={() => router.push(DEV_CONSOLE_PATH)}>
+                  <Terminal className="mr-2" />
+                  Dev Console
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
 
                 <DropdownMenuItem onClick={() => setWriterProfileOpen(true)}>
                   <User className="mr-2" />
@@ -384,7 +388,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
       <SidebarInset>
         <div className="p-4 md:p-6">
-          <AppHeader />
+          {!hideHeader && <AppHeader />}
           {children}
         </div>
       </SidebarInset>
