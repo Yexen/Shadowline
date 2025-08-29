@@ -3,6 +3,11 @@ import "server-only";
 import Parser from 'rss-parser';
 import { extractImageFromArticle } from './extractImage';
 
+// Simple in-memory cache
+let cachedIntel: IntelItem[] | null = null;
+let cacheTimestamp: number | null = null;
+const CACHE_DURATION = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
+
 export type IntelItem = {
   id: string;
   title: string;
@@ -47,6 +52,14 @@ function firstImageFrom(item: any): string | undefined {
 }
 
 export async function getIntel({ limit = 9 } = {}): Promise<IntelItem[]> {
+  // Check cache first
+  const now = Date.now();
+  if (cachedIntel && cacheTimestamp && (now - cacheTimestamp) < CACHE_DURATION) {
+    console.log('Using cached intel data');
+    return cachedIntel.slice(0, limit);
+  }
+
+  console.log('Fetching fresh intel data');
   const all: IntelItem[] = [];
 
   await Promise.allSettled(
@@ -101,6 +114,11 @@ export async function getIntel({ limit = 9 } = {}): Promise<IntelItem[]> {
       }
     })
   );
+
+  // Cache the results
+  cachedIntel = limited;
+  cacheTimestamp = now;
+  console.log(`Cached ${limited.length} intel items for 6 hours`);
 
   return limited;
 }

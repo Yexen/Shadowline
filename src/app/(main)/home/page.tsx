@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 21600; // 6 hours in seconds (6 * 60 * 60)
 export const fetchCache = 'default-no-store';
 
 import React from 'react';
@@ -24,7 +24,7 @@ export default async function HomePage() {
     try {
       const searchQuery = 'batman lore deep dive';
       const YOUTUBE_API_URL = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchQuery)}&type=video&videoDuration=medium&maxResults=6&key=${YOUTUBE_API_KEY}`;
-      const response = await fetch(YOUTUBE_API_URL, { next: { revalidate: 3600 } });
+      const response = await fetch(YOUTUBE_API_URL, { next: { revalidate: 21600 } }); // 6 hours
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(`YouTube API error: ${errorData.error.message}`);

@@ -14,6 +14,7 @@ import { ReadlistButton } from "@/components/readlist-button";
 import { VideoModal } from '@/components/video-modal';
 import { IntelViewer } from '@/components/intel-viewer';
 import { Button } from './ui/button';
+import { useRouter } from 'next/navigation';
 
 interface HomePageClientProps {
     initialVideos: Video[],
@@ -54,6 +55,8 @@ export function HomePageClient({ initialVideos, initialNews, videoError, newsErr
   const [activeVideo, setActiveVideo] = React.useState<{ id: string; title: string } | null>(null);
   const [activeArticle, setActiveArticle] = React.useState<{ url: string; title: string } | null>(null);
   const [lang, setLang] = React.useState<'en' | 'fa'>('en');
+  const [lastRefresh, setLastRefresh] = React.useState<number>(Date.now());
+  const router = useRouter();
 
   React.useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -65,6 +68,25 @@ export function HomePageClient({ initialVideos, initialNews, videoError, newsErr
       }
     }
   }, []);
+
+  // Auto-refresh every 6 hours
+  React.useEffect(() => {
+    const checkForRefresh = () => {
+      const now = Date.now();
+      const sixHours = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
+      
+      if (now - lastRefresh >= sixHours) {
+        console.log('Auto-refreshing homepage after 6 hours');
+        setLastRefresh(now);
+        router.refresh();
+      }
+    };
+
+    // Check every minute if we need to refresh
+    const interval = setInterval(checkForRefresh, 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, [lastRefresh, router]);
 
   const t = translations[lang];
 

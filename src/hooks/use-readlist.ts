@@ -11,7 +11,7 @@ export interface NewsArticle {
   source: string;
   date: string;
   snippet: string;
-  image: string;
+  image?: string;
   url: string;
 }
 

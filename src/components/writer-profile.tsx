@@ -17,7 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { useWatchlist } from '@/hooks/use-watchlist';
 import { useReadlist } from '@/hooks/use-readlist';
 import Image from 'next/image';
-import { PlayCircle } from 'lucide-react';
+import { PlayCircle, Newspaper } from 'lucide-react';
 import { PasswordInput } from './password-input';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
@@ -86,7 +86,13 @@ function ReadlistSection() {
                              <Card key={article.id} className="bg-card/50 flex items-center p-3">
                                 <a href={article.url} target="_blank" rel="noopener noreferrer" className="flex-grow flex items-center gap-4 min-w-0">
                                    <div className="relative h-16 w-24 flex-shrink-0 overflow-hidden rounded-md">
-                                     <Image src={article.image} alt={article.title} fill className="object-cover" />
+                                     {article.image ? (
+                                       <Image src={article.image} alt={article.title} fill className="object-cover" />
+                                     ) : (
+                                       <div className="w-full h-full bg-muted flex items-center justify-center">
+                                         <Newspaper className="w-8 h-8 text-muted-foreground" />
+                                       </div>
+                                     )}
                                    </div>
                                    <div className="flex-grow min-w-0">
                                      <p className="font-semibold truncate">{article.title}</p>
