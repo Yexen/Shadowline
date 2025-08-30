@@ -73,6 +73,8 @@ import {
   Gamepad2,
   Terminal,
   PlusCircle,
+  NotebookPen,
+  FolderOpen,
 } from 'lucide-react';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -141,6 +143,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { href: '/games', label: 'Games', icon: Gamepad2 },
     { href: '/ai-tools', label: 'AI Tools', icon: BrainCircuit },
     { href: '/maps', label: 'Maps', icon: MapIcon },
+    { href: '/batcave-archive', label: 'Notebook', icon: NotebookPen },
+    { href: '/classification', label: 'Classification', icon: FolderOpen },
     { href: '/organization', label: 'Organization', icon: ClipboardList },
     { href: '/messages', label: 'Messages', icon: MessageSquare },
     { href: '/sources', label: 'Sources', icon: Book },

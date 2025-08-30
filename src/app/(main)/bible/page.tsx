@@ -16,7 +16,7 @@ import {
 import { BatLogo } from '@/components/bat-logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Home, PenSquare, BrainCircuit, Info, LogOut, FileText, Images, Settings, BookCopy, BookOpenCheck, ClipboardList, Map as MapIcon, Search, NotebookPen } from 'lucide-react';
+import { Home, PenSquare, BrainCircuit, Info, LogOut, FileText, Images, Settings, BookCopy, BookOpenCheck, ClipboardList, Map as MapIcon, Search } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -59,7 +59,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { href: '/drafts', label: 'Drafts', icon: FileText },
     { href: '/gallery', label: 'Gallery', icon: Images },
     { href: '/maps', label: 'Maps', icon: MapIcon },
-    { href: '/batcave-archive', label: 'Notebook', icon: NotebookPen },
     { href: '/organization', label: 'Organization', icon: ClipboardList },
     { href: '/about', label: 'About', icon: Info },
     { href: '/settings', label: 'Settings', icon: Settings },
