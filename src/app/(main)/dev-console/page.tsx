@@ -8,13 +8,14 @@ import { Separator } from '@/components/ui/separator';
 import {
   Paperclip, Undo2, Send, Search, FileText, Folder,
   ChevronRight, ChevronDown, Play, GitCommitVertical, X,
-  Database, Activity, Settings
+  Database, Activity, Settings, Save, Trash2, GitCommit, Upload
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAiProvider } from '@/hooks/use-ai-provider';
 import { EnhancedTerminal, EnhancedTerminalHandle } from '@/components/dev-console/enhanced-terminal';
 import { MonacoCodeEditor } from '@/components/dev-console/monaco-editor';
 import { FirebaseManager } from '@/components/dev-console/firebase-manager';
+import { useToast } from '@/hooks/use-toast';
 
 // API endpoints
 const API = {
@@ -33,6 +34,14 @@ type ChatMsg = { role: 'user' | 'assistant' | 'system'; content: string; ts: num
 type ChatThread = { id: string; title: string; messages: ChatMsg[] };
 const LS_THREADS_KEY = 'devconsole_threads_v1';
 const LS_ACTIVE_THREAD = 'devconsole_active_thread_v1';
+
+interface SuggestedAction {
+  type: 'file' | 'command' | 'code';
+  label: string;
+  path?: string;
+  content?: string;
+  description?: string;
+}
 
 type FsItem = { name: string; path: string; type: 'dir' | 'file'; children?: FsItem[] };
 
@@ -83,6 +92,7 @@ export default function EnhancedDevConsolePage() {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'chat'|'editor'|'terminal'|'firebase'|'system'>('terminal');
   const { selectedProvider, getCurrentApiKey } = useAiProvider();
+  const { toast } = useToast();
   const terminalRef = useRef<EnhancedTerminalHandle>(null);
 
   // Preview panel
@@ -95,6 +105,8 @@ export default function EnhancedDevConsolePage() {
   const [draft, setDraft] = useState('');
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
+  const [suggestedActions, setSuggestedActions] = useState<SuggestedAction[]>([]);
+  const [contextMemory, setContextMemory] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
@@ -166,6 +178,54 @@ export default function EnhancedDevConsolePage() {
 
   const activeThread = threads.find(t => t.id === activeThreadId)!;
 
+  // Extract suggested actions from AI responses
+  const extractSuggestedActions = (response: string): SuggestedAction[] => {
+    const actions: SuggestedAction[] = [];
+    
+    // Extract file paths
+    const fileMatches = response.match(/`([^`]+\.(ts|tsx|js|jsx|css|json|md|py|html|xml|yaml|yml))`/g);
+    if (fileMatches) {
+      fileMatches.forEach(match => {
+        const path = match.replace(/`/g, '');
+        actions.push({
+          type: 'file',
+          label: `Open ${path}`,
+          path: path,
+          description: `Open file ${path}`
+        });
+      });
+    }
+    
+    // Extract code blocks
+    const codeMatches = response.match(/```[\s\S]*?```/g);
+    if (codeMatches) {
+      codeMatches.forEach((match, index) => {
+        actions.push({
+          type: 'code',
+          label: `Apply Code Block ${index + 1}`,
+          content: match.replace(/```[^\n]*\n?|```/g, ''),
+          description: `Apply suggested code changes`
+        });
+      });
+    }
+
+    // Extract terminal commands
+    const terminalMatches = response.match(/`([^`]*(?:npm|git|yarn|pnpm|node|python|pip|docker|curl|wget|mkdir|cp|mv|rm|ls|cd|chmod|chown|cat|grep|find|sed|awk)\s[^`]*)`/g);
+    if (terminalMatches) {
+      terminalMatches.forEach(match => {
+        const command = match.replace(/`/g, '');
+        actions.push({
+          type: 'command',
+          label: `Run: ${command.substring(0, 30)}...`,
+          content: command,
+          description: `Execute terminal command`
+        });
+      });
+    }
+    
+    return actions;
+  };
+
   // Chat actions
   const newThread = () => {
     const t = { id: uid('thread'), title: 'New chat', messages: [] } as ChatThread;
@@ -182,6 +242,9 @@ export default function EnhancedDevConsolePage() {
       t.id === activeThread.id ? { ...t, messages: [...t.messages, user] } : t
     );
     setThreads(optimistic); saveThreads(optimistic); setDraft('');
+    
+    // Add to context memory
+    setContextMemory(prev => [...prev, text.trim()].slice(-10));
 
     try {
       let aiReply = '';
@@ -240,6 +303,10 @@ export default function EnhancedDevConsolePage() {
       const ai: ChatMsg = { role: 'assistant', content: aiReply, ts: Date.now()+1 };
       const next = threads.map(t => t.id===activeThread.id ? { ...t, messages:[...t.messages, ai] } : t);
       setThreads(next); saveThreads(next);
+      
+      // Extract suggested actions from AI response
+      const actions = extractSuggestedActions(aiReply);
+      setSuggestedActions(actions);
     } catch (e:any) {
       const aiErr: ChatMsg = { role: 'assistant', content:`⚠️ Chat failed: ${e?.message ?? e}`, ts: Date.now()+1 };
       const next = threads.map(t => t.id===activeThread.id ? { ...t, messages:[...t.messages, aiErr] } : t);
@@ -262,6 +329,59 @@ export default function EnhancedDevConsolePage() {
     setPendingFiles(prev => [...prev, ...Array.from(fl)]);
   };
   const removePending = (idx: number) => setPendingFiles(prev => prev.filter((_, i) => i !== idx));
+
+  // Action handlers for suggested actions
+  const handleApplyAction = async (action: SuggestedAction) => {
+    try {
+      if (action.type === 'file' && action.path) {
+        await openFile(action.path);
+        toast({ title: "File Opened", description: `Opened ${action.path}` });
+      } else if (action.type === 'code' && action.content) {
+        await navigator.clipboard.writeText(action.content);
+        toast({ title: "Code Copied", description: "Code copied to clipboard" });
+      } else if (action.type === 'command' && action.content) {
+        if (terminalRef.current) {
+          // Switch to terminal tab and execute command
+          setActiveTab('terminal');
+          setTimeout(() => {
+            terminalRef.current?.executeCommand(action.content || '');
+          }, 100);
+          toast({ title: "Command Executed", description: `Running: ${action.content}` });
+        } else {
+          await navigator.clipboard.writeText(action.content);
+          toast({ title: "Command Copied", description: "Command copied to clipboard" });
+        }
+      }
+    } catch (error) {
+      toast({ title: "Action Failed", description: "Could not apply action", variant: "destructive" });
+    }
+  };
+
+  const handleSaveSession = () => {
+    if (!activeThread || activeThread.messages.length < 2) return;
+    const sessionName = activeThread.messages[0].content.substring(0, 40) + '...';
+    // Update thread title
+    const updatedThread = { ...activeThread, title: sessionName };
+    const next = threads.map(t => t.id === activeThread.id ? updatedThread : t);
+    setThreads(next);
+    saveThreads(next);
+    toast({ title: "Session Saved", description: "Chat session updated" });
+  };
+
+  const handleDismiss = () => {
+    setSuggestedActions([]);
+    setContextMemory([]);
+    toast({ title: "Session Cleared", description: "Context and actions cleared" });
+  };
+
+  const handleCommitChat = () => {
+    commitChanges();
+    toast({ title: "Commit Initiated", description: "Starting commit process..." });
+  };
+
+  const handleDeployChat = () => {
+    toast({ title: "Deploy", description: "Deploy functionality to be implemented" });
+  };
 
   // Editor actions
   const openFile = async (p: string) => {
@@ -395,10 +515,10 @@ export default function EnhancedDevConsolePage() {
               if (data.error) throw new Error(data.error);
               const files = data.files || [];
               const rootFiles = files.filter((f: string) => !f.includes('/'));
-              const rootDirs = [...new Set(files
+              const rootDirs = Array.from(new Set(files
                 .filter((f: string) => f.includes('/'))
                 .map((f: string) => f.split('/')[0])
-              )];
+              ));
               output = [
                 ...rootDirs.map((d: string) => `📁 ${d}/`),
                 ...rootFiles.map((f: string) => `📄 ${f}`)
@@ -601,7 +721,14 @@ Type 'help' to see available commands`;
 
                       <div className="border-t border-white/10 p-2 space-y-2">
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>AI Provider: {selectedProvider.toUpperCase()}</span>
+                          <div className="flex items-center gap-3">
+                            <span>AI Provider: {selectedProvider.toUpperCase()}</span>
+                            {contextMemory.length > 0 && (
+                              <span className="text-amber-400">
+                                Context: {contextMemory.length} topics remembered
+                              </span>
+                            )}
+                          </div>
                           <span>{getCurrentApiKey() ? '🟢 Connected' : '🔴 Not configured'}</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -623,6 +750,47 @@ Type 'help' to see available commands`;
                             <Send className="h-4 w-4 mr-1" /> {sending ? 'Sending…' : 'Send'}
                           </Button>
                         </div>
+                        {activeThread?.messages.length > 1 && (
+                          <div className="flex gap-2 mt-2 justify-between">
+                            <div className="flex gap-2">
+                              <Button variant="outline" size="sm" onClick={handleSaveSession}>
+                                <Save className="h-3 w-3 mr-1"/> Save
+                              </Button>
+                              <Button variant="destructive" size="sm" onClick={handleDismiss}>
+                                <Trash2 className="h-3 w-3 mr-1"/> Clear
+                              </Button>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button variant="secondary" size="sm" onClick={handleCommitChat}>
+                                <GitCommit className="h-3 w-3 mr-1"/> Commit
+                              </Button>
+                              <Button variant="default" size="sm" onClick={handleDeployChat}>
+                                <Upload className="h-3 w-3 mr-1"/> Deploy
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                        {suggestedActions.length > 0 && (
+                          <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                            <p className="text-sm font-medium mb-2 text-amber-400">Suggested Actions:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {suggestedActions.map((action, index) => (
+                                <Button
+                                  key={index}
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleApplyAction(action)}
+                                  className="text-xs border-amber-500/30 text-amber-300 hover:text-amber-200 hover:border-amber-500/50"
+                                >
+                                  {action.type === 'file' && <FileText className="mr-1 h-3 w-3" />}
+                                  {action.type === 'code' && <Play className="mr-1 h-3 w-3" />}
+                                  {action.type === 'command' && <GitCommitVertical className="mr-1 h-3 w-3" />}
+                                  {action.label}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
