@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Send, Save, Trash2, Sparkles, X } from 'lucide-react';
+import { Loader2, Send, Save, Trash2, Sparkles, X, FileText, GitCommit, Upload, Play } from 'lucide-react';
 import { ChatMessage } from '@/components/chat-message';
 import { runOracleChat } from '@/ai/flows/oracle-chat-flow';
 import { useOracleChat, OracleChatSession } from '@/hooks/use-oracle-chat';
@@ -14,10 +14,20 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import type { ChatMessage as OracleChatMessage } from '@/ai/types';
 
+interface SuggestedAction {
+  type: 'file' | 'command' | 'code';
+  label: string;
+  path?: string;
+  content?: string;
+  description?: string;
+}
+
 export function OracleChatTool() {
   const [messages, setMessages] = useState<OracleChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [suggestedActions, setSuggestedActions] = useState<SuggestedAction[]>([]);
+  const [contextMemory, setContextMemory] = useState<string[]>([]);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { savedSessions, saveSession, deleteSession } = useOracleChat();
   const { toast } = useToast();
@@ -32,19 +42,62 @@ export function OracleChatTool() {
     scrollToBottom();
   }, [messages]);
 
+  const extractSuggestedActions = (response: string): SuggestedAction[] => {
+    const actions: SuggestedAction[] = [];
+    
+    // Extract file paths
+    const fileMatches = response.match(/`([^`]+\.(ts|tsx|js|jsx|css|json|md))`/g);
+    if (fileMatches) {
+      fileMatches.forEach(match => {
+        const path = match.replace(/`/g, '');
+        actions.push({
+          type: 'file',
+          label: `Open ${path}`,
+          path: path,
+          description: `Open file ${path}`
+        });
+      });
+    }
+    
+    // Extract code blocks
+    const codeMatches = response.match(/```[\s\S]*?```/g);
+    if (codeMatches) {
+      codeMatches.forEach((match, index) => {
+        actions.push({
+          type: 'code',
+          label: `Apply Code Block ${index + 1}`,
+          content: match.replace(/```[^\n]*\n?|```/g, ''),
+          description: `Apply suggested code changes`
+        });
+      });
+    }
+    
+    return actions;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
     const userMessage: OracleChatMessage = { role: 'user', content: input };
-    setMessages((prev) => [...prev, userMessage]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
+    
+    // Add to context memory
+    setContextMemory(prev => [...prev, input].slice(-10)); // Keep last 10 inputs for memory
+    
     setInput('');
     setIsLoading(true);
 
     try {
-      const response = await runOracleChat([...messages, userMessage]);
+      const response = await runOracleChat(updatedMessages);
       const modelMessage: OracleChatMessage = { role: 'model', content: response };
       setMessages((prev) => [...prev, modelMessage]);
+      
+      // Extract suggested actions from response
+      const actions = extractSuggestedActions(response);
+      setSuggestedActions(actions);
+      
     } catch (error) {
       console.error("Chat error:", error);
       const errorMessage: OracleChatMessage = { role: 'model', content: 'Sorry, the Oracle is not responding. Please try again.' };
@@ -73,6 +126,35 @@ export function OracleChatTool() {
 
   const handleLoadSession = (session: OracleChatSession) => {
     setMessages(session.messages);
+    // Rebuild context memory from session
+    const userMessages = session.messages
+      .filter(msg => msg.role === 'user')
+      .map(msg => msg.content)
+      .slice(-10);
+    setContextMemory(userMessages);
+  };
+  
+  const handleApplyAction = async (action: SuggestedAction) => {
+    try {
+      if (action.type === 'file' && action.path) {
+        // For now, just show a toast. In a real app, you'd open the file in an editor
+        toast({ title: "File Action", description: `Would open ${action.path}` });
+      } else if (action.type === 'code' && action.content) {
+        // Copy code to clipboard for now
+        await navigator.clipboard.writeText(action.content);
+        toast({ title: "Code Applied", description: "Code copied to clipboard" });
+      }
+    } catch (error) {
+      toast({ title: "Action Failed", description: "Could not apply action", variant: "destructive" });
+    }
+  };
+  
+  const handleCommit = () => {
+    toast({ title: "Commit", description: "Commit functionality to be implemented" });
+  };
+  
+  const handleDeploy = () => {
+    toast({ title: "Deploy", description: "Deploy functionality to be implemented" });
   };
   
   const handleDeleteSession = (sessionId: string) => {
@@ -89,7 +171,14 @@ export function OracleChatTool() {
               </div>
               <div>
                 <CardTitle className="font-headline text-xl">Chat with the Oracle</CardTitle>
-                <CardDescription className="mt-1">Ask questions about your world bible. The Oracle's knowledge is limited to what's in the bible.</CardDescription>
+                <CardDescription className="mt-1">
+                  Ask questions about your world bible. The Oracle remembers your recent conversation and can suggest file paths and code changes.
+                  {contextMemory.length > 0 && (
+                    <span className="block text-xs mt-1 text-muted-foreground">
+                      Context: {contextMemory.length} recent topics remembered
+                    </span>
+                  )}
+                </CardDescription>
               </div>
             </div>
         </CardHeader>
@@ -132,9 +221,35 @@ export function OracleChatTool() {
                     </Button>
                     </form>
                     {messages.length > 1 && (
-                        <div className="flex gap-2 mt-2 justify-end">
-                            <Button variant="outline" size="sm" onClick={handleSaveSession}><Save className="mr-2"/> Save</Button>
-                            <Button variant="destructive" size="sm" onClick={handleDismiss}><X className="mr-2"/> Dismiss</Button>
+                        <div className="flex gap-2 mt-2 justify-between">
+                            <div className="flex gap-2">
+                                <Button variant="outline" size="sm" onClick={handleSaveSession}><Save className="mr-2"/> Save</Button>
+                                <Button variant="destructive" size="sm" onClick={handleDismiss}><X className="mr-2"/> Dismiss</Button>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button variant="secondary" size="sm" onClick={handleCommit}><GitCommit className="mr-2"/> Commit</Button>
+                                <Button variant="default" size="sm" onClick={handleDeploy}><Upload className="mr-2"/> Deploy</Button>
+                            </div>
+                        </div>
+                    )}
+                    {suggestedActions.length > 0 && (
+                        <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                            <p className="text-sm font-medium mb-2">Suggested Actions:</p>
+                            <div className="flex flex-wrap gap-2">
+                                {suggestedActions.map((action, index) => (
+                                    <Button
+                                        key={index}
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleApplyAction(action)}
+                                        className="text-xs"
+                                    >
+                                        {action.type === 'file' && <FileText className="mr-1 h-3 w-3" />}
+                                        {action.type === 'code' && <Play className="mr-1 h-3 w-3" />}
+                                        {action.label}
+                                    </Button>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>
