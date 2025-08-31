@@ -135,7 +135,7 @@ export function SettingsDialog({ isOpen, onClose, onOpenUserManagement }: Settin
                          <div className="space-y-4 mt-2 p-3 border rounded-md">
                             <div className="space-y-2">
                                 <Label htmlFor="ai-provider">AI Provider</Label>
-                                <p className="text-xs text-muted-foreground">Choose which AI provider to use for chat and other AI features.</p>
+                                <p className="text-xs text-muted-foreground">Choose which AI provider to use for chat and other AI features. Click "Save AI Settings" to apply changes.</p>
                                 <Select value={selectedProvider} onValueChange={(value: AiProvider) => setSelectedProvider(value)}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select AI provider" />
@@ -147,6 +147,11 @@ export function SettingsDialog({ isOpen, onClose, onOpenUserManagement }: Settin
                                         <SelectItem value="all">{providerLabels.all}</SelectItem>
                                     </SelectContent>
                                 </Select>
+                                {selectedProvider === 'all' && (
+                                    <div className="text-xs bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded p-2 text-blue-800 dark:text-blue-200">
+                                        <strong>Council Chamber Mode:</strong> When ALL is selected and all three API keys are configured, you can access the Council Chamber for multi-LLM conversations.
+                                    </div>
+                                )}
                             </div>
 
                             <div className="space-y-2">

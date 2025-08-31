@@ -51,17 +51,28 @@ export default function CouncilChamberPage() {
 
   // Check if all API keys are available for Council Chamber mode
   const allKeysAvailable = openAiApiKey && claudeApiKey && geminiApiKey;
-  const isCouncilEnabled = selectedProvider === 'all' && allKeysAvailable;
+  const isCouncilEnabled = selectedProvider === 'all' && allKeysAvailable && isLoaded;
 
-  // Welcome message
+  // Debug logging
   useEffect(() => {
-    if (messages.length === 0) {
-      setMessages([
-        {
-          id: '1',
-          role: 'assistant',
-          content: isCouncilEnabled 
-            ? `🏛️ **Welcome to the Council Chamber** 🏛️
+    console.log('Council Chamber State:', {
+      selectedProvider,
+      allKeysAvailable,
+      isCouncilEnabled,
+      isLoaded,
+      hasOpenAI: !!openAiApiKey,
+      hasClaude: !!claudeApiKey,
+      hasGemini: !!geminiApiKey
+    });
+  }, [selectedProvider, allKeysAvailable, isCouncilEnabled, isLoaded, openAiApiKey, claudeApiKey, geminiApiKey]);
+
+  // Welcome message - update when state changes
+  useEffect(() => {
+    const welcomeMessage = {
+      id: '1',
+      role: 'assistant' as const,
+      content: isCouncilEnabled 
+        ? `🏛️ **Welcome to the Council Chamber** 🏛️
 
 The Council Chamber is now in session. Here, the three great AI minds converge to deliberate on your queries:
 
@@ -72,7 +83,7 @@ The Council Chamber is now in session. Here, the three great AI minds converge t
 When you ask a question, all three models will contribute their expertise. The primary response will be highlighted, with alternative perspectives shown below.
 
 *"In the multitude of counselors there is wisdom."* - What would you like the council to discuss?`
-            : `🏛️ **Council Chamber - Setup Required** 🏛️
+        : `🏛️ **Council Chamber - Setup Required** 🏛️
 
 Welcome to the Council Chamber, where multiple AI minds collaborate to provide comprehensive insights.
 
@@ -83,12 +94,12 @@ ${!isLoaded ? '⏳ Loading settings...' :
 }
 
 The Council Chamber only works when ALL is selected and all API keys are present.`,
-          timestamp: new Date(),
-          model: 'System'
-        }
-      ]);
-    }
-  }, [isCouncilEnabled, isLoaded, selectedProvider]);
+      timestamp: new Date(),
+      model: 'System'
+    };
+
+    setMessages([welcomeMessage]);
+  }, [isCouncilEnabled, isLoaded, selectedProvider, allKeysAvailable]);
 
   const scrollToBottom = () => {
     if (scrollAreaRef.current) {
@@ -216,6 +227,49 @@ The Council Chamber only works when ALL is selected and all API keys are present
           Multi-LLM collaborative intelligence - where Claude, GPT-4, and Gemini deliberate together
         </p>
       </div>
+
+      {/* Debug Status Panel */}
+      <Card className="mb-4">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Council Chamber Status</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="grid grid-cols-2 gap-4 text-xs">
+            <div>
+              <span className="font-medium">Provider Selected:</span>
+              <Badge variant={selectedProvider === 'all' ? 'default' : 'secondary'} className="ml-2">
+                {selectedProvider?.toUpperCase() || 'None'}
+              </Badge>
+            </div>
+            <div>
+              <span className="font-medium">Status:</span>
+              <Badge variant={isCouncilEnabled ? 'default' : 'destructive'} className="ml-2">
+                {isCouncilEnabled ? 'Active' : 'Inactive'}
+              </Badge>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            <div className="flex items-center">
+              <span className="font-medium">OpenAI:</span>
+              <Badge variant={openAiApiKey ? 'default' : 'secondary'} className="ml-2">
+                {openAiApiKey ? '✓' : '✗'}
+              </Badge>
+            </div>
+            <div className="flex items-center">
+              <span className="font-medium">Claude:</span>
+              <Badge variant={claudeApiKey ? 'default' : 'secondary'} className="ml-2">
+                {claudeApiKey ? '✓' : '✗'}
+              </Badge>
+            </div>
+            <div className="flex items-center">
+              <span className="font-medium">Gemini:</span>
+              <Badge variant={geminiApiKey ? 'default' : 'secondary'} className="ml-2">
+                {geminiApiKey ? '✓' : '✗'}
+              </Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {!isCouncilEnabled && isLoaded && (
         <Alert>
