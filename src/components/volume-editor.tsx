@@ -180,15 +180,16 @@ export function VolumeEditor({ volume, onSave, onClose, onDeleteChapter, onAddCh
               {currentVolume.chapters.length > 0 ? (
                 <ul className="space-y-2">
                   {currentVolume.chapters.map((chapter) => (
-                    <li key={chapter.id} className="flex items-center justify-between p-2 bg-card rounded-md group">
-                      <div className="flex items-center gap-2 flex-grow min-w-0">
-                        <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
+                    <li key={chapter.id} className="flex items-center justify-between p-2 bg-card rounded-md group hover:bg-accent/50 transition-colors">
+                      <div 
+                        className="flex items-center gap-2 flex-grow min-w-0 cursor-pointer"
+                        onClick={() => handleChapterClick(chapter.id)}
+                      >
+                        <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" onClick={(e) => e.stopPropagation()} />
                         <span className="font-medium truncate">{chapter.title}</span>
+                        <BookOpen className="h-4 w-4 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
-                        <Button variant="ghost" size="sm" onClick={() => handleChapterClick(chapter.id)}>
-                            <BookOpen className="mr-2" /> Open
-                        </Button>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <ExportPopover onExport={(format) => handleExportChapter(chapter, format)} />
                         <AlertDialog>
                           <AlertDialogTrigger asChild>

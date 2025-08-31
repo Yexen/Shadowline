@@ -105,7 +105,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const { isLoaded: bibleLoaded, bibleData, addCategory, addOrUpdateEntry } = useBible();
   const { activeWriter } = useWriters();
   const { modalType, modalData, closeModal, openModal } = useModalStore();
-  const { volumes } = useVolumes();
+  const { volumes, updateChapter, getChapter } = useVolumes();
 
   const [editingEntry, setEditingEntry] = useState<{ category: string; entry: BibleEntry } | null>(null);
   const [newCategory, setNewCategory] = useState('');
@@ -113,6 +113,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [volumesSheetOpen, setVolumesSheetOpen] = useState(false);
   const [editingChapter, setEditingChapter] = useState<any>(null);
+  const [editingVolumeId, setEditingVolumeId] = useState<string>('');
 
   useEffect(() => {
     if (modalType === 'bible' && modalData?.bible) {
@@ -122,9 +123,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (modalType === 'chapter' && modalData?.chapter) {
-      setEditingChapter(modalData.chapter);
+      const { volumeId, chapterId } = modalData.chapter;
+      const chapter = getChapter(volumeId, chapterId);
+      setEditingChapter(chapter);
+      setEditingVolumeId(volumeId);
     }
-  }, [modalType, modalData]);
+  }, [modalType, modalData, getChapter]);
 
   const handleSaveEntry = (category: string, entry: BibleEntry) => {
     addOrUpdateEntry(category, entry, editingEntry?.entry.title);
@@ -314,18 +318,20 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       />
 
       {/* Chapter Editor */}
-      {editingChapter && (
+      {editingChapter && editingVolumeId && (
         <ChapterEditor
           chapter={editingChapter}
-          onSave={(chapter) => {
-            // Handle chapter save
-            console.log('Saving chapter:', chapter);
+          volumeId={editingVolumeId}
+          onSave={(volumeId: string, chapterId: string, title: string, content: string) => {
+            updateChapter(volumeId, chapterId, { title, content });
             closeModal();
             setEditingChapter(null);
+            setEditingVolumeId('');
           }}
           onClose={() => {
             closeModal();
             setEditingChapter(null);
+            setEditingVolumeId('');
           }}
         />
       )}
