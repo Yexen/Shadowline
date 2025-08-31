@@ -25,6 +25,7 @@ const pathToTitle: { [key: string]: string } = {
     '/gallery': "Visual Archives",
     '/games': "Batcave Arcades",
     '/maps': "Cartography",
+    '/classification': "Content Classification",
     '/organization': "Mission Control",
     '/messages': "Secure Comms",
     '/sources/comics': "Comics Database",
