@@ -333,69 +333,69 @@ Please contact your system administrator to enable the Council Chamber.`
           </div>
         </div>
 
-      {/* Server Status Panel */}
-      <Card className="mb-4">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Council Chamber Status</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium">Server Status:</span>
-            <Badge variant={councilStatus === 'available' ? 'default' : councilStatus === 'unavailable' ? 'destructive' : 'secondary'} className="ml-2">
-              {councilStatus === 'available' ? '🟢 Active' : councilStatus === 'unavailable' ? '🔴 Unavailable' : '🟡 Checking...'}
-            </Badge>
-          </div>
-          
-          {councilStatus === 'available' && (
-            <div className="flex items-center justify-between text-sm border-t pt-3">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">Discussion Mode:</span>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Layers className="w-3 h-3" />
-                  <span>Collaborative</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={discussionMode === 'discussion'}
-                  onCheckedChange={(checked) => setDiscussionMode(checked ? 'discussion' : 'collaborative')}
-                />
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <span>Interactive</span>
-                  <Users className="w-3 h-3" />
-                </div>
-              </div>
+        {/* Server Status Panel */}
+        <Card className="mb-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Council Chamber Status</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium">Server Status:</span>
+              <Badge variant={councilStatus === 'available' ? 'default' : councilStatus === 'unavailable' ? 'destructive' : 'secondary'} className="ml-2">
+                {councilStatus === 'available' ? '🟢 Active' : councilStatus === 'unavailable' ? '🔴 Unavailable' : '🟡 Checking...'}
+              </Badge>
             </div>
-          )}
           
-          <div className="text-xs text-muted-foreground">
-            {councilStatus === 'available' ? 
-              discussionMode === 'discussion' 
-                ? 'AIs will respond sequentially, building on each other\'s ideas'
-                : 'All AI services configured - AIs respond in parallel' :
-              councilStatus === 'unavailable' ?
-              'Server-side AI services need configuration' :
-              'Checking server configuration...'
-            }
-          </div>
-        </CardContent>
-      </Card>
+            {councilStatus === 'available' && (
+              <div className="flex items-center justify-between text-sm border-t pt-3">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Discussion Mode:</span>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Layers className="w-3 h-3" />
+                    <span>Collaborative</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={discussionMode === 'discussion'}
+                    onCheckedChange={(checked) => setDiscussionMode(checked ? 'discussion' : 'collaborative')}
+                  />
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <span>Interactive</span>
+                    <Users className="w-3 h-3" />
+                  </div>
+                </div>
+              </div>
+            )}
+          
+            <div className="text-xs text-muted-foreground">
+              {councilStatus === 'available' ? 
+                discussionMode === 'discussion' 
+                  ? 'AIs will respond sequentially, building on each other\'s ideas'
+                  : 'All AI services configured - AIs respond in parallel' :
+                councilStatus === 'unavailable' ?
+                'Server-side AI services need configuration' :
+                'Checking server configuration...'
+              }
+            </div>
+          </CardContent>
+        </Card>
 
-      {councilStatus === 'unavailable' && (
-        <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            The Council Chamber requires server-side configuration of API keys. Contact your administrator to set up OpenAI, Claude, and Gemini API access.
-          </AlertDescription>
-        </Alert>
-      )}
+        {councilStatus === 'unavailable' && (
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              The Council Chamber requires server-side configuration of API keys. Contact your administrator to set up OpenAI, Claude, and Gemini API access.
+            </AlertDescription>
+          </Alert>
+        )}
 
-      {/* Chat Interface */}
-      <Card className="flex flex-col h-[700px]">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
+        {/* Chat Interface */}
+        <Card className="flex flex-col h-[700px]">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
                 <MessageSquare className="w-5 h-5" />
                 Council Session
                 {councilStatus === 'available' && (
@@ -434,8 +434,8 @@ Please contact your system administrator to enable the Council Chamber.`
             </div>
           </div>
         </CardHeader>
-        
-        <CardContent className="flex-1 flex flex-col p-0">
+          
+          <CardContent className="flex-1 flex flex-col p-0">
           {/* Messages */}
           <ScrollArea className="flex-1 px-4" ref={scrollAreaRef}>
             <div className="space-y-6 py-4">
@@ -602,8 +602,9 @@ Please contact your system administrator to enable the Council Chamber.`
               </div>
             )}
           </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
