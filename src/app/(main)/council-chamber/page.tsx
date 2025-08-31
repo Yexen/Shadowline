@@ -21,37 +21,52 @@ import {
   Sparkles,
   AlertTriangle,
   Users,
-  Layers
+  Layers,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  model?: string;
-  timestamp: Date;
-  tokensUsed?: number;
-  participants?: Array<{
-    participant: string;
-    content: string;
-    model: string;
-    tokensUsed?: number;
-  }>;
-  mode?: 'discussion' | 'collaborative';
-}
+import { useCouncilSessions, type CouncilMessage } from '@/hooks/use-council-sessions';
+import { CouncilSessionsSidebar } from '@/components/council-sessions-sidebar';
+import { FileAttachments } from '@/components/file-attachments';
+import { useFileAttachments } from '@/hooks/use-file-attachments';
 
 export default function CouncilChamberPage() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  
+  // Council sessions management
+  const { 
+    currentSessionId, 
+    getCurrentSession, 
+    createSession,
+    addMessage,
+    clearSession,
+    setCurrentSession,
+    isLoaded: sessionsLoaded
+  } = useCouncilSessions();
+  
+  // File attachments
+  const { attachments, getAttachmentsContext, clearAttachments } = useFileAttachments();
   
   // Council Chamber is now always available (server manages API keys)
   const [councilStatus, setCouncilStatus] = useState<'unknown' | 'available' | 'unavailable'>('unknown');
   const [discussionMode, setDiscussionMode] = useState<'discussion' | 'collaborative'>('discussion');
+  
+  // Get current session data
+  const currentSession = getCurrentSession();
+  const messages = currentSession?.messages || [];
+
+  // Create initial session if none exists
+  useEffect(() => {
+    if (sessionsLoaded && !currentSessionId) {
+      createSession();
+    }
+  }, [sessionsLoaded, currentSessionId, createSession]);
 
   // Check Council Chamber availability on mount
   useEffect(() => {
@@ -84,13 +99,13 @@ export default function CouncilChamberPage() {
     }
   };
 
-  // Welcome message - update when status changes
+  // Add welcome message to session when it's created or when status changes
   useEffect(() => {
-    const welcomeMessage = {
-      id: '1',
-      role: 'assistant' as const,
-      content: councilStatus === 'available'
-        ? `🏛️ **Welcome to the Council Chamber** 🏛️
+    if (currentSessionId && councilStatus !== 'unknown' && messages.length === 0) {
+      const welcomeMessage: CouncilMessage = {
+        role: 'assistant' as const,
+        content: councilStatus === 'available'
+          ? `🏛️ **Welcome to the Council Chamber** 🏛️
 
 The Council Chamber is now in session. Here, the three great AI minds converge to deliberate on your queries:
 
@@ -103,8 +118,8 @@ The Council Chamber is now in session. Here, the three great AI minds converge t
 📊 **Collaborative Mode** - All AIs respond in parallel with combined insights
 
 *"In the multitude of counselors there is wisdom."* - What would you like the council to discuss?`
-        : councilStatus === 'unavailable'
-        ? `🏛️ **Council Chamber - Service Unavailable** 🏛️
+          : councilStatus === 'unavailable'
+          ? `🏛️ **Council Chamber - Service Unavailable** 🏛️
 
 The Council Chamber requires all three AI services to be configured on the server.
 
@@ -114,15 +129,15 @@ The Council Chamber requires all three AI services to be configured on the serve
 • Gemini (Google)
 
 Please contact your system administrator to enable the Council Chamber.`
-        : `🏛️ **Council Chamber - Checking Availability** 🏛️
+          : `🏛️ **Council Chamber - Checking Availability** 🏛️
 
 ⏳ Checking if the Council Chamber services are available...`,
-      timestamp: new Date(),
-      model: 'System'
-    };
+        model: 'System'
+      };
 
-    setMessages([welcomeMessage]);
-  }, [councilStatus]);
+      addMessage(currentSessionId, welcomeMessage);
+    }
+  }, [currentSessionId, councilStatus, messages.length, addMessage]);
 
   const scrollToBottom = () => {
     if (scrollAreaRef.current) {
@@ -135,21 +150,38 @@ Please contact your system administrator to enable the Council Chamber.`
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading || councilStatus !== 'available') return;
+    if (!input.trim() || isLoading || councilStatus !== 'available' || !currentSessionId) return;
 
-    const userMessage: ChatMessage = {
-      id: `msg_${Date.now()}`,
+    const currentInput = input.trim();
+    const attachmentsContext = getAttachmentsContext();
+    const fullInput = currentInput + attachmentsContext;
+
+    // Add user message to session
+    const userMessage: CouncilMessage = {
       role: 'user',
-      content: input.trim(),
-      timestamp: new Date()
+      content: currentInput,
+      attachments: attachments.map(att => ({
+        id: att.id,
+        name: att.name,
+        type: att.type,
+        size: att.size,
+        url: att.url
+      }))
     };
 
-    setMessages(prev => [...prev, userMessage]);
-    const currentInput = input.trim();
+    addMessage(currentSessionId, userMessage);
     setInput('');
     setIsLoading(true);
 
     try {
+      // Build conversation history for context
+      const conversationHistory = messages.slice(-10).map(msg => ({
+        role: msg.role,
+        content: msg.role === 'assistant' && msg.participants 
+          ? msg.participants.map(p => `${p.participant}: ${p.content}`).join('\n\n')
+          : msg.content
+      }));
+
       const response = await fetch('/api/ai/council', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -161,9 +193,10 @@ Please contact your system administrator to enable the Council Chamber.`
                 ? 'You are in a Council Chamber discussion where AI models will respond sequentially, building on each other\'s ideas.'
                 : 'You are participating in a Council Chamber where multiple AI models collaborate to provide comprehensive insights.'
             },
+            ...conversationHistory,
             {
               role: 'user',
-              content: currentInput
+              content: fullInput
             }
           ],
           temperature: 0.7,
@@ -178,29 +211,26 @@ Please contact your system administrator to enable the Council Chamber.`
 
       const data = await response.json();
       
-      const assistantMessage: ChatMessage = {
-        id: `msg_${Date.now() + 1}`,
+      const assistantMessage: CouncilMessage = {
         role: 'assistant',
         content: data.content || '',
         model: data.model || 'Council',
         tokensUsed: data.tokensUsed || data.totalTokens,
-        timestamp: new Date(),
         participants: data.participants,
         mode: data.mode
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      addMessage(currentSessionId, assistantMessage);
+      clearAttachments(); // Clear attachments after successful send
       
     } catch (error) {
-      const errorMessage: ChatMessage = {
-        id: `msg_${Date.now() + 1}`,
+      const errorMessage: CouncilMessage = {
         role: 'assistant',
         content: `The Council Chamber encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again or contact your administrator.`,
-        timestamp: new Date(),
         model: 'Error'
       };
       
-      setMessages(prev => [...prev, errorMessage]);
+      addMessage(currentSessionId, errorMessage);
       toast({
         title: "Council Chamber Error",
         description: "Failed to process your question",
@@ -244,20 +274,56 @@ Please contact your system administrator to enable the Council Chamber.`
   };
 
   const clearConversation = () => {
-    setMessages(messages.slice(0, 1)); // Keep welcome message
+    if (currentSessionId) {
+      clearSession(currentSessionId);
+    }
+  };
+
+  const handleSessionSelect = (sessionId: string) => {
+    setCurrentSession(sessionId);
+  };
+
+  const handleClearCurrentSession = () => {
+    if (currentSessionId) {
+      clearSession(currentSessionId);
+    }
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-headline font-bold flex items-center gap-3">
-          <Crown className="w-8 h-8 text-primary" />
-          Council Chamber
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Multi-LLM collaborative intelligence - where Claude, GPT-4, and Gemini deliberate together
-        </p>
-      </div>
+    <div className="flex h-[calc(100vh-12rem)] gap-4 -mt-6">
+      {/* Sessions Sidebar */}
+      {!sidebarCollapsed && <CouncilSessionsSidebar onSessionSelect={handleSessionSelect} />}
+      
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            >
+              {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </Button>
+            <div>
+              <h1 className="text-2xl font-headline font-bold flex items-center gap-2">
+                <Crown className="w-6 h-6 text-primary" />
+                Council Chamber
+              </h1>
+              {currentSession && (
+                <p className="text-sm text-muted-foreground">
+                  {currentSession.title}
+                </p>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">
+              {messages.length} messages
+            </Badge>
+          </div>
+        </div>
 
       {/* Server Status Panel */}
       <Card className="mb-4">
@@ -342,8 +408,8 @@ Please contact your system administrator to enable the Council Chamber.`
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={clearConversation}
-                disabled={messages.length <= 1}
+                onClick={handleClearCurrentSession}
+                disabled={messages.length === 0}
               >
                 <RefreshCw className="w-4 h-4 mr-1" />
                 Clear
@@ -352,7 +418,7 @@ Please contact your system administrator to enable the Council Chamber.`
                 variant="outline" 
                 size="sm" 
                 onClick={exportConversation}
-                disabled={messages.length <= 1}
+                disabled={messages.length === 0}
               >
                 <Download className="w-4 h-4 mr-1" />
                 Export
@@ -494,7 +560,10 @@ Please contact your system administrator to enable the Council Chamber.`
           <Separator />
           
           {/* Input */}
-          <div className="p-4">
+          <div className="p-4 space-y-4">
+            {/* File Attachments */}
+            <FileAttachments />
+            
             <div className="flex items-center gap-2">
               <Input
                 value={input}
@@ -520,7 +589,7 @@ Please contact your system administrator to enable the Council Chamber.`
             </div>
             
             {councilStatus !== 'available' && (
-              <div className="text-center text-sm text-muted-foreground mt-2">
+              <div className="text-center text-sm text-muted-foreground">
                 Council Chamber requires server-side configuration of OpenAI, Claude, and Gemini API keys
               </div>
             )}
