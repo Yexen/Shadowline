@@ -6,6 +6,28 @@ import { UserDataSyncProvider } from '@/components/providers/user-data-sync-prov
 export const metadata: Metadata = {
   title: 'Shadowline',
   description: 'Welcome to the Shadows, Shadows of Gotham',
+  manifest: '/manifest.json',
+  themeColor: '#101014',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Shadowline',
+  },
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
+  icons: {
+    icon: [
+      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+    ],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
