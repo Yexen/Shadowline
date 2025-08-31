@@ -37,6 +37,8 @@ import { MindMapViewer } from '@/components/batcave-archive/mind-map-viewer';
 import { InteractiveTimeline } from '@/components/batcave-archive/interactive-timeline';
 import { SearchInterface } from '@/components/batcave-archive/search-interface';
 import { useToast } from '@/hooks/use-toast';
+import { useBible } from '@/hooks/use-bible';
+import { useVolumes } from '@/hooks/use-volumes';
 
 interface Document {
   id: string;
@@ -47,6 +49,11 @@ interface Document {
   processed: boolean;
   chunks: number;
   content?: string;
+  source?: 'bible' | 'volume' | 'upload';
+  category?: string; // For Bible entries
+  volumeId?: string; // For Volume-related documents
+  chapterId?: string; // For Chapter documents
+  resourceId?: string; // For Resource documents
 }
 
 interface AnalysisResult {
@@ -78,57 +85,29 @@ export default function BatcaveArchivePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
+  
+  // Connect to existing Bible and Volumes systems
+  const { bibleData, isLoaded: bibleLoaded } = useBible();
+  const { volumes, isLoaded: volumesLoaded } = useVolumes();
 
-  // Load documents from localStorage with fallback to mock data
+  // Load uploaded documents from localStorage (Bible and Volumes are loaded via hooks)
   useEffect(() => {
     try {
-      const savedDocuments = localStorage.getItem('batcave-archive-documents');
+      const savedDocuments = localStorage.getItem('batcave-archive-uploaded-documents');
       if (savedDocuments) {
         const parsed = JSON.parse(savedDocuments).map((doc: any) => ({
           ...doc,
-          uploadedAt: new Date(doc.uploadedAt)
+          uploadedAt: new Date(doc.uploadedAt),
+          source: 'upload' // Mark as uploaded documents
         }));
-        setDocuments(parsed);
-      } else {
-        // Simulate existing documents for demo
-        const mockDocuments = [
-          {
-            id: '1',
-            name: 'Joker Character Bible.pdf',
-            type: 'pdf',
-            size: 2048000,
-            uploadedAt: new Date('2024-01-15'),
-            processed: true,
-            chunks: 45,
-            content: 'Detailed character analysis of the Joker including psychological profile, motivations, and relationships with other characters in the Gotham universe.'
-          },
-          {
-            id: '2', 
-            name: 'Gotham City Locations.docx',
-            type: 'docx',
-            size: 1024000,
-            uploadedAt: new Date('2024-01-16'),
-            processed: true,
-            chunks: 32,
-            content: 'Comprehensive guide to Gotham City locations including Wayne Manor, Arkham Asylum, GCPD, and various criminal hideouts.'
-          },
-          {
-            id: '3',
-            name: 'Batman Timeline.txt',
-            type: 'txt',
-            size: 512000,
-            uploadedAt: new Date('2024-01-17'),
-            processed: false,
-            chunks: 0
-          }
-        ];
-        setDocuments(mockDocuments);
-        localStorage.setItem('batcave-archive-documents', JSON.stringify(mockDocuments));
+        // Only set uploaded documents here - Bible and Volumes will be added by the other useEffect
+        const uploadedDocs = parsed.filter((doc: Document) => doc.source === 'upload');
+        if (uploadedDocs.length > 0) {
+          setDocuments(prev => [...prev.filter(d => d.source !== 'upload'), ...uploadedDocs]);
+        }
       }
     } catch (error) {
-      console.error('Failed to load documents:', error);
-      // Fallback to empty array
-      setDocuments([]);
+      console.error('Failed to load uploaded documents:', error);
     }
 
     // Load analyses from localStorage
@@ -199,12 +178,13 @@ export default function BatcaveArchivePage() {
     }
   }, []);
 
-  // Save data to localStorage whenever state changes
+  // Save uploaded documents to localStorage whenever state changes
   useEffect(() => {
     try {
-      localStorage.setItem('batcave-archive-documents', JSON.stringify(documents));
+      const uploadedDocuments = documents.filter(doc => doc.source === 'upload');
+      localStorage.setItem('batcave-archive-uploaded-documents', JSON.stringify(uploadedDocuments));
     } catch (error) {
-      console.error('Failed to save documents:', error);
+      console.error('Failed to save uploaded documents:', error);
     }
   }, [documents]);
 
@@ -224,25 +204,132 @@ export default function BatcaveArchivePage() {
     }
   }, [audioContent]);
 
+  // Convert Bible entries to documents
+  const getBibleDocuments = (): Document[] => {
+    if (!bibleLoaded || !bibleData) return [];
+    
+    const bibleDocuments: Document[] = [];
+    bibleData.forEach((category) => {
+      category.items.forEach((entry, index) => {
+        const content = entry.fields.map(field => `${field.label}: ${field.value}`).join('\n\n');
+        bibleDocuments.push({
+          id: `bible-${category.category}-${index}`,
+          name: `${category.category}: ${entry.title}`,
+          type: 'bible-entry',
+          size: content.length,
+          uploadedAt: new Date(),
+          processed: true,
+          chunks: Math.ceil(content.length / 100),
+          content: content,
+          source: 'bible',
+          category: category.category
+        });
+      });
+    });
+    return bibleDocuments;
+  };
+
+  // Convert Volume chapters to documents
+  const getVolumeDocuments = (): Document[] => {
+    if (!volumesLoaded || !volumes) return [];
+    
+    const volumeDocuments: Document[] = [];
+    volumes.forEach((volume) => {
+      // Add volume overview as document
+      if (volume.overview) {
+        volumeDocuments.push({
+          id: `volume-overview-${volume.id}`,
+          name: `${volume.title} - Overview`,
+          type: 'volume-overview',
+          size: volume.overview.length,
+          uploadedAt: new Date(),
+          processed: true,
+          chunks: Math.ceil(volume.overview.length / 200),
+          content: volume.overview,
+          source: 'volume',
+          volumeId: volume.id
+        });
+      }
+
+      // Add each chapter as a document
+      volume.chapters.forEach((chapter) => {
+        volumeDocuments.push({
+          id: `chapter-${volume.id}-${chapter.id}`,
+          name: `${volume.title} - ${chapter.title}`,
+          type: 'chapter',
+          size: chapter.content.length,
+          uploadedAt: new Date(),
+          processed: true,
+          chunks: Math.ceil(chapter.content.length / 200),
+          content: chapter.content,
+          source: 'volume',
+          volumeId: volume.id,
+          chapterId: chapter.id
+        });
+      });
+
+      // Add volume resources as documents
+      if (volume.resources) {
+        volume.resources.forEach((resource) => {
+          volumeDocuments.push({
+            id: `resource-${volume.id}-${resource.id}`,
+            name: `${volume.title} - Resource: ${resource.title}`,
+            type: 'volume-resource',
+            size: resource.content.length,
+            uploadedAt: new Date(),
+            processed: true,
+            chunks: Math.ceil(resource.content.length / 100),
+            content: resource.content,
+            source: 'volume',
+            volumeId: volume.id,
+            resourceId: resource.id
+          });
+        });
+      }
+    });
+    return volumeDocuments;
+  };
+
+  // Combine all documents (Bible + Volumes + Uploaded)
+  const getAllDocuments = (): Document[] => {
+    const bibleDocuments = getBibleDocuments();
+    const volumeDocuments = getVolumeDocuments();
+    const uploadedDocuments = documents.filter(doc => doc.source !== 'bible' && doc.source !== 'volume');
+    
+    return [...bibleDocuments, ...volumeDocuments, ...uploadedDocuments];
+  };
+
+  // Update documents when Bible or Volumes change
+  useEffect(() => {
+    if (bibleLoaded && volumesLoaded) {
+      const allDocuments = getAllDocuments();
+      setDocuments(allDocuments);
+    }
+  }, [bibleData, volumes, bibleLoaded, volumesLoaded]);
+
   const stats = {
     totalDocuments: documents.length,
     processedDocuments: documents.filter(d => d.processed).length,
     totalChunks: documents.reduce((sum, d) => sum + d.chunks, 0),
     totalAnalyses: analyses.length,
-    audioHours: Math.floor(audioContent.reduce((sum, a) => sum + a.duration, 0) / 3600)
+    audioHours: Math.floor(audioContent.reduce((sum, a) => sum + a.duration, 0) / 3600),
+    bibleEntries: documents.filter(d => d.source === 'bible').length,
+    volumeChapters: documents.filter(d => d.source === 'volume').length,
+    uploadedFiles: documents.filter(d => d.source === 'upload').length
   };
 
   const clearAllData = () => {
-    if (confirm('Are you sure you want to clear all archive data? This action cannot be undone.')) {
-      localStorage.removeItem('batcave-archive-documents');
+    if (confirm('Are you sure you want to clear all uploaded documents, analyses, and audio content? Your Bible and Volume content will remain intact.')) {
+      localStorage.removeItem('batcave-archive-uploaded-documents');
       localStorage.removeItem('batcave-archive-analyses'); 
       localStorage.removeItem('batcave-archive-audio');
-      setDocuments([]);
+      // Keep Bible and Volume documents, only remove uploaded ones
+      setDocuments(prev => prev.filter(doc => doc.source === 'bible' || doc.source === 'volume'));
       setAnalyses([]);
       setAudioContent([]);
       toast({
         title: "Archive Cleared",
-        description: "All archive data has been removed."
+        description: "Uploaded documents, analyses, and audio content have been removed. Bible and Volume content remains."
       });
     }
   };
@@ -386,6 +473,41 @@ export default function BatcaveArchivePage() {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
+          {/* Connected Content Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Network className="w-5 h-5" />
+                Connected Story Content
+              </CardTitle>
+              <CardDescription>
+                Your Bible and Volume content is automatically connected to the archive
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                  <BookOpen className="w-6 h-6 text-blue-500 mx-auto mb-2" />
+                  <div className="text-xl font-bold text-blue-600">{stats.bibleEntries}</div>
+                  <div className="text-xs text-blue-600/80">Bible Entries</div>
+                </div>
+                <div className="text-center p-3 bg-green-50 dark:bg-green-950/30 rounded-lg">
+                  <FileText className="w-6 h-6 text-green-500 mx-auto mb-2" />
+                  <div className="text-xl font-bold text-green-600">{stats.volumeChapters}</div>
+                  <div className="text-xs text-green-600/80">Volume Content</div>
+                </div>
+                <div className="text-center p-3 bg-orange-50 dark:bg-orange-950/30 rounded-lg">
+                  <Upload className="w-6 h-6 text-orange-500 mx-auto mb-2" />
+                  <div className="text-xl font-bold text-orange-600">{stats.uploadedFiles}</div>
+                  <div className="text-xs text-orange-600/80">Uploaded Files</div>
+                </div>
+              </div>
+              <div className="mt-4 text-sm text-muted-foreground text-center">
+                All content is automatically processed and available for Q&A, analysis, and audio generation
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Recent Activity */}
             <Card>
@@ -481,27 +603,55 @@ export default function BatcaveArchivePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {documents.map((doc) => (
-                  <div key={doc.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <FileText className="w-4 h-4" />
-                      <div>
-                        <div className="font-medium">{doc.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {(doc.size / 1024 / 1024).toFixed(1)} MB • {doc.chunks} chunks
+                {documents.map((doc) => {
+                  const getSourceIcon = () => {
+                    switch (doc.source) {
+                      case 'bible': return <BookOpen className="w-4 h-4 text-blue-500" />;
+                      case 'volume': return <FileText className="w-4 h-4 text-green-500" />;
+                      default: return <Upload className="w-4 h-4 text-orange-500" />;
+                    }
+                  };
+
+                  const getSourceLabel = () => {
+                    switch (doc.source) {
+                      case 'bible': return 'Bible Entry';
+                      case 'volume': return 'Story Volume';
+                      default: return 'Uploaded';
+                    }
+                  };
+
+                  return (
+                    <div key={doc.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        {getSourceIcon()}
+                        <div className="flex-grow min-w-0">
+                          <div className="font-medium line-clamp-1">{doc.name}</div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                            <span>{(doc.size / 1024).toFixed(1)} KB • {doc.chunks} chunks</span>
+                            <span>•</span>
+                            <Badge variant="outline" className="text-xs">
+                              {getSourceLabel()}
+                            </Badge>
+                            {doc.category && (
+                              <>
+                                <span>•</span>
+                                <span className="text-xs">{doc.category}</span>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={doc.processed ? "default" : "secondary"}>
+                          {doc.processed ? "Ready" : "Pending"}
+                        </Badge>
+                        <Button size="sm" variant="ghost">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={doc.processed ? "default" : "secondary"}>
-                        {doc.processed ? "Processed" : "Pending"}
-                      </Badge>
-                      <Button size="sm" variant="ghost">
-                        View
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -509,12 +659,107 @@ export default function BatcaveArchivePage() {
 
         {/* Documents Tab */}
         <TabsContent value="documents">
-          <DocumentUploader 
-            documents={documents}
-            setDocuments={setDocuments}
-            isProcessing={isProcessing}
-            setIsProcessing={setIsProcessing}
-          />
+          <div className="space-y-6">
+            {/* Upload Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="w-5 h-5" />
+                  Upload Additional Documents
+                </CardTitle>
+                <CardDescription>
+                  Upload external documents to complement your connected Bible and Volume content
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <DocumentUploader 
+                  documents={documents.filter(d => d.source === 'upload')}
+                  setDocuments={(docs) => {
+                    // Ensure uploaded documents have the 'upload' source
+                    const uploadDocs = Array.isArray(docs) ? docs : docs(documents.filter(d => d.source === 'upload'));
+                    const markedDocs = uploadDocs.map(doc => ({ ...doc, source: 'upload' as const }));
+                    setDocuments(prev => [...prev.filter(d => d.source !== 'upload'), ...markedDocs]);
+                  }}
+                  isProcessing={isProcessing}
+                  setIsProcessing={setIsProcessing}
+                />
+              </CardContent>
+            </Card>
+
+            {/* All Documents List */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Database className="w-5 h-5" />
+                  All Connected Documents
+                </CardTitle>
+                <CardDescription>
+                  Bible entries, Volume chapters, and uploaded files - all processed and ready for analysis
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {documents.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Database className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No content connected yet</p>
+                      <p className="text-sm">Add Bible entries or Volume chapters to get started</p>
+                    </div>
+                  ) : (
+                    documents.map((doc) => {
+                      const getSourceIcon = () => {
+                        switch (doc.source) {
+                          case 'bible': return <BookOpen className="w-4 h-4 text-blue-500" />;
+                          case 'volume': return <FileText className="w-4 h-4 text-green-500" />;
+                          default: return <Upload className="w-4 h-4 text-orange-500" />;
+                        }
+                      };
+
+                      const getSourceLabel = () => {
+                        switch (doc.source) {
+                          case 'bible': return 'Bible Entry';
+                          case 'volume': return 'Story Volume';
+                          default: return 'Uploaded';
+                        }
+                      };
+
+                      return (
+                        <div key={doc.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            {getSourceIcon()}
+                            <div className="flex-grow min-w-0">
+                              <div className="font-medium line-clamp-1">{doc.name}</div>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                <span>{(doc.size / 1024).toFixed(1)} KB • {doc.chunks} chunks</span>
+                                <span>•</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {getSourceLabel()}
+                                </Badge>
+                                {doc.category && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="text-xs">{doc.category}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={doc.processed ? "default" : "secondary"}>
+                              {doc.processed ? "Ready" : "Pending"}
+                            </Badge>
+                            <Button size="sm" variant="ghost">
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Q&A Chat Tab */}
