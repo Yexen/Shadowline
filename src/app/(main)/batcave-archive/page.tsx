@@ -25,7 +25,8 @@ import {
   FileAudio,
   Eye,
   Zap,
-  Database
+  Database,
+  Trash2
 } from 'lucide-react';
 import { DocumentUploader } from '@/components/batcave-archive/document-uploader';
 import { ChatInterface } from '@/components/batcave-archive/chat-interface';
@@ -60,11 +61,13 @@ interface AnalysisResult {
 interface AudioContent {
   id: string;
   title: string;
-  type: 'podcast' | 'summary' | 'character';
+  type: 'podcast' | 'summary' | 'character' | 'dialogue';
   duration: number;
   url: string;
   transcript?: string;
   createdAt: Date;
+  status: 'generating' | 'ready' | 'error';
+  progress?: number;
 }
 
 export default function BatcaveArchivePage() {
@@ -76,65 +79,150 @@ export default function BatcaveArchivePage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
-  // Mock data for demonstration
+  // Load documents from localStorage with fallback to mock data
   useEffect(() => {
-    // Simulate existing documents
-    setDocuments([
-      {
-        id: '1',
-        name: 'Joker Character Bible.pdf',
-        type: 'pdf',
-        size: 2048000,
-        uploadedAt: new Date('2024-01-15'),
-        processed: true,
-        chunks: 45,
-        content: 'Detailed character analysis of the Joker...'
-      },
-      {
-        id: '2', 
-        name: 'Gotham City Locations.docx',
-        type: 'docx',
-        size: 1024000,
-        uploadedAt: new Date('2024-01-16'),
-        processed: true,
-        chunks: 32
-      },
-      {
-        id: '3',
-        name: 'Batman Timeline.txt',
-        type: 'txt',
-        size: 512000,
-        uploadedAt: new Date('2024-01-17'),
-        processed: false,
-        chunks: 0
+    try {
+      const savedDocuments = localStorage.getItem('batcave-archive-documents');
+      if (savedDocuments) {
+        const parsed = JSON.parse(savedDocuments).map((doc: any) => ({
+          ...doc,
+          uploadedAt: new Date(doc.uploadedAt)
+        }));
+        setDocuments(parsed);
+      } else {
+        // Simulate existing documents for demo
+        const mockDocuments = [
+          {
+            id: '1',
+            name: 'Joker Character Bible.pdf',
+            type: 'pdf',
+            size: 2048000,
+            uploadedAt: new Date('2024-01-15'),
+            processed: true,
+            chunks: 45,
+            content: 'Detailed character analysis of the Joker including psychological profile, motivations, and relationships with other characters in the Gotham universe.'
+          },
+          {
+            id: '2', 
+            name: 'Gotham City Locations.docx',
+            type: 'docx',
+            size: 1024000,
+            uploadedAt: new Date('2024-01-16'),
+            processed: true,
+            chunks: 32,
+            content: 'Comprehensive guide to Gotham City locations including Wayne Manor, Arkham Asylum, GCPD, and various criminal hideouts.'
+          },
+          {
+            id: '3',
+            name: 'Batman Timeline.txt',
+            type: 'txt',
+            size: 512000,
+            uploadedAt: new Date('2024-01-17'),
+            processed: false,
+            chunks: 0
+          }
+        ];
+        setDocuments(mockDocuments);
+        localStorage.setItem('batcave-archive-documents', JSON.stringify(mockDocuments));
       }
-    ]);
+    } catch (error) {
+      console.error('Failed to load documents:', error);
+      // Fallback to empty array
+      setDocuments([]);
+    }
 
-    // Simulate existing analyses
-    setAnalyses([
-      {
-        id: '1',
-        type: 'character',
-        title: 'Character Relationship Analysis',
-        content: { relationships: [], centralCharacters: [] },
-        sources: ['Joker Character Bible.pdf', 'Gotham City Locations.docx'],
-        createdAt: new Date('2024-01-18')
+    // Load analyses from localStorage
+    try {
+      const savedAnalyses = localStorage.getItem('batcave-archive-analyses');
+      if (savedAnalyses) {
+        const parsed = JSON.parse(savedAnalyses).map((analysis: any) => ({
+          ...analysis,
+          createdAt: new Date(analysis.createdAt)
+        }));
+        setAnalyses(parsed);
+      } else {
+        // Mock analyses
+        const mockAnalyses = [
+          {
+            id: '1',
+            type: 'character' as const,
+            title: 'Character Relationship Analysis',
+            content: { 
+              relationships: [
+                { from: 'Batman', to: 'Joker', type: 'nemesis', strength: 10 },
+                { from: 'Batman', to: 'Commissioner Gordon', type: 'ally', strength: 9 }
+              ], 
+              centralCharacters: ['Batman', 'Joker', 'Commissioner Gordon'] 
+            },
+            sources: ['Joker Character Bible.pdf', 'Gotham City Locations.docx'],
+            createdAt: new Date('2024-01-18')
+          }
+        ];
+        setAnalyses(mockAnalyses);
+        localStorage.setItem('batcave-archive-analyses', JSON.stringify(mockAnalyses));
       }
-    ]);
+    } catch (error) {
+      console.error('Failed to load analyses:', error);
+      setAnalyses([]);
+    }
 
-    // Simulate audio content
-    setAudioContent([
-      {
-        id: '1',
-        title: 'Joker Psychology Deep Dive',
-        type: 'podcast',
-        duration: 1847, // seconds
-        url: '/audio/joker-analysis.mp3',
-        transcript: 'In this episode, we explore the complex psychology...',
-        createdAt: new Date('2024-01-19')
+    // Load audio content from localStorage
+    try {
+      const savedAudioContent = localStorage.getItem('batcave-archive-audio');
+      if (savedAudioContent) {
+        const parsed = JSON.parse(savedAudioContent).map((audio: any) => ({
+          ...audio,
+          createdAt: new Date(audio.createdAt),
+          status: audio.status || 'ready' // Default to ready for existing audio without status
+        }));
+        setAudioContent(parsed);
+      } else {
+        // Mock audio content
+        const mockAudioContent = [
+          {
+            id: '1',
+            title: 'Joker Psychology Deep Dive',
+            type: 'podcast' as const,
+            duration: 1847, // seconds
+            url: '/audio/joker-analysis.mp3',
+            transcript: 'In this episode, we explore the complex psychology of the Joker, examining his relationship with Batman and the role of chaos versus order in Gotham City.',
+            createdAt: new Date('2024-01-19'),
+            status: 'ready' as const
+          }
+        ];
+        setAudioContent(mockAudioContent);
+        localStorage.setItem('batcave-archive-audio', JSON.stringify(mockAudioContent));
       }
-    ]);
+    } catch (error) {
+      console.error('Failed to load audio content:', error);
+      setAudioContent([]);
+    }
   }, []);
+
+  // Save data to localStorage whenever state changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('batcave-archive-documents', JSON.stringify(documents));
+    } catch (error) {
+      console.error('Failed to save documents:', error);
+    }
+  }, [documents]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('batcave-archive-analyses', JSON.stringify(analyses));
+    } catch (error) {
+      console.error('Failed to save analyses:', error);
+    }
+  }, [analyses]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('batcave-archive-audio', JSON.stringify(audioContent));
+    } catch (error) {
+      console.error('Failed to save audio content:', error);
+    }
+  }, [audioContent]);
 
   const stats = {
     totalDocuments: documents.length,
@@ -142,6 +230,65 @@ export default function BatcaveArchivePage() {
     totalChunks: documents.reduce((sum, d) => sum + d.chunks, 0),
     totalAnalyses: analyses.length,
     audioHours: Math.floor(audioContent.reduce((sum, a) => sum + a.duration, 0) / 3600)
+  };
+
+  const clearAllData = () => {
+    if (confirm('Are you sure you want to clear all archive data? This action cannot be undone.')) {
+      localStorage.removeItem('batcave-archive-documents');
+      localStorage.removeItem('batcave-archive-analyses'); 
+      localStorage.removeItem('batcave-archive-audio');
+      setDocuments([]);
+      setAnalyses([]);
+      setAudioContent([]);
+      toast({
+        title: "Archive Cleared",
+        description: "All archive data has been removed."
+      });
+    }
+  };
+
+  const processUnprocessedDocuments = async () => {
+    const unprocessed = documents.filter(d => !d.processed);
+    if (unprocessed.length === 0) {
+      toast({
+        title: "No Documents to Process",
+        description: "All documents have already been processed."
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    
+    for (const doc of unprocessed) {
+      try {
+        // Simulate processing delay
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        setDocuments(prev => prev.map(d => 
+          d.id === doc.id 
+            ? { 
+                ...d, 
+                processed: true, 
+                chunks: Math.floor(Math.random() * 50) + 10,
+                content: `Auto-processed content from ${d.name}`
+              }
+            : d
+        ));
+        
+        toast({
+          title: "Document Processed",
+          description: `${doc.name} has been processed successfully.`
+        });
+      } catch (error) {
+        toast({
+          title: "Processing Failed",
+          description: `Failed to process ${doc.name}`,
+          variant: "destructive"
+        });
+      }
+    }
+    
+    setIsProcessing(false);
   };
 
   return (
@@ -249,7 +396,7 @@ export default function BatcaveArchivePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {[...analyses, ...audioContent].slice(0, 5).map((item, index) => (
+                {[...analyses, ...audioContent].slice(0, 5).map((item) => (
                   <div key={item.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div className="flex items-center gap-3">
                       {'type' in item && item.type === 'character' && <Users className="w-4 h-4 text-blue-500" />}
@@ -297,10 +444,11 @@ export default function BatcaveArchivePage() {
                 <Button 
                   className="w-full justify-start" 
                   variant="outline"
-                  onClick={() => setActiveTab('audio')}
+                  onClick={processUnprocessedDocuments}
+                  disabled={isProcessing || documents.filter(d => !d.processed).length === 0}
                 >
-                  <Mic className="w-4 h-4 mr-2" />
-                  Generate Audio Content
+                  <Zap className="w-4 h-4 mr-2" />
+                  {isProcessing ? 'Processing...' : 'Process Pending Documents'}
                 </Button>
                 <Button 
                   className="w-full justify-start" 
@@ -309,6 +457,15 @@ export default function BatcaveArchivePage() {
                 >
                   <Network className="w-4 h-4 mr-2" />
                   Analyze Relationships
+                </Button>
+                <Separator className="my-2" />
+                <Button 
+                  className="w-full justify-start text-destructive" 
+                  variant="outline"
+                  onClick={clearAllData}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Clear All Data
                 </Button>
               </CardContent>
             </Card>
