@@ -23,7 +23,7 @@ import {
   RefreshCw,
   Loader2,
   Settings,
-  Waveform
+  Radio
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -338,7 +338,7 @@ Significance to Overall Narrative: This character serves to...
                 { type: 'podcast', label: 'Podcast Discussion', icon: Users },
                 { type: 'summary', label: 'Chapter Summary', icon: FileAudio },
                 { type: 'character', label: 'Character Profile', icon: Mic },
-                { type: 'dialogue', label: 'Character Dialogue', icon: Waveform }
+                { type: 'dialogue', label: 'Character Dialogue', icon: Radio }
               ].map(({ type, label, icon: Icon }) => (
                 <Button
                   key={type}
