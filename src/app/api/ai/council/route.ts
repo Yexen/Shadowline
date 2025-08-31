@@ -262,79 +262,88 @@ async function handleInteractiveDiscussion(
 
   let conversationHistory = [...messages];
 
-  try {
-    // 1. Claude goes first (analytical foundation)
-    const claudePrompt = [
-      {
-        role: 'system' as const,
-        content: `You are Claude, participating in a Council Chamber discussion. You'll speak first to establish an analytical foundation. Other AI participants (GPT-4 and Gemini) will respond after you, building on your analysis. Be thoughtful, structured, and leave openings for others to build upon your ideas. Keep your response focused and concise to allow room for discussion.`
-      },
-      ...conversationHistory
-    ];
+  // Always try all three AIs in sequence, even if one fails
+  const aiParticipants = [
+    {
+      name: 'Claude',
+      call: () => callClaude(claudeKey, [
+        {
+          role: 'system' as const,
+          content: `You are Claude, speaking first in a Council Chamber discussion. Establish an analytical foundation that GPT-4 and Gemini can build upon. Be thoughtful and structured, but leave openings for others to expand on your ideas.`
+        },
+        ...conversationHistory
+      ], temperature),
+      systemPrompt: 'You are Claude, speaking first in a Council Chamber discussion. Establish an analytical foundation that GPT-4 and Gemini can build upon.'
+    },
+    {
+      name: 'GPT-4',
+      call: () => callOpenAI(openaiKey, [
+        {
+          role: 'system' as const,
+          content: `You are GPT-4, speaking second in a Council Chamber discussion. Claude has spoken first. Build upon, complement, or respectfully challenge Claude's points while adding your own insights. Gemini will speak after you.`
+        },
+        ...conversationHistory
+      ], temperature),
+      systemPrompt: 'You are GPT-4, speaking second. Build upon or challenge Claude\'s points.'
+    },
+    {
+      name: 'Gemini',
+      call: () => callGemini(geminiKey, [
+        {
+          role: 'system' as const,
+          content: `You are Gemini, speaking last in a Council Chamber discussion. You've heard from Claude and GPT-4. Synthesize their points, highlight agreements/disagreements, and provide additional perspectives they may have missed.`
+        },
+        ...conversationHistory
+      ], temperature),
+      systemPrompt: 'You are Gemini, speaking last. Synthesize and add unique perspectives.'
+    }
+  ];
 
-    const claudeResponse = await callClaude(claudeKey, claudePrompt, temperature);
-    discussionResponses.push({
-      participant: 'Claude',
-      content: claudeResponse.content,
-      model: claudeResponse.model,
-      tokensUsed: claudeResponse.tokensUsed
-    });
+  // Call each AI in sequence, continuing even if one fails
+  for (const participant of aiParticipants) {
+    try {
+      console.log(`Calling ${participant.name}...`);
+      const response = await participant.call();
+      
+      discussionResponses.push({
+        participant: participant.name,
+        content: response.content,
+        model: response.model,
+        tokensUsed: response.tokensUsed
+      });
 
-    // Add Claude's response to conversation history
-    conversationHistory.push({
-      role: 'assistant',
-      content: `**Claude:** ${claudeResponse.content}`
-    });
-
-    // 2. GPT-4 responds to both user and Claude
-    const gptPrompt = [
-      {
-        role: 'system' as const,
-        content: `You are GPT-4, participating in a Council Chamber discussion. Claude has just provided their analytical perspective. Now build upon, complement, or respectfully challenge Claude's points while addressing the original question. Gemini will respond after you, so leave room for their contribution. Reference Claude's points when relevant and add your own unique insights.`
-      },
-      ...conversationHistory
-    ];
-
-    const gptResponse = await callOpenAI(openaiKey, gptPrompt, temperature);
-    discussionResponses.push({
-      participant: 'GPT-4',
-      content: gptResponse.content,
-      model: gptResponse.model,
-      tokensUsed: gptResponse.tokensUsed
-    });
-
-    conversationHistory.push({
-      role: 'assistant', 
-      content: `**GPT-4:** ${gptResponse.content}`
-    });
-
-    // 3. Gemini wraps up with synthesis and additional perspectives
-    const geminiPrompt = [
-      {
-        role: 'system' as const,
-        content: `You are Gemini, the final participant in this Council Chamber discussion. You've heard from Claude (analytical foundation) and GPT-4 (building/challenging). Now provide synthesis, highlight agreements/disagreements, offer additional perspectives the others missed, and help bring the discussion toward actionable insights. Reference specific points made by Claude and GPT-4.`
-      },
-      ...conversationHistory
-    ];
-
-    const geminiResponse = await callGemini(geminiKey, geminiPrompt, temperature);
-    discussionResponses.push({
-      participant: 'Gemini',
-      content: geminiResponse.content,
-      model: geminiResponse.model,
-      tokensUsed: geminiResponse.tokensUsed
-    });
-
-    return NextResponse.json({
-      mode: 'discussion',
-      participants: discussionResponses,
-      totalTokens: discussionResponses.reduce((sum, r) => sum + (r.tokensUsed || 0), 0),
-      discussionSummary: `Interactive discussion with ${discussionResponses.length} participants`
-    });
-
-  } catch (error) {
-    console.error('Interactive discussion failed:', error);
-    // Fallback to collaborative mode if discussion fails
-    return await handleCollaborativeMode(openaiKey, claudeKey, geminiKey, messages, temperature);
+      // Add this AI's response to conversation history for next AI
+      conversationHistory.push({
+        role: 'assistant',
+        content: `**${participant.name}:** ${response.content}`
+      });
+      
+      console.log(`${participant.name} responded successfully`);
+      
+    } catch (error) {
+      console.error(`${participant.name} failed:`, error);
+      
+      // Add a fallback response so the conversation can continue
+      discussionResponses.push({
+        participant: participant.name,
+        content: `*${participant.name} is currently unavailable and could not participate in this discussion.*`,
+        model: 'Error',
+        tokensUsed: 0
+      });
+      
+      // Add error to conversation history so next AI knows this one failed
+      conversationHistory.push({
+        role: 'assistant',
+        content: `**${participant.name}:** *Unable to respond at this time*`
+      });
+    }
   }
+
+  // Return results even if some AIs failed
+  return NextResponse.json({
+    mode: 'discussion',
+    participants: discussionResponses,
+    totalTokens: discussionResponses.reduce((sum, r) => sum + (r.tokensUsed || 0), 0),
+    discussionSummary: `Interactive discussion with ${discussionResponses.filter(r => r.model !== 'Error').length}/${discussionResponses.length} participants responding`
+  });
 }
