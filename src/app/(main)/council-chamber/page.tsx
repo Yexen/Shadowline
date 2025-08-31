@@ -19,8 +19,11 @@ import {
   Copy,
   Crown,
   Sparkles,
-  AlertTriangle
+  AlertTriangle,
+  Users,
+  Layers
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 
 interface ChatMessage {
@@ -30,6 +33,13 @@ interface ChatMessage {
   model?: string;
   timestamp: Date;
   tokensUsed?: number;
+  participants?: Array<{
+    participant: string;
+    content: string;
+    model: string;
+    tokensUsed?: number;
+  }>;
+  mode?: 'discussion' | 'collaborative';
 }
 
 export default function CouncilChamberPage() {
@@ -41,6 +51,7 @@ export default function CouncilChamberPage() {
   
   // Council Chamber is now always available (server manages API keys)
   const [councilStatus, setCouncilStatus] = useState<'unknown' | 'available' | 'unavailable'>('unknown');
+  const [discussionMode, setDiscussionMode] = useState<'discussion' | 'collaborative'>('discussion');
 
   // Check Council Chamber availability on mount
   useEffect(() => {
@@ -87,7 +98,9 @@ The Council Chamber is now in session. Here, the three great AI minds converge t
 • **GPT-4** - Creative and comprehensive insights  
 • **Gemini** - Multi-perspective reasoning
 
-When you ask a question, all three models will contribute their expertise. The primary response will be highlighted, with alternative perspectives shown below.
+**Choose your mode:**
+🔄 **Interactive Mode** - AIs respond sequentially, building on each other's ideas
+📊 **Collaborative Mode** - All AIs respond in parallel with combined insights
 
 *"In the multitude of counselors there is wisdom."* - What would you like the council to discuss?`
         : councilStatus === 'unavailable'
@@ -144,14 +157,17 @@ Please contact your system administrator to enable the Council Chamber.`
           messages: [
             {
               role: 'system',
-              content: 'You are participating in a Council Chamber where multiple AI models collaborate to provide comprehensive insights. Provide thoughtful, well-reasoned responses that complement other AI perspectives.'
+              content: discussionMode === 'discussion' 
+                ? 'You are in a Council Chamber discussion where AI models will respond sequentially, building on each other\'s ideas.'
+                : 'You are participating in a Council Chamber where multiple AI models collaborate to provide comprehensive insights.'
             },
             {
               role: 'user',
               content: currentInput
             }
           ],
-          temperature: 0.7
+          temperature: 0.7,
+          mode: discussionMode
         })
       });
 
@@ -165,10 +181,12 @@ Please contact your system administrator to enable the Council Chamber.`
       const assistantMessage: ChatMessage = {
         id: `msg_${Date.now() + 1}`,
         role: 'assistant',
-        content: data.content,
-        model: data.model,
-        tokensUsed: data.tokensUsed,
-        timestamp: new Date()
+        content: data.content || '',
+        model: data.model || 'Council',
+        tokensUsed: data.tokensUsed || data.totalTokens,
+        timestamp: new Date(),
+        participants: data.participants,
+        mode: data.mode
       };
 
       setMessages(prev => [...prev, assistantMessage]);
@@ -246,16 +264,41 @@ Please contact your system administrator to enable the Council Chamber.`
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">Council Chamber Status</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-3">
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium">Server Status:</span>
             <Badge variant={councilStatus === 'available' ? 'default' : councilStatus === 'unavailable' ? 'destructive' : 'secondary'} className="ml-2">
               {councilStatus === 'available' ? '🟢 Active' : councilStatus === 'unavailable' ? '🔴 Unavailable' : '🟡 Checking...'}
             </Badge>
           </div>
+          
+          {councilStatus === 'available' && (
+            <div className="flex items-center justify-between text-sm border-t pt-3">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">Discussion Mode:</span>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Layers className="w-3 h-3" />
+                  <span>Collaborative</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={discussionMode === 'discussion'}
+                  onCheckedChange={(checked) => setDiscussionMode(checked ? 'discussion' : 'collaborative')}
+                />
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <span>Interactive</span>
+                  <Users className="w-3 h-3" />
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div className="text-xs text-muted-foreground">
             {councilStatus === 'available' ? 
-              'All AI services are configured and ready' :
+              discussionMode === 'discussion' 
+                ? 'AIs will respond sequentially, building on each other\'s ideas'
+                : 'All AI services configured - AIs respond in parallel' :
               councilStatus === 'unavailable' ?
               'Server-side AI services need configuration' :
               'Checking server configuration...'
@@ -322,10 +365,67 @@ Please contact your system administrator to enable the Council Chamber.`
           {/* Messages */}
           <ScrollArea className="flex-1 px-4" ref={scrollAreaRef}>
             <div className="space-y-6 py-4">
-              {messages.map((message) => (
+{messages.map((message) => (
                 <div key={message.id} className="space-y-3">
-                  <div className={`flex items-start gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}>
-                    {message.role === 'assistant' && (
+                  {message.role === 'user' ? (
+                    // User message
+                    <div className="flex items-start gap-3 justify-end">
+                      <div className="max-w-[85%] space-y-2 order-first">
+                        <div className="p-4 rounded-lg bg-primary text-primary-foreground ml-auto">
+                          <div className="whitespace-pre-wrap">{message.content}</div>
+                        </div>
+                      </div>
+                      <div className="bg-muted p-2 rounded-full">
+                        <User className="w-4 h-4" />
+                      </div>
+                    </div>
+                  ) : message.participants && message.mode === 'discussion' ? (
+                    // Discussion mode - show individual participants
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <Crown className="w-4 h-4" />
+                        <span>Council Discussion</span>
+                        <Badge variant="outline" className="text-xs">
+                          {message.participants.length} participants
+                        </Badge>
+                      </div>
+                      {message.participants.map((participant, index) => (
+                        <div key={`${message.id}-${participant.participant}`} className="flex items-start gap-3">
+                          <div className="bg-primary/10 p-2 rounded-full border border-primary/20 flex-shrink-0">
+                            {participant.participant === 'Claude' ? (
+                              <Bot className="w-4 h-4 text-blue-600" />
+                            ) : participant.participant === 'GPT-4' ? (
+                              <Bot className="w-4 h-4 text-green-600" />
+                            ) : (
+                              <Bot className="w-4 h-4 text-purple-600" />
+                            )}
+                          </div>
+                          
+                          <div className="max-w-[85%] space-y-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-sm">
+                                {participant.participant}
+                              </span>
+                              <Badge variant="secondary" className="text-xs">
+                                {index === 0 ? '1st' : index === 1 ? '2nd' : '3rd'}
+                              </Badge>
+                            </div>
+                            <div className="p-4 rounded-lg bg-muted">
+                              <div className="whitespace-pre-wrap">{participant.content}</div>
+                            </div>
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <span>{participant.model}</span>
+                              {participant.tokensUsed && (
+                                <span>{participant.tokensUsed} tokens</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    // Collaborative mode - combined response
+                    <div className="flex items-start gap-3">
                       <div className="bg-primary/10 p-2 rounded-full border border-primary/20">
                         {message.model?.includes('Multi-LLM') ? (
                           <Crown className="w-4 h-4 text-primary" />
@@ -333,34 +433,23 @@ Please contact your system administrator to enable the Council Chamber.`
                           <Bot className="w-4 h-4 text-primary" />
                         )}
                       </div>
-                    )}
-                    
-                    <div className={`max-w-[85%] space-y-2 ${message.role === 'user' ? 'order-first' : ''}`}>
-                      <div className={`p-4 rounded-lg ${
-                        message.role === 'user' 
-                          ? 'bg-primary text-primary-foreground ml-auto' 
-                          : 'bg-muted'
-                      }`}>
-                        <div className="whitespace-pre-wrap">{message.content}</div>
-                      </div>
                       
-                      {/* Model info */}
-                      {message.model && (
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>{message.model}</span>
-                          {message.tokensUsed && (
-                            <span>{message.tokensUsed} tokens</span>
-                          )}
+                      <div className="max-w-[85%] space-y-2">
+                        <div className="p-4 rounded-lg bg-muted">
+                          <div className="whitespace-pre-wrap">{message.content}</div>
                         </div>
-                      )}
-                    </div>
-                    
-                    {message.role === 'user' && (
-                      <div className="bg-muted p-2 rounded-full">
-                        <User className="w-4 h-4" />
+                        
+                        {message.model && (
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>{message.model}</span>
+                            {message.tokensUsed && (
+                              <span>{message.tokensUsed} tokens</span>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                   
                   <div className={`flex items-center gap-2 text-xs text-muted-foreground ${
                     message.role === 'user' ? 'justify-end' : ''
@@ -370,7 +459,10 @@ Please contact your system administrator to enable the Council Chamber.`
                       variant="ghost" 
                       size="sm" 
                       className="h-6 px-2"
-                      onClick={() => copyMessage(message.content)}
+                      onClick={() => copyMessage(message.participants ? 
+                        message.participants.map(p => `${p.participant}: ${p.content}`).join('\n\n') : 
+                        message.content
+                      )}
                     >
                       <Copy className="w-3 h-3" />
                     </Button>
@@ -386,7 +478,12 @@ Please contact your system administrator to enable the Council Chamber.`
                   <div className="bg-muted p-4 rounded-lg">
                     <div className="flex items-center gap-2">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-sm">The Council is deliberating... Consulting Claude, GPT-4, and Gemini...</span>
+                      <span className="text-sm">
+                        {discussionMode === 'discussion' 
+                          ? 'The Council is in session... Claude speaks first, then GPT-4, then Gemini...'
+                          : 'The Council is deliberating... Consulting Claude, GPT-4, and Gemini...'
+                        }
+                      </span>
                     </div>
                   </div>
                 </div>

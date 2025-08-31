@@ -13,7 +13,7 @@ interface AiResponse {
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, temperature = 0.7 } = await req.json();
+    const { messages, temperature = 0.7, mode = 'collaborative' } = await req.json();
 
     // Validate input
     if (!Array.isArray(messages)) {
@@ -60,60 +60,13 @@ export async function POST(req: NextRequest) {
       }, { status: 503 });
     }
 
-    // Call all providers in parallel
-    const [openaiResult, claudeResult, geminiResult] = await Promise.allSettled([
-      callOpenAI(openaiKey, messages, temperature),
-      callClaude(claudeKey, messages, temperature),
-      callGemini(geminiKey, messages, temperature),
-    ]);
-
-    // Collect successful responses
-    const responses: AiResponse[] = [];
-    
-    if (openaiResult.status === 'fulfilled') {
-      responses.push({ ...openaiResult.value, model: 'OpenAI: ' + openaiResult.value.model });
+    if (mode === 'discussion') {
+      // Interactive discussion mode - sequential responses that build on each other
+      return await handleInteractiveDiscussion(openaiKey, claudeKey, geminiKey, messages, temperature);
     } else {
-      console.error('OpenAI failed:', openaiResult.reason);
+      // Original collaborative mode - parallel responses
+      return await handleCollaborativeMode(openaiKey, claudeKey, geminiKey, messages, temperature);
     }
-    
-    if (claudeResult.status === 'fulfilled') {
-      responses.push({ ...claudeResult.value, model: 'Claude: ' + claudeResult.value.model });
-    } else {
-      console.error('Claude failed:', claudeResult.reason);
-    }
-    
-    if (geminiResult.status === 'fulfilled') {
-      responses.push({ ...geminiResult.value, model: 'Gemini: ' + geminiResult.value.model });
-    } else {
-      console.error('Gemini failed:', geminiResult.reason);
-    }
-
-    if (responses.length === 0) {
-      return NextResponse.json({ 
-        error: 'All AI services failed to respond' 
-      }, { status: 503 });
-    }
-
-    // Combine responses intelligently
-    const primaryResponse = responses.find(r => r.model.startsWith('Claude:')) || responses[0];
-    const otherResponses = responses.filter(r => r !== primaryResponse);
-    
-    let combinedContent = primaryResponse.content;
-    
-    if (otherResponses.length > 0) {
-      combinedContent += '\n\n---\n\n**Alternative perspectives from other models:**\n\n';
-      otherResponses.forEach((response) => {
-        combinedContent += `**${response.model}:**\n${response.content}\n\n`;
-      });
-    }
-
-    return NextResponse.json({
-      content: combinedContent,
-      model: `Multi-LLM (${responses.length} models: ${responses.map(r => r.model.split(':')[0]).join(', ')})`,
-      tokensUsed: responses.reduce((sum, r) => sum + (r.tokensUsed || 0), 0),
-      providersUsed: responses.length,
-      successfulProviders: responses.map(r => r.model.split(':')[0])
-    });
 
   } catch (e: any) {
     console.error('Council Chamber error:', e);
@@ -238,4 +191,150 @@ async function callGemini(apiKey: string, messages: AiMessage[], temperature: nu
     model: 'gemini-1.5-pro-latest',
     tokensUsed: data.usageMetadata?.totalTokenCount,
   };
+}
+
+async function handleCollaborativeMode(
+  openaiKey: string,
+  claudeKey: string, 
+  geminiKey: string,
+  messages: AiMessage[],
+  temperature: number
+) {
+  // Original parallel processing mode
+  const [openaiResult, claudeResult, geminiResult] = await Promise.allSettled([
+    callOpenAI(openaiKey, messages, temperature),
+    callClaude(claudeKey, messages, temperature),
+    callGemini(geminiKey, messages, temperature),
+  ]);
+
+  const responses: AiResponse[] = [];
+  
+  if (openaiResult.status === 'fulfilled') {
+    responses.push({ ...openaiResult.value, model: 'OpenAI: ' + openaiResult.value.model });
+  }
+  
+  if (claudeResult.status === 'fulfilled') {
+    responses.push({ ...claudeResult.value, model: 'Claude: ' + claudeResult.value.model });
+  }
+  
+  if (geminiResult.status === 'fulfilled') {
+    responses.push({ ...geminiResult.value, model: 'Gemini: ' + geminiResult.value.model });
+  }
+
+  if (responses.length === 0) {
+    throw new Error('All AI services failed to respond');
+  }
+
+  const primaryResponse = responses.find(r => r.model.startsWith('Claude:')) || responses[0];
+  const otherResponses = responses.filter(r => r !== primaryResponse);
+  
+  let combinedContent = primaryResponse.content;
+  
+  if (otherResponses.length > 0) {
+    combinedContent += '\n\n---\n\n**Alternative perspectives from other models:**\n\n';
+    otherResponses.forEach((response) => {
+      combinedContent += `**${response.model}:**\n${response.content}\n\n`;
+    });
+  }
+
+  return NextResponse.json({
+    content: combinedContent,
+    model: `Multi-LLM (${responses.length} models: ${responses.map(r => r.model.split(':')[0]).join(', ')})`,
+    tokensUsed: responses.reduce((sum, r) => sum + (r.tokensUsed || 0), 0),
+    providersUsed: responses.length,
+    successfulProviders: responses.map(r => r.model.split(':')[0])
+  });
+}
+
+async function handleInteractiveDiscussion(
+  openaiKey: string,
+  claudeKey: string,
+  geminiKey: string, 
+  messages: AiMessage[],
+  temperature: number
+) {
+  const discussionResponses: Array<{
+    participant: string;
+    content: string;
+    model: string;
+    tokensUsed?: number;
+  }> = [];
+
+  let conversationHistory = [...messages];
+
+  try {
+    // 1. Claude goes first (analytical foundation)
+    const claudePrompt = [
+      {
+        role: 'system' as const,
+        content: `You are Claude, participating in a Council Chamber discussion. You'll speak first to establish an analytical foundation. Other AI participants (GPT-4 and Gemini) will respond after you, building on your analysis. Be thoughtful, structured, and leave openings for others to build upon your ideas. Keep your response focused and concise to allow room for discussion.`
+      },
+      ...conversationHistory
+    ];
+
+    const claudeResponse = await callClaude(claudeKey, claudePrompt, temperature);
+    discussionResponses.push({
+      participant: 'Claude',
+      content: claudeResponse.content,
+      model: claudeResponse.model,
+      tokensUsed: claudeResponse.tokensUsed
+    });
+
+    // Add Claude's response to conversation history
+    conversationHistory.push({
+      role: 'assistant',
+      content: `**Claude:** ${claudeResponse.content}`
+    });
+
+    // 2. GPT-4 responds to both user and Claude
+    const gptPrompt = [
+      {
+        role: 'system' as const,
+        content: `You are GPT-4, participating in a Council Chamber discussion. Claude has just provided their analytical perspective. Now build upon, complement, or respectfully challenge Claude's points while addressing the original question. Gemini will respond after you, so leave room for their contribution. Reference Claude's points when relevant and add your own unique insights.`
+      },
+      ...conversationHistory
+    ];
+
+    const gptResponse = await callOpenAI(openaiKey, gptPrompt, temperature);
+    discussionResponses.push({
+      participant: 'GPT-4',
+      content: gptResponse.content,
+      model: gptResponse.model,
+      tokensUsed: gptResponse.tokensUsed
+    });
+
+    conversationHistory.push({
+      role: 'assistant', 
+      content: `**GPT-4:** ${gptResponse.content}`
+    });
+
+    // 3. Gemini wraps up with synthesis and additional perspectives
+    const geminiPrompt = [
+      {
+        role: 'system' as const,
+        content: `You are Gemini, the final participant in this Council Chamber discussion. You've heard from Claude (analytical foundation) and GPT-4 (building/challenging). Now provide synthesis, highlight agreements/disagreements, offer additional perspectives the others missed, and help bring the discussion toward actionable insights. Reference specific points made by Claude and GPT-4.`
+      },
+      ...conversationHistory
+    ];
+
+    const geminiResponse = await callGemini(geminiKey, geminiPrompt, temperature);
+    discussionResponses.push({
+      participant: 'Gemini',
+      content: geminiResponse.content,
+      model: geminiResponse.model,
+      tokensUsed: geminiResponse.tokensUsed
+    });
+
+    return NextResponse.json({
+      mode: 'discussion',
+      participants: discussionResponses,
+      totalTokens: discussionResponses.reduce((sum, r) => sum + (r.tokensUsed || 0), 0),
+      discussionSummary: `Interactive discussion with ${discussionResponses.length} participants`
+    });
+
+  } catch (error) {
+    console.error('Interactive discussion failed:', error);
+    // Fallback to collaborative mode if discussion fails
+    return await handleCollaborativeMode(openaiKey, claudeKey, geminiKey, messages, temperature);
+  }
 }
