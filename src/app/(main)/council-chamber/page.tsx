@@ -22,8 +22,6 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useAiProvider } from '@/hooks/use-ai-provider';
-import { callAiProvider, type AiMessage } from '@/lib/ai-providers';
 
 interface ChatMessage {
   id: string;
@@ -41,37 +39,46 @@ export default function CouncilChamberPage() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   
-  const { 
-    selectedProvider, 
-    openAiApiKey, 
-    claudeApiKey, 
-    geminiApiKey,
-    isLoaded 
-  } = useAiProvider();
+  // Council Chamber is now always available (server manages API keys)
+  const [councilStatus, setCouncilStatus] = useState<'unknown' | 'available' | 'unavailable'>('unknown');
 
-  // Check if all API keys are available for Council Chamber mode
-  const allKeysAvailable = openAiApiKey && claudeApiKey && geminiApiKey;
-  const isCouncilEnabled = selectedProvider === 'all' && allKeysAvailable && isLoaded;
-
-  // Debug logging
+  // Check Council Chamber availability on mount
   useEffect(() => {
-    console.log('Council Chamber State:', {
-      selectedProvider,
-      allKeysAvailable,
-      isCouncilEnabled,
-      isLoaded,
-      hasOpenAI: !!openAiApiKey,
-      hasClaude: !!claudeApiKey,
-      hasGemini: !!geminiApiKey
-    });
-  }, [selectedProvider, allKeysAvailable, isCouncilEnabled, isLoaded, openAiApiKey, claudeApiKey, geminiApiKey]);
+    checkCouncilAvailability();
+  }, []);
 
-  // Welcome message - update when state changes
+  const checkCouncilAvailability = async () => {
+    try {
+      const response = await fetch('/api/ai/council', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: 'test' }]
+        })
+      });
+      
+      if (response.status === 503) {
+        const error = await response.json();
+        setCouncilStatus('unavailable');
+        console.log('Council Chamber unavailable:', error.details);
+      } else if (response.ok || response.status === 400) {
+        // 400 is expected for test message, but means service is available
+        setCouncilStatus('available');
+      } else {
+        setCouncilStatus('unavailable');
+      }
+    } catch (error) {
+      console.error('Failed to check Council availability:', error);
+      setCouncilStatus('unavailable');
+    }
+  };
+
+  // Welcome message - update when status changes
   useEffect(() => {
     const welcomeMessage = {
       id: '1',
       role: 'assistant' as const,
-      content: isCouncilEnabled 
+      content: councilStatus === 'available'
         ? `🏛️ **Welcome to the Council Chamber** 🏛️
 
 The Council Chamber is now in session. Here, the three great AI minds converge to deliberate on your queries:
@@ -83,23 +90,26 @@ The Council Chamber is now in session. Here, the three great AI minds converge t
 When you ask a question, all three models will contribute their expertise. The primary response will be highlighted, with alternative perspectives shown below.
 
 *"In the multitude of counselors there is wisdom."* - What would you like the council to discuss?`
-        : `🏛️ **Council Chamber - Setup Required** 🏛️
+        : councilStatus === 'unavailable'
+        ? `🏛️ **Council Chamber - Service Unavailable** 🏛️
 
-Welcome to the Council Chamber, where multiple AI minds collaborate to provide comprehensive insights.
+The Council Chamber requires all three AI services to be configured on the server.
 
-${!isLoaded ? '⏳ Loading settings...' : 
-  selectedProvider !== 'all' ? 
-    '⚙️ **Action Required:** Please go to Settings and select "ALL (Multi-LLM Mix)" as your AI provider.' :
-    '🔑 **API Keys Required:** All three API keys (OpenAI, Claude, Gemini) must be configured in Settings to enable the Council Chamber.'
-}
+⚙️ **Server Configuration Required:** The administrator needs to set up API keys for:
+• OpenAI (GPT-4)
+• Claude (Anthropic)  
+• Gemini (Google)
 
-The Council Chamber only works when ALL is selected and all API keys are present.`,
+Please contact your system administrator to enable the Council Chamber.`
+        : `🏛️ **Council Chamber - Checking Availability** 🏛️
+
+⏳ Checking if the Council Chamber services are available...`,
       timestamp: new Date(),
       model: 'System'
     };
 
     setMessages([welcomeMessage]);
-  }, [isCouncilEnabled, isLoaded, selectedProvider, allKeysAvailable]);
+  }, [councilStatus]);
 
   const scrollToBottom = () => {
     if (scrollAreaRef.current) {
@@ -112,7 +122,7 @@ The Council Chamber only works when ALL is selected and all API keys are present
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading || !isCouncilEnabled) return;
+    if (!input.trim() || isLoading || councilStatus !== 'available') return;
 
     const userMessage: ChatMessage = {
       id: `msg_${Date.now()}`,
@@ -122,39 +132,42 @@ The Council Chamber only works when ALL is selected and all API keys are present
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = input.trim();
     setInput('');
     setIsLoading(true);
 
     try {
-      const aiMessages: AiMessage[] = [
-        {
-          role: 'system',
-          content: 'You are participating in a Council Chamber where multiple AI models collaborate to provide comprehensive insights. Provide thoughtful, well-reasoned responses that complement other AI perspectives.'
-        },
-        {
-          role: 'user',
-          content: input.trim()
-        }
-      ];
+      const response = await fetch('/api/ai/council', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'system',
+              content: 'You are participating in a Council Chamber where multiple AI models collaborate to provide comprehensive insights. Provide thoughtful, well-reasoned responses that complement other AI perspectives.'
+            },
+            {
+              role: 'user',
+              content: currentInput
+            }
+          ],
+          temperature: 0.7
+        })
+      });
 
-      const response = await callAiProvider(
-        'all',
-        '',
-        aiMessages,
-        0.7,
-        {
-          openAiApiKey,
-          claudeApiKey,
-          geminiApiKey
-        }
-      );
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Unknown server error');
+      }
+
+      const data = await response.json();
       
       const assistantMessage: ChatMessage = {
         id: `msg_${Date.now() + 1}`,
         role: 'assistant',
-        content: response.content,
-        model: response.model,
-        tokensUsed: response.tokensUsed,
+        content: data.content,
+        model: data.model,
+        tokensUsed: data.tokensUsed,
         timestamp: new Date()
       };
 
@@ -164,7 +177,7 @@ The Council Chamber only works when ALL is selected and all API keys are present
       const errorMessage: ChatMessage = {
         id: `msg_${Date.now() + 1}`,
         role: 'assistant',
-        content: `The Council Chamber encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please check your API keys and try again.`,
+        content: `The Council Chamber encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again or contact your administrator.`,
         timestamp: new Date(),
         model: 'Error'
       };
@@ -228,57 +241,34 @@ The Council Chamber only works when ALL is selected and all API keys are present
         </p>
       </div>
 
-      {/* Debug Status Panel */}
+      {/* Server Status Panel */}
       <Card className="mb-4">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">Council Chamber Status</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <div className="grid grid-cols-2 gap-4 text-xs">
-            <div>
-              <span className="font-medium">Provider Selected:</span>
-              <Badge variant={selectedProvider === 'all' ? 'default' : 'secondary'} className="ml-2">
-                {selectedProvider?.toUpperCase() || 'None'}
-              </Badge>
-            </div>
-            <div>
-              <span className="font-medium">Status:</span>
-              <Badge variant={isCouncilEnabled ? 'default' : 'destructive'} className="ml-2">
-                {isCouncilEnabled ? 'Active' : 'Inactive'}
-              </Badge>
-            </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium">Server Status:</span>
+            <Badge variant={councilStatus === 'available' ? 'default' : councilStatus === 'unavailable' ? 'destructive' : 'secondary'} className="ml-2">
+              {councilStatus === 'available' ? '🟢 Active' : councilStatus === 'unavailable' ? '🔴 Unavailable' : '🟡 Checking...'}
+            </Badge>
           </div>
-          <div className="grid grid-cols-3 gap-2 text-xs">
-            <div className="flex items-center">
-              <span className="font-medium">OpenAI:</span>
-              <Badge variant={openAiApiKey ? 'default' : 'secondary'} className="ml-2">
-                {openAiApiKey ? '✓' : '✗'}
-              </Badge>
-            </div>
-            <div className="flex items-center">
-              <span className="font-medium">Claude:</span>
-              <Badge variant={claudeApiKey ? 'default' : 'secondary'} className="ml-2">
-                {claudeApiKey ? '✓' : '✗'}
-              </Badge>
-            </div>
-            <div className="flex items-center">
-              <span className="font-medium">Gemini:</span>
-              <Badge variant={geminiApiKey ? 'default' : 'secondary'} className="ml-2">
-                {geminiApiKey ? '✓' : '✗'}
-              </Badge>
-            </div>
+          <div className="text-xs text-muted-foreground">
+            {councilStatus === 'available' ? 
+              'All AI services are configured and ready' :
+              councilStatus === 'unavailable' ?
+              'Server-side AI services need configuration' :
+              'Checking server configuration...'
+            }
           </div>
         </CardContent>
       </Card>
 
-      {!isCouncilEnabled && isLoaded && (
+      {councilStatus === 'unavailable' && (
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            {selectedProvider !== 'all' 
-              ? 'Council Chamber requires "ALL (Multi-LLM Mix)" to be selected in Settings.'
-              : 'All three API keys (OpenAI, Claude, Gemini) must be configured in Settings to use the Council Chamber.'
-            }
+            The Council Chamber requires server-side configuration of API keys. Contact your administrator to set up OpenAI, Claude, and Gemini API access.
           </AlertDescription>
         </Alert>
       )}
@@ -291,7 +281,7 @@ The Council Chamber only works when ALL is selected and all API keys are present
               <CardTitle className="flex items-center gap-2">
                 <MessageSquare className="w-5 h-5" />
                 Council Session
-                {isCouncilEnabled && (
+                {councilStatus === 'available' && (
                   <Badge variant="secondary" className="ml-2">
                     <Sparkles className="w-3 h-3 mr-1" />
                     Multi-LLM Active
@@ -299,9 +289,9 @@ The Council Chamber only works when ALL is selected and all API keys are present
                 )}
               </CardTitle>
               <CardDescription>
-                {isCouncilEnabled 
+                {councilStatus === 'available'
                   ? 'Ask complex questions and get perspectives from multiple AI models'
-                  : 'Configure all API keys and select ALL provider to begin'
+                  : 'Waiting for server-side AI services to be configured'
                 }
               </CardDescription>
             </div>
@@ -413,16 +403,16 @@ The Council Chamber only works when ALL is selected and all API keys are present
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
-                placeholder={isCouncilEnabled 
+                placeholder={councilStatus === 'available'
                   ? "Ask the Council a complex question requiring multiple perspectives..." 
-                  : "Configure ALL provider and API keys to begin..."
+                  : "Waiting for server configuration..."
                 }
-                disabled={!isCouncilEnabled || isLoading}
+                disabled={councilStatus !== 'available' || isLoading}
                 className="flex-1"
               />
               <Button 
                 onClick={handleSend} 
-                disabled={!input.trim() || !isCouncilEnabled || isLoading}
+                disabled={!input.trim() || councilStatus !== 'available' || isLoading}
               >
                 {isLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -432,9 +422,9 @@ The Council Chamber only works when ALL is selected and all API keys are present
               </Button>
             </div>
             
-            {!isCouncilEnabled && (
+            {councilStatus !== 'available' && (
               <div className="text-center text-sm text-muted-foreground mt-2">
-                Set AI Provider to "ALL" and configure all API keys in Settings to enable the Council Chamber
+                Council Chamber requires server-side configuration of OpenAI, Claude, and Gemini API keys
               </div>
             )}
           </div>
