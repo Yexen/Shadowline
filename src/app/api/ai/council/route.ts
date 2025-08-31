@@ -44,10 +44,10 @@ export async function POST(req: NextRequest) {
       }, { status: 413 });
     }
 
-    // Check if all required API keys are available
+    // Check if all required API keys are available (try common variations)
     const openaiKey = process.env.OPENAI_API_KEY;
-    const claudeKey = process.env.CLAUDE_API_KEY;
-    const geminiKey = process.env.GEMINI_API_KEY;
+    const claudeKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY;
+    const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
     if (!openaiKey || !claudeKey || !geminiKey) {
       return NextResponse.json({ 
@@ -56,6 +56,16 @@ export async function POST(req: NextRequest) {
           openai: !!openaiKey,
           claude: !!claudeKey,
           gemini: !!geminiKey
+        },
+        debug: {
+          openaiChecked: ['OPENAI_API_KEY'],
+          claudeChecked: ['CLAUDE_API_KEY', 'ANTHROPIC_API_KEY'],
+          geminiChecked: ['GEMINI_API_KEY', 'GOOGLE_API_KEY', 'GOOGLE_GENERATIVE_AI_API_KEY'],
+          foundKeys: {
+            openai: process.env.OPENAI_API_KEY ? 'OPENAI_API_KEY' : 'none',
+            claude: process.env.CLAUDE_API_KEY ? 'CLAUDE_API_KEY' : process.env.ANTHROPIC_API_KEY ? 'ANTHROPIC_API_KEY' : 'none',
+            gemini: process.env.GEMINI_API_KEY ? 'GEMINI_API_KEY' : process.env.GOOGLE_API_KEY ? 'GOOGLE_API_KEY' : process.env.GOOGLE_GENERATIVE_AI_API_KEY ? 'GOOGLE_GENERATIVE_AI_API_KEY' : 'none'
+          }
         }
       }, { status: 503 });
     }

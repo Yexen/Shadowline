@@ -87,6 +87,14 @@ export default function CouncilChamberPage() {
         const error = await response.json();
         setCouncilStatus('unavailable');
         console.log('Council Chamber unavailable:', error.details);
+        toast({
+          title: "Council Chamber Unavailable",
+          description: `Missing API keys: ${Object.entries(error.details || {})
+            .filter(([_, available]) => !available)
+            .map(([service, _]) => service)
+            .join(', ')}`,
+          variant: "destructive"
+        });
       } else if (response.ok || response.status === 400) {
         // 400 is expected for test message, but means service is available
         setCouncilStatus('available');
