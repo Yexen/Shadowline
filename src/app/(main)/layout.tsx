@@ -35,7 +35,14 @@ import {
   Map as MapIcon,
   Search,
   PlusCircle,
-  Library
+  Library,
+  Gamepad2,
+  Crown,
+  NotebookPen,
+  FolderOpen,
+  MessageSquare,
+  Book,
+  Terminal
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -69,17 +76,27 @@ const tagColors: Record<TagColor, string> = {
   gray: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
 };
 
+const DEV_CONSOLE_PATH = '/dev-console';
+
 const menuItems = [
   { href: '/home', label: 'Home', icon: Home },
   { href: '/search', label: 'Search', icon: Search },
   { href: '/editor', label: 'Editor', icon: PenSquare },
   { href: '/drafts', label: 'Drafts', icon: FileText },
   { href: '/gallery', label: 'Gallery', icon: Images },
+  { href: '/games', label: 'Games', icon: Gamepad2 },
+  { href: '/ai-tools', label: 'AI Tools', icon: BrainCircuit },
+  { href: '/council-chamber', label: 'Discussion', icon: Crown },
   { href: '/maps', label: 'Maps', icon: MapIcon },
+  { href: '/batcave-archive', label: 'Notebook', icon: NotebookPen },
+  { href: '/classification', label: 'Classification', icon: FolderOpen },
   { href: '/organization', label: 'Organization', icon: ClipboardList },
-  { href: '/classification', label: 'Classification', icon: BrainCircuit },
+  { href: '/messages', label: 'Messages', icon: MessageSquare },
+  { href: '/sources', label: 'Sources', icon: Book },
   { href: '/about', label: 'About', icon: Info },
   { href: '/settings', label: 'Settings', icon: Settings },
+  // Always show Dev Console
+  { href: DEV_CONSOLE_PATH, label: 'Dev Console', icon: Terminal },
 ];
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
