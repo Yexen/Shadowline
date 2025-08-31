@@ -3,14 +3,14 @@
 // File System Integration for Friday AI
 // This provides safe browser-based file operations
 
-export class FridayFileSystem {
-  private static instance: FridayFileSystem;
+export class OracleFileSystem {
+  private static instance: OracleFileSystem;
   
-  static getInstance(): FridayFileSystem {
-    if (!FridayFileSystem.instance) {
-      FridayFileSystem.instance = new FridayFileSystem();
+  static getInstance(): OracleFileSystem {
+    if (!OracleFileSystem.instance) {
+      OracleFileSystem.instance = new OracleFileSystem();
     }
-    return FridayFileSystem.instance;
+    return OracleFileSystem.instance;
   }
 
   // Simulate file reading from known app structure
@@ -37,13 +37,13 @@ export class FridayFileSystem {
 
       return `// File: ${path}\n// Content would be loaded from the actual file system`;
     } catch (error) {
-      console.error(`Friday FS: Error reading ${path}:`, error);
+      console.error(`Oracle FS: Error reading ${path}:`, error);
       return `Error reading file: ${path}`;
     }
   }
 
   async writeFile(path: string, content: string): Promise<void> {
-    console.log(`Friday FS: Writing to ${path}`, { contentLength: content.length });
+    console.log(`Oracle FS: Writing to ${path}`, { contentLength: content.length });
     
     // In production, this would integrate with your development environment
     // For now, we'll simulate the operation and provide instructions
@@ -210,14 +210,14 @@ npm run dev
 }
 
 // Integration with existing app hooks
-export class FridayAppIntegration {
-  private static instance: FridayAppIntegration;
+export class OracleAppIntegration {
+  private static instance: OracleAppIntegration;
   
-  static getInstance(): FridayAppIntegration {
-    if (!FridayAppIntegration.instance) {
-      FridayAppIntegration.instance = new FridayAppIntegration();
+  static getInstance(): OracleAppIntegration {
+    if (!OracleAppIntegration.instance) {
+      OracleAppIntegration.instance = new OracleAppIntegration();
     }
-    return FridayAppIntegration.instance;
+    return OracleAppIntegration.instance;
   }
 
   // Bible Integration
@@ -231,7 +231,7 @@ export class FridayAppIntegration {
   }
 
   async createBibleEntry(section: string, entry: any): Promise<void> {
-    console.log(`Friday Integration: Creating Bible entry in "${section}":`, entry);
+    console.log(`Oracle Integration: Creating Bible entry in "${section}":`, entry);
     
     // This would integrate with useBible hook
     const currentData = await this.getBibleData();
@@ -261,7 +261,7 @@ export class FridayAppIntegration {
   }
 
   async createVolumeChapter(volumeId: string, title: string, content: string): Promise<void> {
-    console.log(`Friday Integration: Creating chapter "${title}" in volume ${volumeId}`);
+    console.log(`Oracle Integration: Creating chapter "${title}" in volume ${volumeId}`);
     
     const volumesData = await this.getVolumesData();
     const volume = volumesData.find((v: any) => v.id === volumeId);
@@ -306,12 +306,12 @@ export class FridayAppIntegration {
     return {
       category,
       confidence,
-      reasoning: `Friday AI classified based on content analysis${instructions ? ' and user instructions' : ''}. Found ${category === 'bible' ? 'world-building' : 'narrative'} indicators.`,
+      reasoning: `Oracle AI classified based on content analysis${instructions ? ' and user instructions' : ''}. Found ${category === 'bible' ? 'world-building' : 'narrative'} indicators.`,
       suggestedTags: category === 'bible' 
         ? ['lore', 'reference', 'world-building'] 
         : ['story', 'narrative', 'creative'],
       metadata: {
-        processedBy: 'friday-ai',
+        processedBy: 'oracle-ai',
         timestamp: new Date().toISOString(),
         instructions: instructions || null
       }

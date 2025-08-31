@@ -2,9 +2,9 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { FridayFileSystem, FridayAppIntegration } from './friday-fs-integration';
+import { OracleFileSystem, OracleAppIntegration } from './oracle-fs-integration';
 
-export interface FridayMessage {
+export interface OracleMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
@@ -16,7 +16,7 @@ export interface FridayMessage {
   };
 }
 
-export interface FridayCapabilities {
+export interface OracleCapabilities {
   // File System Access
   readFile: (path: string) => Promise<string>;
   writeFile: (path: string, content: string) => Promise<void>;
@@ -39,14 +39,14 @@ export interface FridayCapabilities {
   debugIssue: (error: string, context?: string) => Promise<string>;
 }
 
-export interface FridayState {
+export interface OracleState {
   // Core State
   isActive: boolean;
   isVisible: boolean;
   currentProvider: 'anthropic' | 'openai' | 'local';
   
   // Conversation
-  messages: FridayMessage[];
+  messages: OracleMessage[];
   isThinking: boolean;
   
   // Context & Memory
@@ -55,7 +55,7 @@ export interface FridayState {
   persistentContext: Record<string, any>;
   
   // Capabilities
-  capabilities: FridayCapabilities;
+  capabilities: OracleCapabilities;
   availableTools: string[];
   
   // Actions
@@ -74,20 +74,20 @@ export interface FridayState {
 }
 
 // Mock AI Processing (replace with actual AI provider calls)
-class FridayAI {
-  private static instance: FridayAI;
+class OracleAI {
+  private static instance: OracleAI;
   
-  static getInstance(): FridayAI {
-    if (!FridayAI.instance) {
-      FridayAI.instance = new FridayAI();
+  static getInstance(): OracleAI {
+    if (!OracleAI.instance) {
+      OracleAI.instance = new OracleAI();
     }
-    return FridayAI.instance;
+    return OracleAI.instance;
   }
   
   async processMessage(
     message: string, 
     context: any, 
-    capabilities: FridayCapabilities
+    capabilities: OracleCapabilities
   ): Promise<string> {
     // This would integrate with your chosen AI provider
     // For now, simulating intelligent responses
@@ -111,7 +111,7 @@ class FridayAI {
     return `I understand you want me to: "${message}". Let me analyze the current context and provide assistance. I have access to your entire codebase, app state, and can perform actions like creating Bible entries, Volume chapters, and analyzing your code.`;
   }
   
-  private async handleAnalysis(message: string, context: any, capabilities: FridayCapabilities): Promise<string> {
+  private async handleAnalysis(message: string, context: any, capabilities: OracleCapabilities): Promise<string> {
     if (message.includes('codebase')) {
       const analysis = await capabilities.analyzeCodebase();
       return `📊 **Codebase Analysis:**\n\n${analysis}\n\nI can help you refine any part of the codebase. Just tell me what you'd like to improve!`;
@@ -120,22 +120,22 @@ class FridayAI {
     return "I can analyze files, components, or the entire application structure. What would you like me to examine?";
   }
   
-  private async handleCreation(message: string, context: any, capabilities: FridayCapabilities): Promise<string> {
+  private async handleCreation(message: string, context: any, capabilities: OracleCapabilities): Promise<string> {
     return "I can help create Bible entries, Volume chapters, or new components. What would you like me to create?";
   }
   
-  private async handleDebugging(message: string, context: any, capabilities: FridayCapabilities): Promise<string> {
+  private async handleDebugging(message: string, context: any, capabilities: OracleCapabilities): Promise<string> {
     return "I can help debug issues by analyzing error logs, code patterns, and suggesting fixes. Share the error details with me.";
   }
   
-  private async handleSuggestions(message: string, context: any, capabilities: FridayCapabilities): Promise<string> {
+  private async handleSuggestions(message: string, context: any, capabilities: OracleCapabilities): Promise<string> {
     const suggestions = await capabilities.suggestImprovements(context);
     return `💡 **Improvement Suggestions:**\n\n${suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nWould you like me to implement any of these improvements?`;
   }
 }
 
 // Create the Zustand store
-export const useFridayStore = create<FridayState>()(
+export const useOracleStore = create<OracleState>()(
   devtools(
     (set, get) => ({
       // Initial State
@@ -155,67 +155,67 @@ export const useFridayStore = create<FridayState>()(
       // Capabilities Implementation with real integrations
       capabilities: {
         readFile: async (path: string) => {
-          const fs = FridayFileSystem.getInstance();
+          const fs = OracleFileSystem.getInstance();
           return await fs.readFile(path);
         },
         
         writeFile: async (path: string, content: string) => {
-          const fs = FridayFileSystem.getInstance();
+          const fs = OracleFileSystem.getInstance();
           await fs.writeFile(path, content);
         },
         
         listFiles: async (directory = '.') => {
-          const fs = FridayFileSystem.getInstance();
+          const fs = OracleFileSystem.getInstance();
           return await fs.listFiles(directory);
         },
         
         searchFiles: async (pattern: string) => {
-          const fs = FridayFileSystem.getInstance();
+          const fs = OracleFileSystem.getInstance();
           return await fs.searchFiles(pattern);
         },
         
         getBibleData: async () => {
-          const integration = FridayAppIntegration.getInstance();
+          const integration = OracleAppIntegration.getInstance();
           return await integration.getBibleData();
         },
         
         getVolumesData: async () => {
-          const integration = FridayAppIntegration.getInstance();
+          const integration = OracleAppIntegration.getInstance();
           return await integration.getVolumesData();
         },
         
         getClassificationItems: async () => {
-          const integration = FridayAppIntegration.getInstance();
+          const integration = OracleAppIntegration.getInstance();
           return await integration.getClassificationItems();
         },
         
         createBibleEntry: async (section: string, entry: any) => {
-          const integration = FridayAppIntegration.getInstance();
+          const integration = OracleAppIntegration.getInstance();
           await integration.createBibleEntry(section, entry);
         },
         
         createVolumeChapter: async (volumeId: string, title: string, content: string) => {
-          const integration = FridayAppIntegration.getInstance();
+          const integration = OracleAppIntegration.getInstance();
           await integration.createVolumeChapter(volumeId, title, content);
         },
         
         classifyContent: async (content: string, instructions?: string) => {
-          const integration = FridayAppIntegration.getInstance();
+          const integration = OracleAppIntegration.getInstance();
           return await integration.classifyContent(content, instructions);
         },
         
         analyzeCodebase: async () => {
-          const integration = FridayAppIntegration.getInstance();
+          const integration = OracleAppIntegration.getInstance();
           const appState = await integration.analyzeAppState();
           
           return `🔍 **Codebase & App Analysis:**
           
 **Technical Structure:**
 • **Architecture:** Next.js 14 with TypeScript and React 18
-• **State Management:** Zustand stores for Bible, Volumes, Classification, and Friday AI
+• **State Management:** Zustand stores for Bible, Volumes, Classification, and Oracle AI
 • **Components:** 25+ React components with shadcn/ui design system
 • **Styling:** Tailwind CSS with consistent theming
-• **AI Integration:** Enhanced classification system with omnipresent Friday AI
+• **AI Integration:** Enhanced classification system with omnipresent Oracle AI
 
 ${appState}
 
@@ -228,7 +228,7 @@ ${appState}
         },
         
         suggestImprovements: async (_context?: string) => {
-          const integration = FridayAppIntegration.getInstance();
+          const integration = OracleAppIntegration.getInstance();
           const [bible, volumes, classification] = await Promise.all([
             integration.getBibleData(),
             integration.getVolumesData(), 
@@ -279,13 +279,13 @@ ${appState}
 
 **Context Analysis:** ${context || 'No additional context provided'}
 
-Need more help? Share the full error stack trace with Friday!`;
+Need more help? Share the full error stack trace with Oracle!`;
         }
       },
       
       // Actions
       initialize: async () => {
-        console.log('🤖 Friday AI: Initializing...');
+        console.log('🤖 Oracle AI: Initializing...');
         set({ isActive: true });
         
         const state = get();
@@ -296,10 +296,10 @@ Need more help? Share the full error stack trace with Friday!`;
         });
         
         // Add welcome message
-        const welcomeMessage: FridayMessage = {
+        const welcomeMessage: OracleMessage = {
           id: `msg_${Date.now()}`,
           role: 'assistant',
-          content: `🤖 **Friday AI Initialized**\n\nI'm your omnipresent AI assistant with access to:\n• Complete codebase\n• App state (Bible, Volumes, Classifications)\n• File system operations\n• Code analysis and debugging\n• Content creation and refinement\n\nHow can I assist you today?`,
+          content: `🤖 **Oracle AI Initialized**\n\nI'm your omnipresent AI assistant with access to:\n• Complete codebase\n• App state (Bible, Volumes, Classifications)\n• File system operations\n• Code analysis and debugging\n• Content creation and refinement\n\nHow can I assist you today?`,
           timestamp: new Date(),
           metadata: {
             toolsUsed: ['initialization'],
@@ -311,12 +311,12 @@ Need more help? Share the full error stack trace with Friday!`;
           messages: [...state.messages, welcomeMessage]
         }));
         
-        console.log('✅ Friday AI: Ready for action!');
+        console.log('✅ Oracle AI: Ready for action!');
       },
       
       sendMessage: async (content: string) => {
         const state = get();
-        const userMessage: FridayMessage = {
+        const userMessage: OracleMessage = {
           id: `msg_${Date.now()}_user`,
           role: 'user',
           content,
@@ -329,10 +329,10 @@ Need more help? Share the full error stack trace with Friday!`;
         }));
         
         try {
-          const ai = FridayAI.getInstance();
+          const ai = OracleAI.getInstance();
           const response = await ai.processMessage(content, state.persistentContext, state.capabilities);
           
-          const assistantMessage: FridayMessage = {
+          const assistantMessage: OracleMessage = {
             id: `msg_${Date.now()}_assistant`,
             role: 'assistant',
             content: response,
@@ -347,7 +347,7 @@ Need more help? Share the full error stack trace with Friday!`;
             isThinking: false
           }));
         } catch (error) {
-          console.error('Friday AI Error:', error);
+          console.error('Oracle AI Error:', error);
           set({ isThinking: false });
         }
       },
@@ -358,7 +358,7 @@ Need more help? Share the full error stack trace with Friday!`;
       
       setProvider: (provider) => {
         set({ currentProvider: provider });
-        console.log(`Friday AI: Switched to ${provider} provider`);
+        console.log(`Oracle AI: Switched to ${provider} provider`);
       },
       
       addToContext: (key: string, data: any) => {
@@ -381,7 +381,7 @@ Need more help? Share the full error stack trace with Friday!`;
       // Dev Console Interface
       executeCommand: async (command: string) => {
         const state = get();
-        console.log(`Friday AI: Executing command - ${command}`);
+        console.log(`Oracle AI: Executing command - ${command}`);
         
         if (command.startsWith('inspect ')) {
           const path = command.replace('inspect ', '');
@@ -420,7 +420,7 @@ Need more help? Share the full error stack trace with Friday!`;
   )
 );
 
-// Global Friday AI instance for dev console access
+// Global Oracle AI instance for dev console access
 declare global {
   interface Window {
     friday: {
@@ -436,9 +436,9 @@ declare global {
   }
 }
 
-// Initialize global Friday interface
+// Initialize global Oracle interface
 if (typeof window !== 'undefined') {
-  const fridayStore = useFridayStore.getState();
+  const fridayStore = useOracleStore.getState();
   
   window.friday = {
     send: async (message: string) => {
@@ -483,11 +483,11 @@ if (typeof window !== 'undefined') {
     
     clear: () => {
       fridayStore.clearContext();
-      console.log('Friday AI: Context cleared');
+      console.log('Oracle AI: Context cleared');
     },
     
     status: () => {
-      console.log('🤖 Friday AI Status:', {
+      console.log('🤖 Oracle AI Status:', {
         active: fridayStore.isActive,
         visible: fridayStore.isVisible,
         provider: fridayStore.currentProvider,
@@ -497,7 +497,7 @@ if (typeof window !== 'undefined') {
     }
   };
   
-  // Auto-initialize Friday AI
+  // Auto-initialize Oracle AI
   setTimeout(() => {
     fridayStore.initialize();
   }, 1000);

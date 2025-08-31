@@ -22,10 +22,10 @@ import {
   Zap,
   Brain
 } from 'lucide-react';
-import { useFridayStore, type FridayMessage } from '@/services/friday-ai';
+import { useOracleStore, type OracleMessage } from '@/services/oracle-ai';
 import { cn } from '@/lib/utils';
 
-export function FridayChat() {
+export function OracleChat() {
   const {
     isVisible,
     messages,
@@ -36,7 +36,7 @@ export function FridayChat() {
     sendMessage,
     setProvider,
     clearContext
-  } = useFridayStore();
+  } = useOracleStore();
 
   const [input, setInput] = useState('');
   const [isMinimized, setIsMinimized] = useState(false);
@@ -142,7 +142,7 @@ export function FridayChat() {
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <Bot className="w-4 h-4 text-primary animate-pulse" />
-            Friday AI
+Oracle AI
             <Badge variant="outline" className="text-xs">
               {currentProvider}
             </Badge>
@@ -237,7 +237,7 @@ export function FridayChat() {
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Bot className="w-4 h-4" />
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Friday is thinking...
+                  Oracle is thinking...
                 </div>
               )}
               
@@ -266,7 +266,7 @@ export function FridayChat() {
             </form>
             
             <div className="flex justify-between items-center mt-2 text-xs text-muted-foreground">
-              <span>Type or use dev console: friday.send("message")</span>
+              <span>Type or use dev console: oracle.send("message")</span>
               <Button
                 variant="ghost"
                 size="sm"
@@ -283,7 +283,7 @@ export function FridayChat() {
   );
 }
 
-function MessageBubble({ message }: { message: FridayMessage }) {
+function MessageBubble({ message }: { message: OracleMessage }) {
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
 
