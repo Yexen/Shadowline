@@ -3,7 +3,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -23,7 +22,6 @@ import {
   Loader2,
   Trash2,
   Eye,
-  Move,
   Sparkles,
   MessageSquare,
   Settings,
@@ -32,10 +30,10 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useClassification, ClassificationItem } from '@/hooks/use-classification';
 import { useBible } from '@/hooks/use-bible';
+import { useVolumes } from '@/hooks/use-volumes';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-
 
 export default function ClassificationPage() {
   const [dragActive, setDragActive] = useState(false);
@@ -43,6 +41,8 @@ export default function ClassificationPage() {
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [instructionsDialogOpen, setInstructionsDialogOpen] = useState(false);
   const [tempInstructions, setTempInstructions] = useState('');
+  const [volumeSelectionDialogOpen, setVolumeSelectionDialogOpen] = useState(false);
+  const [selectedItemForVolume, setSelectedItemForVolume] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   
@@ -61,6 +61,7 @@ export default function ClassificationPage() {
   } = useClassification();
   
   const { addCategory, addOrUpdateEntry } = useBible();
+  const { volumes, addChapterToVolume, getVolume } = useVolumes();
 
   // Drag and drop handlers
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -139,7 +140,7 @@ export default function ClassificationPage() {
         file
       }));
 
-      addItems(newItems);
+      await addItems(newItems);
 
       toast({
         title: "Files added",
@@ -184,6 +185,87 @@ export default function ClassificationPage() {
     }
   };
 
+  const findVolumeByName = (volumeName: string): string | null => {
+    const volume = volumes.find(v => 
+      v.title.toLowerCase().includes(volumeName.toLowerCase()) ||
+      v.id === volumeName ||
+      volumeName.match(/^\d+$/) && volumes.indexOf(v) === parseInt(volumeName) - 1
+    );
+    return volume?.id || null;
+  };
+  
+  const createVolumeChapter = async (volumeId: string, item: any, result: any) => {
+    const parsedContent = result.item.classification?.parsedContent;
+    const chapterTitle = parsedContent?.title || item.name.replace(/\.[^/.]+$/, '');
+    const chapterContent = item.extractedText || item.content || '';
+    
+    addChapterToVolume(volumeId, chapterTitle, chapterContent);
+    
+    const volume = getVolume(volumeId);
+    toast({
+      title: "Chapter created",
+      description: `"${chapterTitle}" added to ${volume?.title || 'selected volume'}`
+    });
+  };
+
+  const handleAcceptClassification = async (item: any) => {
+    const result = acceptClassification(item.id);
+    if (result) {
+      try {
+        if (result.category === 'bible') {
+          // Add to Bible with parsed content
+          const section = result.suggestedSection || 'General';
+          addCategory(section);
+          
+          const parsedContent = result.item.classification?.parsedContent;
+          const entry = {
+            title: parsedContent?.title || item.name,
+            fields: parsedContent?.fields || [
+              { label: 'Content', value: item.extractedText || item.content || 'No content available' },
+              { label: 'Source', value: `Imported from ${item.source || 'classification'}` },
+              { label: 'Tags', value: result.item.classification?.suggestedTags?.join(', ') || '' }
+            ],
+            pages: parsedContent?.sections?.map(section => ({
+              id: `page-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+              title: section.title,
+              content: section.content
+            })) || []
+          };
+          
+          addOrUpdateEntry(section, entry);
+          
+          toast({
+            title: "Bible entry created",
+            description: `${entry.title} added to ${section} section with ${entry.fields.length} fields and ${entry.pages?.length || 0} pages`
+          });
+          
+        } else if (result.category === 'volumes') {
+          // Check if target volume is specified
+          if (result.item.classification?.targetVolume) {
+            const targetVolumeId = findVolumeByName(result.item.classification.targetVolume);
+            if (targetVolumeId) {
+              await createVolumeChapter(targetVolumeId, item, result);
+            } else {
+              // Show volume selection dialog
+              setSelectedItemForVolume({ item, result });
+              setVolumeSelectionDialogOpen(true);
+            }
+          } else {
+            // Show volume selection dialog
+            setSelectedItemForVolume({ item, result });
+            setVolumeSelectionDialogOpen(true);
+          }
+        }
+      } catch (error) {
+        toast({
+          title: "Error organizing content",
+          description: "Failed to move content to the appropriate section",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
   const handleAcceptAll = async () => {
     if (stats.classified === 0) return;
     
@@ -205,60 +287,11 @@ export default function ClassificationPage() {
     });
   };
 
-  const handleSaveInstructions = () => {
-    saveInstructions(tempInstructions);
-    setInstructionsDialogOpen(false);
-    toast({
-      title: "Instructions saved",
-      description: "AI will use these instructions for future classifications"
-    });
-  };
-
-  const handleOpenInstructions = () => {
-    setTempInstructions(globalInstructions);
-    setInstructionsDialogOpen(true);
-  };
-
-  const handleAcceptClassification = async (item: any) => {
-    const result = acceptClassification(item.id);
-    if (result) {
-      try {
-        if (result.category === 'bible') {
-          // Add to Bible
-          const section = result.suggestedSection || 'General';
-          addCategory(section); // Ensure category exists
-          
-          const entry = {
-            title: item.name,
-            fields: [
-              { label: 'Content', value: item.content || 'No content available' },
-              { label: 'Source', value: `Imported from ${item.source || 'classification'}` },
-              { label: 'Tags', value: result.item.classification?.suggestedTags?.join(', ') || '' }
-            ]
-          };
-          
-          addOrUpdateEntry(section, entry);
-        } else if (result.category === 'volumes') {
-          // For now, we'll need the user to select which volume to add to
-          // This could be enhanced with a volume selection dialog
-          toast({
-            title: "Content ready for Volumes",
-            description: `${item.name} has been classified for Volumes. Please manually add it to the appropriate volume.`,
-            variant: "default"
-          });
-        }
-        
-        toast({
-          title: "Content organized",
-          description: `${item.name} moved to ${result.category.toUpperCase()} section`
-        });
-      } catch (error) {
-        toast({
-          title: "Error organizing content",
-          description: "Failed to move content to the appropriate section",
-          variant: "destructive"
-        });
-      }
+  const handleVolumeSelection = async (volumeId: string) => {
+    if (selectedItemForVolume) {
+      await createVolumeChapter(volumeId, selectedItemForVolume.item, selectedItemForVolume.result);
+      setVolumeSelectionDialogOpen(false);
+      setSelectedItemForVolume(null);
     }
   };
 
@@ -273,6 +306,20 @@ export default function ClassificationPage() {
   const handlePreview = (item: any) => {
     setSelectedItem(item);
     setPreviewDialogOpen(true);
+  };
+
+  const handleSaveInstructions = () => {
+    saveInstructions(tempInstructions);
+    setInstructionsDialogOpen(false);
+    toast({
+      title: "Instructions saved",
+      description: "AI will use these instructions for future classifications"
+    });
+  };
+
+  const handleOpenInstructions = () => {
+    setTempInstructions(globalInstructions);
+    setInstructionsDialogOpen(true);
   };
 
   const getFileIcon = (type: string) => {
@@ -292,7 +339,6 @@ export default function ClassificationPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -303,12 +349,12 @@ export default function ClassificationPage() {
         </div>
         <p className="text-muted-foreground">
           Automatically organize your content into Bible (lore & world-building) and Volumes (story content). 
-          Drag & drop files or import from other sections of the app.
+          Drop PDFs to extract text and create structured entries automatically.
         </p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -317,6 +363,17 @@ export default function ClassificationPage() {
                 <p className="text-2xl font-bold">{stats.pending}</p>
               </div>
               <Loader2 className={`w-4 h-4 text-orange-500 ${batchProcessing ? 'animate-spin' : ''}`} />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Extracting</p>
+                <p className="text-2xl font-bold">{stats.extracting}</p>
+              </div>
+              <FileText className="w-4 h-4 text-cyan-500" />
             </div>
           </CardContent>
         </Card>
@@ -375,13 +432,13 @@ export default function ClassificationPage() {
               <p className="text-sm text-muted-foreground">Current instructions:</p>
               <p className="text-sm bg-muted p-2 rounded-md">{globalInstructions}</p>
               <div className="text-xs text-muted-foreground">
-                These instructions will guide the AI when classifying content into Bible (reference material) or Volumes (story content).
+                These instructions will guide the AI when classifying content. You can specify target volumes like "Volume 1" or "The Long Halloween".
               </div>
             </div>
           ) : (
             <div className="text-center py-4">
               <p className="text-sm text-muted-foreground mb-2">
-                No instructions set. The AI will use default classification logic.
+                No instructions set. The AI will use default classification logic. Set instructions to specify target volumes or sections.
               </p>
               <Button variant="outline" size="sm" onClick={handleOpenInstructions}>
                 <MessageSquare className="w-4 h-4 mr-2" />
@@ -414,7 +471,7 @@ export default function ClassificationPage() {
           <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
           <h3 className="text-lg font-semibold mb-2">Drop files here to classify</h3>
           <p className="text-muted-foreground mb-4">
-            Support for text, PDF, images, and videos • Max 50MB per file
+            Support for text, PDF (auto-extracted), images, and videos • Max 50MB per file
           </p>
           <div className="flex gap-2 justify-center flex-wrap">
             <Button onClick={() => fileInputRef.current?.click()}>
@@ -557,6 +614,12 @@ export default function ClassificationPage() {
                   <Label>Size:</Label>
                   <p>{selectedItem.size ? formatFileSize(selectedItem.size) : 'Unknown'}</p>
                 </div>
+                {selectedItem.extractedText && (
+                  <div>
+                    <Label>Extracted Text:</Label>
+                    <p className="text-xs truncate">{selectedItem.extractedText.substring(0, 100)}...</p>
+                  </div>
+                )}
                 <div>
                   <Label>Source:</Label>
                   <p className="capitalize">{selectedItem.source}</p>
@@ -588,7 +651,7 @@ export default function ClassificationPage() {
                     </div>
                   </div>
                   
-                  {(selectedItem.classification.suggestedSection || selectedItem.classification.suggestedSubCategory) && (
+                  {(selectedItem.classification.suggestedSection || selectedItem.classification.suggestedSubCategory || selectedItem.classification.targetVolume) && (
                     <div className="grid grid-cols-1 gap-2 text-sm">
                       {selectedItem.classification.suggestedSection && (
                         <div>
@@ -602,6 +665,12 @@ export default function ClassificationPage() {
                           <Badge variant="outline">{selectedItem.classification.suggestedSubCategory}</Badge>
                         </div>
                       )}
+                      {selectedItem.classification.targetVolume && (
+                        <div>
+                          <Label>Target Volume:</Label>
+                          <Badge variant="outline">{selectedItem.classification.targetVolume}</Badge>
+                        </div>
+                      )}
                     </div>
                   )}
                   
@@ -611,6 +680,19 @@ export default function ClassificationPage() {
                       {selectedItem.classification.reasoning}
                     </p>
                   </div>
+                  
+                  {selectedItem.classification.parsedContent && (
+                    <div>
+                      <Label>Parsed Structure:</Label>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        <p>Title: {selectedItem.classification.parsedContent.title}</p>
+                        {selectedItem.classification.parsedContent.sections && (
+                          <p>{selectedItem.classification.parsedContent.sections.length} sections identified</p>
+                        )}
+                        <p>{selectedItem.classification.parsedContent.fields?.length || 0} fields generated</p>
+                      </div>
+                    </div>
+                  )}
                   {selectedItem.classification.suggestedTags && (
                     <div>
                       <Label>Suggested Tags:</Label>
@@ -649,7 +731,7 @@ export default function ClassificationPage() {
               <Label htmlFor="instructions">Instructions</Label>
               <Textarea
                 id="instructions"
-                placeholder="e.g., 'Prioritize character backgrounds and world-building details for Bible. Story drafts, plot outlines, and narrative content should go to Volumes. Look for keywords like adventure, mystery, or action for volume classification.'"
+                placeholder="e.g., 'Prioritize character backgrounds and world-building details for Bible. Story drafts, plot outlines, and narrative content should go to Volumes. For chapter content, save to Volume 1: The Long Halloween.'"
                 value={tempInstructions}
                 onChange={(e) => setTempInstructions(e.target.value)}
                 rows={6}
@@ -661,8 +743,9 @@ export default function ClassificationPage() {
               <ul className="list-disc list-inside space-y-1 text-xs">
                 <li>Mention specific keywords that indicate Bible vs Volume content</li>
                 <li>Specify preferred sections (e.g., "Characters", "Locations" for Bible)</li>
-                <li>Describe content types (e.g., "reference material", "story drafts")</li>
-                <li>Include any special handling for your content workflow</li>
+                <li>Target specific volumes (e.g., "save to Volume 1", "add to The Long Halloween")</li>
+                <li>Describe content types (e.g., "reference material", "story chapters")</li>
+                <li>PDFs will be automatically text-extracted and parsed into structured content</li>
               </ul>
             </div>
           </div>
@@ -672,6 +755,39 @@ export default function ClassificationPage() {
             </Button>
             <Button onClick={handleSaveInstructions}>
               Save Instructions
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Volume Selection Dialog */}
+      <Dialog open={volumeSelectionDialogOpen} onOpenChange={setVolumeSelectionDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Select Target Volume</DialogTitle>
+            <DialogDescription>
+              Choose which volume to add "{selectedItemForVolume?.item?.name}" to as a new chapter.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-60 overflow-y-auto">
+            {volumes.map((volume, index) => (
+              <Button
+                key={volume.id}
+                variant="outline"
+                className="w-full justify-start h-auto p-3"
+                onClick={() => handleVolumeSelection(volume.id)}
+              >
+                <div className="text-left">
+                  <p className="font-semibold">Volume {index + 1}</p>
+                  <p className="text-sm text-muted-foreground truncate">{volume.title}</p>
+                  <p className="text-xs text-muted-foreground">{volume.chapters.length} chapters</p>
+                </div>
+              </Button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setVolumeSelectionDialogOpen(false)}>
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -725,6 +841,7 @@ function ClassificationItemCard({
           <h4 className="font-medium truncate">{item.name}</h4>
           <Badge variant={
             item.status === 'pending' ? 'secondary' :
+            item.status === 'extracting' ? 'default' :
             item.status === 'classifying' ? 'default' :
             item.status === 'classified' ? 'default' : 'destructive'
           }>
@@ -746,6 +863,11 @@ function ClassificationItemCard({
             <span className="text-xs text-muted-foreground">
               {Math.round(item.classification.confidence)}% confidence
             </span>
+            {item.classification.targetVolume && (
+              <Badge variant="outline" className="text-xs">
+                → {item.classification.targetVolume}
+              </Badge>
+            )}
           </div>
         )}
       </div>
@@ -759,6 +881,13 @@ function ClassificationItemCard({
           <Button variant="ghost" size="sm" onClick={onClassify}>
             <Brain className="w-4 h-4" />
           </Button>
+        )}
+        
+        {item.status === 'extracting' && (
+          <div className="flex items-center gap-1">
+            <FileText className="w-4 h-4 animate-pulse text-cyan-500" />
+            <span className="text-xs text-cyan-500">PDF</span>
+          </div>
         )}
         
         {item.status === 'classifying' && (

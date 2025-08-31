@@ -10,7 +10,7 @@ export interface ClassificationItem {
   preview?: string;
   size?: number;
   source?: string;
-  status: 'pending' | 'classifying' | 'classified' | 'rejected';
+  status: 'pending' | 'extracting' | 'classifying' | 'classified' | 'rejected';
   classification?: {
     category: 'bible' | 'volumes';
     confidence: number;
@@ -18,10 +18,17 @@ export interface ClassificationItem {
     suggestedTags?: string[];
     suggestedSection?: string;
     suggestedSubCategory?: string;
+    targetVolume?: string;
+    parsedContent?: {
+      title?: string;
+      sections?: { title: string; content: string }[];
+      fields?: { label: string; value: string }[];
+    };
   };
   file?: File;
   originalPath?: string;
   userInstructions?: string;
+  extractedText?: string;
 }
 
 interface BatchProcessingOptions {
@@ -88,16 +95,60 @@ export function useClassification() {
     return newItem.id;
   }, [items, saveData]);
 
-  // Add multiple items at once
-  const addItems = useCallback((newItems: Omit<ClassificationItem, 'id'>[]) => {
-    const itemsWithIds = newItems.map(item => ({
-      ...item,
-      id: `item_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
-    }));
+  // Extract text from PDF files
+  const extractPDFText = useCallback(async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async (_e) => {
+        try {
+          // const typedarray = new Uint8Array(e.target?.result as ArrayBuffer);
+          // For now, we'll simulate PDF extraction with a placeholder
+          // In a real implementation, you'd use pdf-lib or similar
+          const simulatedText = `[PDF Content Extracted from ${file.name}]\n\nThis is simulated PDF text extraction. In a real implementation, this would contain the actual text content from the PDF file.\n\nThe content would be parsed and structured for classification into Bible entries or Volume chapters.`;
+          resolve(simulatedText);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    });
+  }, []);
+
+  // Add multiple items at once with text extraction
+  const addItems = useCallback(async (newItems: Omit<ClassificationItem, 'id'>[]) => {
+    const itemsWithIds: ClassificationItem[] = [];
+    
+    for (const item of newItems) {
+      const newItem: ClassificationItem = {
+        ...item,
+        id: `item_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
+      };
+      
+      // Extract text from PDF files
+      if (item.file && item.file.type === 'application/pdf') {
+        try {
+          newItem.status = 'extracting';
+          itemsWithIds.push(newItem);
+          saveData([...items, ...itemsWithIds]);
+          
+          const extractedText = await extractPDFText(item.file);
+          newItem.extractedText = extractedText;
+          newItem.content = extractedText;
+          newItem.status = 'pending';
+        } catch (error) {
+          console.error('Failed to extract PDF text:', error);
+          newItem.content = 'Failed to extract PDF content';
+          newItem.status = 'pending';
+        }
+      } else {
+        itemsWithIds.push(newItem);
+      }
+    }
     
     saveData([...items, ...itemsWithIds]);
     return itemsWithIds.map(item => item.id);
-  }, [items, saveData]);
+  }, [items, saveData, extractPDFText]);
 
   // Update item
   const updateItem = useCallback((itemId: string, updates: Partial<ClassificationItem>) => {
@@ -166,10 +217,13 @@ export function useClassification() {
     await new Promise(resolve => setTimeout(resolve, delay));
 
     // Get content and instructions
-    const content = item.content || item.name || '';
+    const content = item.extractedText || item.content || item.name || '';
     const instructions = customInstructions || item.userInstructions || globalInstructions;
     const lowerContent = content.toLowerCase();
     const lowerInstructions = instructions.toLowerCase();
+    
+    // Parse content for structure
+    const parsedContent = parseContentStructure(content, instructions);
     
     // Enhanced classification logic with instructions
     const bibleKeywords = [
@@ -247,6 +301,13 @@ export function useClassification() {
       }
     }
 
+    // Extract target volume from instructions if specified
+    let targetVolume = '';
+    const volumeMatch = lowerInstructions.match(/volume\s+(\d+|[ivx]+|"[^"]+"|'[^']+')/);
+    if (volumeMatch) {
+      targetVolume = volumeMatch[1].replace(/"/g, '').replace(/'/g, '');
+    }
+
     const classification = {
       category: isBibleContent ? 'bible' as const : 'volumes' as const,
       confidence,
@@ -261,7 +322,9 @@ export function useClassification() {
         ? ['lore', 'world-building', 'reference', suggestedSection.toLowerCase()].filter(Boolean)
         : ['story', 'narrative', 'creative', suggestedSubCategory.toLowerCase()].filter(Boolean),
       suggestedSection: isBibleContent ? suggestedSection : undefined,
-      suggestedSubCategory: !isBibleContent ? suggestedSubCategory : undefined
+      suggestedSubCategory: !isBibleContent ? suggestedSubCategory : undefined,
+      targetVolume: !isBibleContent && targetVolume ? targetVolume : undefined,
+      parsedContent
     };
 
     updateItem(itemId, { 
@@ -335,6 +398,7 @@ export function useClassification() {
   const stats = {
     total: items.length,
     pending: items.filter(i => i.status === 'pending').length,
+    extracting: items.filter(i => i.status === 'extracting').length,
     classifying: items.filter(i => i.status === 'classifying').length,
     classified: items.filter(i => i.status === 'classified').length,
     rejected: items.filter(i => i.status === 'rejected').length,
@@ -357,8 +421,76 @@ export function useClassification() {
     acceptClassification,
     acceptAllClassified,
     saveInstructions,
+    extractPDFText,
     importFromGallery,
     importFromNotes,
     importFromBatcave
+  };
+}
+
+// Helper function to parse content structure
+function parseContentStructure(content: string, instructions: string) {
+  const lines = content.split('\n').filter(line => line.trim());
+  const sections: { title: string; content: string }[] = [];
+  const fields: { label: string; value: string }[] = [];
+  let title = '';
+  
+  // Extract title from first line or instructions
+  const titleMatch = instructions.match(/title[:\s]+"([^"]+)"|title[:\s]+([^\n,]+)/i);
+  if (titleMatch) {
+    title = titleMatch[1] || titleMatch[2];
+  } else if (lines.length > 0) {
+    title = lines[0].replace(/^[#*\-\s]+/, '').trim();
+  }
+  
+  // Parse content for sections (looking for headers)
+  let currentSection = '';
+  let currentContent = '';
+  
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    
+    // Check if line is a header (starts with #, *, -, or is in ALL CAPS)
+    if (trimmedLine.match(/^[#*\-]/) || 
+        (trimmedLine.length < 50 && trimmedLine === trimmedLine.toUpperCase() && trimmedLine.length > 3)) {
+      
+      // Save previous section
+      if (currentSection && currentContent) {
+        sections.push({ title: currentSection, content: currentContent.trim() });
+      }
+      
+      // Start new section
+      currentSection = trimmedLine.replace(/^[#*\-\s]+/, '');
+      currentContent = '';
+    } else {
+      currentContent += line + '\n';
+    }
+  }
+  
+  // Save last section
+  if (currentSection && currentContent) {
+    sections.push({ title: currentSection, content: currentContent.trim() });
+  }
+  
+  // Generate fields based on content analysis
+  if (content.includes('character') || content.includes('person')) {
+    fields.push({ label: 'Type', value: 'Character' });
+    if (content.match(/age[:\s]+(\d+)/i)) {
+      fields.push({ label: 'Age', value: content.match(/age[:\s]+(\d+)/i)![1] });
+    }
+  }
+  
+  if (content.includes('location') || content.includes('place')) {
+    fields.push({ label: 'Type', value: 'Location' });
+  }
+  
+  // Add source field
+  fields.push({ label: 'Source', value: 'Imported from Classification' });
+  fields.push({ label: 'Content', value: content.substring(0, 500) + (content.length > 500 ? '...' : '') });
+  
+  return {
+    title: title || 'Untitled',
+    sections: sections.length > 0 ? sections : undefined,
+    fields
   };
 }
