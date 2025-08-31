@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ImagePlus, Trash2, GripVertical, BookOpen, PlusCircle, Download } from 'lucide-react';
+import { ImagePlus, Trash2, BookOpen, PlusCircle, GripVertical } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { useModalStore } from '@/hooks/use-modal-store';
@@ -121,7 +121,7 @@ export function VolumeEditor({ volume, onSave, onClose, onDeleteChapter, onAddCh
 
   return (
     <Dialog open={!!volume} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+      <DialogContent className="max-w-6xl h-[95vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="font-headline">Editing Volume: {volume?.title}</DialogTitle>
           <DialogDescription>
@@ -129,40 +129,44 @@ export function VolumeEditor({ volume, onSave, onClose, onDeleteChapter, onAddCh
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-4 flex-grow overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 py-6 flex-grow overflow-hidden">
           {/* Left Column: Details & Cover */}
-          <div className="md:col-span-1 space-y-4">
-            <div>
-              <Label htmlFor="volume-title">Title</Label>
+          <div className="lg:col-span-1 space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="volume-title" className="text-sm font-medium">Volume Title</Label>
               <Input
                 id="volume-title"
                 value={currentVolume.title}
                 onChange={(e) => handleFieldChange('title', e.target.value)}
-                className="font-bold"
+                className="font-bold text-lg"
+                placeholder="Enter volume title"
               />
             </div>
-            <div>
-              <Label htmlFor="volume-description">Description</Label>
+            <div className="space-y-2">
+              <Label htmlFor="volume-description" className="text-sm font-medium">Description</Label>
               <Textarea
                 id="volume-description"
                 value={currentVolume.description}
                 onChange={(e) => handleFieldChange('description', e.target.value)}
-                className="min-h-[100px]"
+                className="min-h-[120px] resize-none"
+                placeholder="Describe this volume"
               />
             </div>
-            <div>
-              <Label>Cover Image</Label>
-              <div className="aspect-w-3 aspect-h-4 bg-muted rounded-md overflow-hidden relative group">
-                {currentVolume.coverImage ? (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Cover Image</Label>
+              <div className="aspect-[3/4] bg-gradient-to-br from-muted to-muted/60 rounded-lg overflow-hidden relative group border border-border/50">
+                {currentVolume.coverImage && !currentVolume.coverImage.includes('placehold') ? (
                   <img src={currentVolume.coverImage} alt="Cover" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="flex items-center justify-center h-full text-muted-foreground">
-                    No Cover
+                  <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                    <ImagePlus className="h-12 w-12 mb-3 opacity-50" />
+                    <span className="text-sm font-medium">No Cover Image</span>
+                    <span className="text-xs mt-1">Click to upload</span>
                   </div>
                 )}
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                   <Button variant="secondary" onClick={() => fileInputRef.current?.click()}>
-                     <ImagePlus className="mr-2"/> Change
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200">
+                   <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()}>
+                     <ImagePlus className="mr-2 h-4 w-4"/> {currentVolume.coverImage && !currentVolume.coverImage.includes('placehold') ? 'Change' : 'Upload'} Cover
                    </Button>
                    <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileSelect} />
                 </div>
@@ -171,61 +175,88 @@ export function VolumeEditor({ volume, onSave, onClose, onDeleteChapter, onAddCh
           </div>
 
           {/* Right Column: Chapters */}
-          <div className="md:col-span-2 flex flex-col">
-            <div className="flex justify-between items-center mb-2">
-                <h3 className="font-bold">Chapters</h3>
-                <Button variant="outline" size="sm" onClick={handleAddChapter}><PlusCircle className="mr-2"/> Add Chapter</Button>
+          <div className="lg:col-span-2 flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+                <div>
+                    <h3 className="font-bold text-lg">Chapters</h3>
+                    <p className="text-sm text-muted-foreground">{currentVolume.chapters.length} {currentVolume.chapters.length === 1 ? 'chapter' : 'chapters'} in this volume</p>
+                </div>
+                <Button variant="outline" onClick={handleAddChapter}>
+                    <PlusCircle className="mr-2 h-4 w-4"/> Add Chapter
+                </Button>
             </div>
-            <ScrollArea className="flex-grow border rounded-md p-2 bg-muted/50">
+            <ScrollArea className="flex-grow border border-border/50 rounded-lg p-4 bg-gradient-to-br from-background to-muted/20">
               {currentVolume.chapters.length > 0 ? (
-                <ul className="space-y-2">
-                  {currentVolume.chapters.map((chapter) => (
-                    <li key={chapter.id} className="flex items-center justify-between p-2 bg-card rounded-md group hover:bg-accent/50 transition-colors">
+                <ul className="space-y-3">
+                  {currentVolume.chapters.map((chapter, index) => (
+                    <li key={chapter.id} className="group">
                       <div 
-                        className="flex items-center gap-2 flex-grow min-w-0 cursor-pointer"
+                        className="flex items-start gap-4 p-4 bg-card/80 backdrop-blur-sm rounded-lg border border-border/30 hover:border-border/60 hover:shadow-sm transition-all duration-200 cursor-pointer"
                         onClick={() => handleChapterClick(chapter.id)}
                       >
-                        <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" onClick={(e) => e.stopPropagation()} />
-                        <span className="font-medium truncate">{chapter.title}</span>
-                        <BookOpen className="h-4 w-4 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <ExportPopover onExport={(format) => handleExportChapter(chapter, format)} />
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                <Trash2 />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Chapter?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This will permanently delete "{chapter.title}". This action cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => onDeleteChapter(currentVolume.id, chapter.id)}>Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        <div className="flex items-center gap-3 flex-grow min-w-0">
+                          <div className="flex-shrink-0">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                              {index + 1}
+                            </div>
+                          </div>
+                          <div className="flex-grow min-w-0">
+                            <h4 className="font-semibold text-base mb-1 line-clamp-1">{chapter.title}</h4>
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                              <span>{chapter.content.trim().split(/\s+/).filter(Boolean).length} words</span>
+                              <span>•</span>
+                              <span>{Math.ceil(chapter.content.trim().split(/\s+/).filter(Boolean).length / 200)} min read</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="sm" onClick={() => handleChapterClick(chapter.id)}>
+                              <BookOpen className="h-4 w-4" />
+                          </Button>
+                          <ExportPopover onExport={(format) => handleExportChapter(chapter, format)} />
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                                  <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Chapter?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                      This will permanently delete "{chapter.title}". This action cannot be undone.
+                                  </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => onDeleteChapter(currentVolume.id, chapter.id)}>Delete</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </div>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-center text-muted-foreground py-8">No chapters yet.</p>
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <BookOpen className="h-16 w-16 text-muted-foreground/50 mb-4" />
+                  <h4 className="font-semibold text-lg mb-2">No chapters yet</h4>
+                  <p className="text-muted-foreground text-sm mb-6 max-w-sm">Start building your story by adding your first chapter to this volume.</p>
+                  <Button onClick={handleAddChapter}>
+                    <PlusCircle className="mr-2 h-4 w-4"/> Add First Chapter
+                  </Button>
+                </div>
               )}
             </ScrollArea>
           </div>
         </div>
 
-        <DialogFooter className="justify-between">
+        <DialogFooter className="justify-between pt-6 border-t border-border/50">
             <ExportPopover onExport={handleExportVolume} />
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <Button variant="outline" onClick={onClose}>Cancel</Button>
-              <Button onClick={handleSaveChanges}>Save Changes</Button>
+              <Button onClick={handleSaveChanges} className="px-6">Save Changes</Button>
             </div>
         </DialogFooter>
       </DialogContent>

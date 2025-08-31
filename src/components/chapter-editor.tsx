@@ -42,30 +42,34 @@ export function ChapterEditor({ chapter, volumeId, onSave, onClose }: ChapterEdi
 
   return (
     <Dialog open={!!chapter} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[80vw] h-[80vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[90vw] h-[90vh] flex flex-col">
+        <DialogHeader className="pb-4">
           <Input 
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="font-headline text-lg"
-            placeholder="Chapter Title"
+            className="font-headline text-xl font-bold border-none p-0 focus-visible:ring-0 placeholder:text-muted-foreground/60"
+            placeholder="Enter chapter title..."
           />
         </DialogHeader>
-        <div className="flex-grow flex flex-col gap-4 py-4 overflow-y-hidden">
+        <div className="flex-grow flex flex-col gap-4 py-2 overflow-hidden">
           <Textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="flex-grow resize-none w-full"
-            placeholder="Write chapter content here..."
+            className="flex-grow resize-none w-full border-none p-4 focus-visible:ring-0 bg-gradient-to-br from-background to-muted/10 rounded-lg text-base leading-relaxed"
+            placeholder="Start writing your chapter here...\n\nTip: Use markdown formatting for better structure."
           />
         </div>
-         <DialogFooter className="justify-between">
-            <span className="text-sm text-muted-foreground">Word Count: {wordCount}</span>
-            <div className="flex gap-2">
-                <Button variant="outline" onClick={onClose}>
-                    Cancel
-                </Button>
-                <Button onClick={handleSave}>Save Chapter</Button>
+         <DialogFooter className="justify-between pt-4 border-t border-border/30">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <span className="font-medium">Words: {wordCount.toLocaleString()}</span>
+                <span>•</span>
+                <span>~{Math.ceil(wordCount / 200)} min read</span>
+                <span>•</span>
+                <span>Characters: {content.length.toLocaleString()}</span>
+            </div>
+            <div className="flex gap-3">
+                <Button variant="outline" onClick={onClose}>Cancel</Button>
+                <Button onClick={handleSave} className="px-6">Save Chapter</Button>
             </div>
         </DialogFooter>
       </DialogContent>

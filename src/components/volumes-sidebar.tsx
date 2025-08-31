@@ -53,7 +53,7 @@ export function VolumesSidebar({ open, onOpenChange }: VolumesSidebarProps) {
         updateResource,
         deleteResource
     } = useVolumes();
-    const { modalType, modalData, closeModal, openModal } = useModalStore();
+    const { modalData, closeModal, openModal } = useModalStore();
     const [activeTab, setActiveTab] = useState<'volumes' | 'outlines'>('volumes');
     const [outlineDialogVolume, setOutlineDialogVolume] = useState<Volume | null>(null);
 
@@ -88,50 +88,88 @@ export function VolumesSidebar({ open, onOpenChange }: VolumesSidebarProps) {
         renderItem: (item: any, index: number) => React.ReactNode
     ) => (
         <div className="w-full mt-4 flex-grow overflow-y-auto pr-2">
-            <ul className="space-y-2">
-                {items.map((item, index) => (
-                    <li key={item.id || index}>
-                        {renderItem(item, index)}
-                        <Separator className="mt-2 bg-border/50" />
-                    </li>
-                ))}
-            </ul>
+            {items.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <Library className="h-12 w-12 text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground text-sm">No volumes yet</p>
+                    <p className="text-muted-foreground text-xs mt-1">Create your first volume to get started</p>
+                </div>
+            ) : (
+                <ul className="space-y-3">
+                    {items.map((item, index) => (
+                        <li key={item.id || index}>
+                            {renderItem(item, index)}
+                            {index < items.length - 1 && <Separator className="mt-3 bg-border/30" />}
+                        </li>
+                    ))}
+                </ul>
+            )}
         </div>
     );
 
     const renderVolumeItem = (volume: Volume, index: number) => (
         <button 
-            className="w-full text-left p-2 rounded-md hover:bg-accent transition-colors"
+            className="w-full text-left p-3 rounded-lg hover:bg-accent/60 transition-all duration-200 border border-transparent hover:border-accent group"
             onClick={() => useModalStore.getState().openModal('volume', { id: volume.id })}
         >
-            <h3 className="font-headline font-bold text-lg">VOLUME {toRoman(index + 1)}</h3>
-            <p className="text-sm text-muted-foreground truncate">{volume.title}</p>
+            <div className="flex items-start gap-3">
+                <div className="w-12 h-16 bg-muted/60 rounded-md flex-shrink-0 flex items-center justify-center group-hover:bg-muted">
+                    <BookCopy className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <div className="flex-grow min-w-0">
+                    <h3 className="font-headline font-bold text-base mb-1">VOLUME {toRoman(index + 1)}</h3>
+                    <p className="text-sm text-foreground font-medium line-clamp-1 mb-1">{volume.title}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{volume.description || 'No description'}</p>
+                    <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                        <span>{volume.chapters.length} chapters</span>
+                        {volume.overview && <span>• Overview</span>}
+                        {volume.resources && volume.resources.length > 0 && <span>• {volume.resources.length} resources</span>}
+                    </div>
+                </div>
+            </div>
         </button>
     );
 
     const renderOutlineItem = (volume: Volume, index: number) => (
         <button 
-            className="w-full text-left p-2 rounded-md hover:bg-accent transition-colors"
+            className="w-full text-left p-3 rounded-lg hover:bg-accent/60 transition-all duration-200 border border-transparent hover:border-accent group"
             onClick={() => handleOpenOutlineDialog(volume)}
         >
-            <h3 className="font-headline font-bold text-lg">VOLUME {toRoman(index + 1)}</h3>
-            <p className="text-sm text-muted-foreground truncate">{volume.title}</p>
+            <div className="flex items-start gap-3">
+                <div className="w-12 h-16 bg-muted/60 rounded-md flex-shrink-0 flex items-center justify-center group-hover:bg-muted">
+                    <BookOpen className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <div className="flex-grow min-w-0">
+                    <h3 className="font-headline font-bold text-base mb-1">VOLUME {toRoman(index + 1)}</h3>
+                    <p className="text-sm text-foreground font-medium line-clamp-1 mb-1">{volume.title}</p>
+                    <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                        <span className={`flex items-center gap-1 ${volume.overview ? 'text-green-600' : ''}}`}>
+                            <BookOpen className="h-3 w-3" />
+                            Overview {volume.overview ? '✓' : '○'}
+                        </span>
+                        <span className={`flex items-center gap-1 ${volume.resources && volume.resources.length > 0 ? 'text-blue-600' : ''}}`}>
+                            <BookCopy className="h-3 w-3" />
+                            Resources {volume.resources && volume.resources.length > 0 ? `(${volume.resources.length})` : '○'}
+                        </span>
+                    </div>
+                </div>
+            </div>
         </button>
     );
 
     return (
         <>
             <Sheet open={open} onOpenChange={onOpenChange}>
-                <SheetContent className="sm:max-w-md flex flex-col">
+                <SheetContent className="sm:max-w-lg flex flex-col">
                     <SheetHeader>
                         <SheetTitle className="font-headline text-2xl flex items-center gap-2">
                             <Library /> STORY VOLUMES
                         </SheetTitle>
                     </SheetHeader>
-                    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'volumes' | 'outlines')} className="flex-grow flex flex-col mt-4">
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="volumes"><BookCopy className="mr-2"/> Volumes</TabsTrigger>
-                            <TabsTrigger value="outlines"><BookOpen className="mr-2"/> Outlines</TabsTrigger>
+                    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'volumes' | 'outlines')} className="flex-grow flex flex-col mt-6">
+                        <TabsList className="grid w-full grid-cols-2 h-11">
+                            <TabsTrigger value="volumes" className="text-sm font-medium"><BookCopy className="mr-2 h-4 w-4"/> Volumes</TabsTrigger>
+                            <TabsTrigger value="outlines" className="text-sm font-medium"><BookOpen className="mr-2 h-4 w-4"/> Outlines</TabsTrigger>
                         </TabsList>
                         
                         <TabsContent value="volumes" className="flex-grow flex flex-col">
@@ -140,9 +178,11 @@ export function VolumesSidebar({ open, onOpenChange }: VolumesSidebarProps) {
                                     <Skeleton className="h-16 w-full" />
                                     <Skeleton className="h-16 w-full" />
                                 </div>
-                            ) : renderList(volumes.slice(0, 6), renderVolumeItem)}
-                            <div className="mt-auto pt-4 border-t">
-                                <Button className="w-full" onClick={addVolume}><PlusCircle className="mr-2"/> Add New Volume</Button>
+                            ) : renderList(volumes, renderVolumeItem)}
+                            <div className="mt-auto pt-6 border-t border-border/50">
+                                <Button className="w-full h-11 font-medium" onClick={addVolume}>
+                                    <PlusCircle className="mr-2 h-5 w-5"/> Add New Volume
+                                </Button>
                             </div>
                         </TabsContent>
                         
@@ -152,7 +192,7 @@ export function VolumesSidebar({ open, onOpenChange }: VolumesSidebarProps) {
                                     <Skeleton className="h-16 w-full" />
                                     <Skeleton className="h-16 w-full" />
                                 </div>
-                            ) : renderList(volumes.slice(0, 6), renderOutlineItem)}
+                            ) : renderList(volumes, renderOutlineItem)}
                         </TabsContent>
                     </Tabs>
                 </SheetContent>
