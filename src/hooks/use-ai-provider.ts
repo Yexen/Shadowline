@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-export type AiProvider = 'openai' | 'claude' | 'gemini';
+export type AiProvider = 'openai' | 'claude' | 'gemini' | 'all';
 
 interface AiProviderState {
   // Provider selection
@@ -46,6 +46,7 @@ export const useAiProvider = create<AiProviderState>()(
           case 'openai': return state.openAiApiKey;
           case 'claude': return state.claudeApiKey;
           case 'gemini': return state.geminiApiKey;
+          case 'all': return ''; // Will use all keys when needed
           default: return '';
         }
       },
@@ -55,7 +56,7 @@ export const useAiProvider = create<AiProviderState>()(
     {
       name: 'gotham-ai-provider-storage',
       storage: createJSONStorage(() => localStorage),
-      onRehydrateStorage: () => (state) => {
+      onRehydrateStorage: () => (state: AiProviderState | null) => {
         if (state) {
             state.isLoaded = true;
         }

@@ -75,6 +75,7 @@ import {
   PlusCircle,
   NotebookPen,
   FolderOpen,
+  Crown,
 } from 'lucide-react';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -142,6 +143,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { href: '/gallery', label: 'Gallery', icon: Images },
     { href: '/games', label: 'Games', icon: Gamepad2 },
     { href: '/ai-tools', label: 'AI Tools', icon: BrainCircuit },
+    { href: '/council-chamber', label: 'Discussion', icon: Crown },
     { href: '/maps', label: 'Maps', icon: MapIcon },
     { href: '/batcave-archive', label: 'Notebook', icon: NotebookPen },
     { href: '/classification', label: 'Classification', icon: FolderOpen },

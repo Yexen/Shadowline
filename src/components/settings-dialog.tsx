@@ -101,7 +101,8 @@ export function SettingsDialog({ isOpen, onClose, onOpenUserManagement }: Settin
     const providerLabels = {
         openai: 'OpenAI (GPT)',
         claude: 'Claude (Anthropic)', 
-        gemini: 'Gemini (Google)'
+        gemini: 'Gemini (Google)',
+        all: 'ALL (Multi-LLM Mix)'
     };
 
     return (
@@ -143,6 +144,7 @@ export function SettingsDialog({ isOpen, onClose, onOpenUserManagement }: Settin
                                         <SelectItem value="openai">{providerLabels.openai}</SelectItem>
                                         <SelectItem value="claude">{providerLabels.claude}</SelectItem>
                                         <SelectItem value="gemini">{providerLabels.gemini}</SelectItem>
+                                        <SelectItem value="all">{providerLabels.all}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
