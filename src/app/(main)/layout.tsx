@@ -56,7 +56,6 @@ import { useTimer } from '@/hooks/use-timer';
 import { BibleEditor } from '@/components/bible-editor';
 import { WriterProfile } from '@/components/writer-profile';
 import { SettingsDialog } from '@/components/settings-dialog';
-import { FridayChat } from '@/components/friday-chat';
 import { VolumesSidebar } from '@/components/volumes-sidebar';
 import { ChapterEditor } from '@/components/chapter-editor';
 
@@ -331,8 +330,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         />
       )}
       
-      {/* Friday AI Chat - Omnipresent Assistant */}
-      <FridayChat />
     </SidebarProvider>
   );
 }
