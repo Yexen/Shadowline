@@ -16,14 +16,18 @@ export interface ClassificationItem {
     confidence: number;
     reasoning: string;
     suggestedTags?: string[];
+    suggestedSection?: string;
+    suggestedSubCategory?: string;
   };
   file?: File;
-  originalPath?: string; // For items moved from other sections
+  originalPath?: string;
+  userInstructions?: string;
 }
 
-interface ClassificationState {
-  items: ClassificationItem[];
-  isLoaded: boolean;
+interface BatchProcessingOptions {
+  globalInstructions?: string;
+  priorityCategories?: ('bible' | 'volumes')[];
+  confidence?: number;
 }
 
 const CLASSIFICATION_STORAGE_KEY = 'gotham-classification-data';
@@ -31,14 +35,20 @@ const CLASSIFICATION_STORAGE_KEY = 'gotham-classification-data';
 export function useClassification() {
   const [items, setItems] = useState<ClassificationItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [globalInstructions, setGlobalInstructions] = useState<string>('');
+  const [batchProcessing, setBatchProcessing] = useState(false);
 
   // Load data from localStorage on mount
   useEffect(() => {
     try {
       const storedData = localStorage.getItem(CLASSIFICATION_STORAGE_KEY);
+      const storedInstructions = localStorage.getItem(CLASSIFICATION_STORAGE_KEY + '_instructions');
       if (storedData) {
         const parsed: ClassificationItem[] = JSON.parse(storedData);
         setItems(parsed);
+      }
+      if (storedInstructions) {
+        setGlobalInstructions(storedInstructions);
       }
     } catch (error) {
       console.error("Failed to load classification data:", error);
@@ -57,11 +67,21 @@ export function useClassification() {
     }
   }, []);
 
+  // Save global instructions
+  const saveInstructions = useCallback((instructions: string) => {
+    try {
+      localStorage.setItem(CLASSIFICATION_STORAGE_KEY + '_instructions', instructions);
+      setGlobalInstructions(instructions);
+    } catch (error) {
+      console.error("Failed to save instructions:", error);
+    }
+  }, []);
+
   // Add item to classification queue
   const addItem = useCallback((item: Omit<ClassificationItem, 'id'>) => {
     const newItem: ClassificationItem = {
       ...item,
-      id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      id: `item_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
     };
     
     saveData([...items, newItem]);
@@ -72,7 +92,7 @@ export function useClassification() {
   const addItems = useCallback((newItems: Omit<ClassificationItem, 'id'>[]) => {
     const itemsWithIds = newItems.map(item => ({
       ...item,
-      id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      id: `item_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
     }));
     
     saveData([...items, ...itemsWithIds]);
@@ -133,55 +153,115 @@ export function useClassification() {
     return addItems(classificationItems);
   }, [addItems]);
 
-  // Classify item (simulate AI classification)
-  const classifyItem = useCallback(async (itemId: string) => {
+  // Enhanced classification with user instructions
+  const classifyItem = useCallback(async (itemId: string, customInstructions?: string) => {
     const item = items.find(i => i.id === itemId);
     if (!item || item.status !== 'pending') return;
 
     // Set to classifying
     updateItem(itemId, { status: 'classifying' });
 
-    // Simulate AI processing delay
-    await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
+    // Simulate AI processing delay (reduced for batch processing)
+    const delay = batchProcessing ? 500 + Math.random() * 1000 : 2000 + Math.random() * 3000;
+    await new Promise(resolve => setTimeout(resolve, delay));
 
-    // Simple classification logic (in real app, this would call an AI service)
+    // Get content and instructions
     const content = item.content || item.name || '';
+    const instructions = customInstructions || item.userInstructions || globalInstructions;
     const lowerContent = content.toLowerCase();
+    const lowerInstructions = instructions.toLowerCase();
     
+    // Enhanced classification logic with instructions
     const bibleKeywords = [
       'lore', 'world', 'character', 'bible', 'backstory', 'history',
       'mythology', 'legend', 'origin', 'background', 'reference',
-      'gotham', 'batman', 'wayne', 'arkham', 'villain', 'hero'
+      'gotham', 'batman', 'wayne', 'arkham', 'villain', 'hero',
+      'encyclopedia', 'wiki', 'database', 'catalog'
     ];
     
     const volumeKeywords = [
       'story', 'chapter', 'narrative', 'plot', 'scene', 'dialogue',
       'action', 'adventure', 'mystery', 'crime', 'investigation',
-      'fight', 'chase', 'confrontation', 'resolution'
+      'fight', 'chase', 'confrontation', 'resolution', 'script',
+      'screenplay', 'novel', 'comic', 'issue'
     ];
 
+    // Score based on content
     const bibleScore = bibleKeywords.reduce((score, keyword) => 
       score + (lowerContent.includes(keyword) ? 1 : 0), 0);
     const volumeScore = volumeKeywords.reduce((score, keyword) => 
       score + (lowerContent.includes(keyword) ? 1 : 0), 0);
 
-    const isBibleContent = bibleScore > volumeScore || 
-                          (bibleScore === volumeScore && item.source === 'batcave-archive');
+    // Factor in user instructions
+    let instructionWeight = 0;
+    let instructionCategory: 'bible' | 'volumes' | null = null;
+    
+    if (instructions) {
+      if (lowerInstructions.includes('bible') || lowerInstructions.includes('reference') || 
+          lowerInstructions.includes('lore') || lowerInstructions.includes('world')) {
+        instructionWeight = 3;
+        instructionCategory = 'bible';
+      } else if (lowerInstructions.includes('volume') || lowerInstructions.includes('story') || 
+                 lowerInstructions.includes('chapter') || lowerInstructions.includes('narrative')) {
+        instructionWeight = 3;
+        instructionCategory = 'volumes';
+      }
+    }
 
-    const confidence = Math.min(95, Math.max(65, 
-      ((Math.max(bibleScore, volumeScore) / Math.max(bibleKeywords.length, volumeKeywords.length)) * 100) + 
-      Math.random() * 20
-    ));
+    // Calculate final scores with instruction bias
+    const finalBibleScore = bibleScore + (instructionCategory === 'bible' ? instructionWeight : 0);
+    const finalVolumeScore = volumeScore + (instructionCategory === 'volumes' ? instructionWeight : 0);
+
+    const isBibleContent = finalBibleScore > finalVolumeScore || 
+                          (finalBibleScore === finalVolumeScore && item.source === 'batcave-archive');
+
+    // Enhanced confidence calculation
+    const baseConfidence = Math.max(finalBibleScore, finalVolumeScore) / Math.max(bibleKeywords.length, volumeKeywords.length) * 100;
+    const instructionBonus = instructionWeight > 0 ? 15 : 0;
+    const confidence = Math.min(95, Math.max(65, baseConfidence + instructionBonus + Math.random() * 15));
+
+    // Suggest specific sections/categories
+    let suggestedSection = '';
+    let suggestedSubCategory = '';
+    
+    if (isBibleContent) {
+      if (lowerContent.includes('character') || lowerContent.includes('person') || lowerContent.includes('villain') || lowerContent.includes('hero')) {
+        suggestedSection = 'Characters';
+      } else if (lowerContent.includes('place') || lowerContent.includes('location') || lowerContent.includes('building') || lowerContent.includes('arkham') || lowerContent.includes('wayne')) {
+        suggestedSection = 'Locations';
+      } else if (lowerContent.includes('gadget') || lowerContent.includes('weapon') || lowerContent.includes('technology') || lowerContent.includes('vehicle')) {
+        suggestedSection = 'Gadgets';
+      } else {
+        suggestedSection = 'General';
+      }
+    } else {
+      // For volumes, suggest based on content themes
+      if (lowerContent.includes('mystery') || lowerContent.includes('investigation')) {
+        suggestedSubCategory = 'Mystery';
+      } else if (lowerContent.includes('action') || lowerContent.includes('fight') || lowerContent.includes('combat')) {
+        suggestedSubCategory = 'Action';
+      } else if (lowerContent.includes('origin') || lowerContent.includes('beginning')) {
+        suggestedSubCategory = 'Origin Story';
+      } else {
+        suggestedSubCategory = 'General Story';
+      }
+    }
 
     const classification = {
       category: isBibleContent ? 'bible' as const : 'volumes' as const,
       confidence,
-      reasoning: isBibleContent 
-        ? `Content contains ${bibleScore} world-building indicators and appears to be reference material suitable for the Bible section.`
-        : `Content contains ${volumeScore} narrative indicators and appears to be story material suitable for Volumes.`,
+      reasoning: instructions 
+        ? `Based on user instructions ("${instructions.substring(0, 100)}...") and content analysis: ${isBibleContent 
+            ? `Content appears to be reference material with ${finalBibleScore} world-building indicators.`
+            : `Content appears to be story material with ${finalVolumeScore} narrative indicators.`}`
+        : `Content analysis: ${isBibleContent 
+            ? `Found ${finalBibleScore} world-building indicators suggesting Bible section.`
+            : `Found ${finalVolumeScore} narrative indicators suggesting Volumes section.`}`,
       suggestedTags: isBibleContent 
-        ? ['lore', 'world-building', 'reference', 'character']
-        : ['story', 'narrative', 'creative', 'content']
+        ? ['lore', 'world-building', 'reference', suggestedSection.toLowerCase()].filter(Boolean)
+        : ['story', 'narrative', 'creative', suggestedSubCategory.toLowerCase()].filter(Boolean),
+      suggestedSection: isBibleContent ? suggestedSection : undefined,
+      suggestedSubCategory: !isBibleContent ? suggestedSubCategory : undefined
     };
 
     updateItem(itemId, { 
@@ -190,27 +270,66 @@ export function useClassification() {
     });
 
     return classification;
-  }, [items, updateItem]);
+  }, [items, updateItem, globalInstructions, batchProcessing]);
 
-  // Classify all pending items
-  const classifyAllPending = useCallback(async () => {
+  // Batch classify all pending items with enhanced processing
+  const classifyAllPending = useCallback(async (options?: BatchProcessingOptions) => {
     const pendingItems = items.filter(i => i.status === 'pending');
+    if (pendingItems.length === 0) return;
     
-    for (const item of pendingItems) {
-      await classifyItem(item.id);
+    setBatchProcessing(true);
+    
+    try {
+      // Apply global instructions if provided
+      if (options?.globalInstructions) {
+        saveInstructions(options.globalInstructions);
+      }
+      
+      // Process in smaller batches to avoid overwhelming the system
+      const batchSize = 5;
+      for (let i = 0; i < pendingItems.length; i += batchSize) {
+        const batch = pendingItems.slice(i, i + batchSize);
+        
+        // Process batch items in parallel
+        const promises = batch.map(item => 
+          classifyItem(item.id, options?.globalInstructions)
+        );
+        
+        await Promise.all(promises);
+        
+        // Small delay between batches to prevent overwhelming
+        if (i + batchSize < pendingItems.length) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+    } finally {
+      setBatchProcessing(false);
     }
-  }, [items, classifyItem]);
+  }, [items, classifyItem, saveInstructions]);
 
   // Accept classification and move to appropriate section
   const acceptClassification = useCallback((itemId: string) => {
     const item = items.find(i => i.id === itemId);
     if (!item || !item.classification) return false;
 
-    // In a real app, this would integrate with Bible and Volumes systems
-    // For now, we just remove from classification queue
+    // TODO: Integrate with Bible and Volumes systems to actually move the content
+    // This would involve calling useBible().addOrUpdateEntry() or useVolumes().addChapterToVolume()
+    // For now, we remove from classification queue
     removeItem(itemId);
-    return true;
+    return {
+      category: item.classification.category,
+      suggestedSection: item.classification.suggestedSection,
+      suggestedSubCategory: item.classification.suggestedSubCategory,
+      item
+    };
   }, [items, removeItem]);
+
+  // Batch accept all classified items
+  const acceptAllClassified = useCallback(() => {
+    const classifiedItems = items.filter(i => i.status === 'classified');
+    const results = classifiedItems.map(item => acceptClassification(item.id)).filter(Boolean);
+    return results;
+  }, [items, acceptClassification]);
 
   // Statistics
   const stats = {
@@ -227,6 +346,8 @@ export function useClassification() {
     items,
     stats,
     isLoaded,
+    globalInstructions,
+    batchProcessing,
     addItem,
     addItems,
     updateItem,
@@ -234,6 +355,8 @@ export function useClassification() {
     classifyItem,
     classifyAllPending,
     acceptClassification,
+    acceptAllClassified,
+    saveInstructions,
     importFromGallery,
     importFromNotes,
     importFromBatcave

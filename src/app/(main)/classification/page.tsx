@@ -24,10 +24,14 @@ import {
   Trash2,
   Eye,
   Move,
-  Sparkles
+  Sparkles,
+  MessageSquare,
+  Settings,
+  CheckCircle2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useClassification } from '@/hooks/use-classification';
+import { useClassification, ClassificationItem } from '@/hooks/use-classification';
+import { useBible } from '@/hooks/use-bible';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -37,19 +41,26 @@ export default function ClassificationPage() {
   const [dragActive, setDragActive] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [instructionsDialogOpen, setInstructionsDialogOpen] = useState(false);
+  const [tempInstructions, setTempInstructions] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   
   const {
     items,
     stats,
+    globalInstructions,
+    batchProcessing,
     addItems,
     updateItem,
     removeItem,
     classifyItem,
     classifyAllPending,
-    acceptClassification
+    acceptClassification,
+    saveInstructions
   } = useClassification();
+  
+  const { addCategory, addOrUpdateEntry } = useBible();
 
   // Drag and drop handlers
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -151,25 +162,103 @@ export default function ClassificationPage() {
     if (stats.pending === 0) return;
     
     toast({
-      title: "Starting classification",
-      description: `Processing ${stats.pending} items...`
+      title: "Starting batch classification",
+      description: `Processing ${stats.pending} items with AI guidance...`
     });
     
-    await classifyAllPending();
+    try {
+      await classifyAllPending({ 
+        globalInstructions: globalInstructions || undefined
+      });
+      
+      toast({
+        title: "Batch classification complete",
+        description: "All pending items have been classified"
+      });
+    } catch (error) {
+      toast({
+        title: "Classification failed",
+        description: "There was an error processing the items",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleAcceptAll = async () => {
+    if (stats.classified === 0) return;
+    
+    const classifiedItems = items.filter(i => i.status === 'classified');
+    let successCount = 0;
+    
+    for (const item of classifiedItems) {
+      try {
+        await handleAcceptClassification(item);
+        successCount++;
+      } catch (error) {
+        console.error('Failed to accept classification for:', item.name, error);
+      }
+    }
     
     toast({
-      title: "Classification complete",
-      description: "All pending items have been classified"
+      title: "Batch organization complete",
+      description: `${successCount} items moved to their appropriate sections`
     });
   };
 
-  const handleAcceptClassification = (item: any) => {
-    const success = acceptClassification(item.id);
-    if (success) {
-      toast({
-        title: "Content organized",
-        description: `${item.name} moved to ${item.classification?.category.toUpperCase()} section`
-      });
+  const handleSaveInstructions = () => {
+    saveInstructions(tempInstructions);
+    setInstructionsDialogOpen(false);
+    toast({
+      title: "Instructions saved",
+      description: "AI will use these instructions for future classifications"
+    });
+  };
+
+  const handleOpenInstructions = () => {
+    setTempInstructions(globalInstructions);
+    setInstructionsDialogOpen(true);
+  };
+
+  const handleAcceptClassification = async (item: any) => {
+    const result = acceptClassification(item.id);
+    if (result) {
+      try {
+        if (result.category === 'bible') {
+          // Add to Bible
+          const section = result.suggestedSection || 'General';
+          addCategory(section); // Ensure category exists
+          
+          const entry = {
+            title: item.name,
+            fields: [
+              { label: 'Content', value: item.content || 'No content available' },
+              { label: 'Source', value: `Imported from ${item.source || 'classification'}` },
+              { label: 'Tags', value: result.item.classification?.suggestedTags?.join(', ') || '' }
+            ]
+          };
+          
+          addOrUpdateEntry(section, entry);
+        } else if (result.category === 'volumes') {
+          // For now, we'll need the user to select which volume to add to
+          // This could be enhanced with a volume selection dialog
+          toast({
+            title: "Content ready for Volumes",
+            description: `${item.name} has been classified for Volumes. Please manually add it to the appropriate volume.`,
+            variant: "default"
+          });
+        }
+        
+        toast({
+          title: "Content organized",
+          description: `${item.name} moved to ${result.category.toUpperCase()} section`
+        });
+      } catch (error) {
+        toast({
+          title: "Error organizing content",
+          description: "Failed to move content to the appropriate section",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -181,7 +270,7 @@ export default function ClassificationPage() {
     });
   };
 
-  const handlePreview = (item: ClassificationItem) => {
+  const handlePreview = (item: any) => {
     setSelectedItem(item);
     setPreviewDialogOpen(true);
   };
@@ -227,7 +316,7 @@ export default function ClassificationPage() {
                 <p className="text-sm text-muted-foreground">Pending</p>
                 <p className="text-2xl font-bold">{stats.pending}</p>
               </div>
-              <Loader2 className="w-4 h-4 text-orange-500" />
+              <Loader2 className={`w-4 h-4 text-orange-500 ${batchProcessing ? 'animate-spin' : ''}`} />
             </div>
           </CardContent>
         </Card>
@@ -266,6 +355,43 @@ export default function ClassificationPage() {
         </Card>
       </div>
 
+      {/* AI Instructions Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5" />
+              AI Classification Instructions
+            </CardTitle>
+            <Button variant="outline" size="sm" onClick={handleOpenInstructions}>
+              <Settings className="w-4 h-4 mr-2" />
+              Configure
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {globalInstructions ? (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Current instructions:</p>
+              <p className="text-sm bg-muted p-2 rounded-md">{globalInstructions}</p>
+              <div className="text-xs text-muted-foreground">
+                These instructions will guide the AI when classifying content into Bible (reference material) or Volumes (story content).
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-sm text-muted-foreground mb-2">
+                No instructions set. The AI will use default classification logic.
+              </p>
+              <Button variant="outline" size="sm" onClick={handleOpenInstructions}>
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Add Instructions
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Upload Area */}
       <Card className={`relative ${dragActive ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
         <div
@@ -290,15 +416,34 @@ export default function ClassificationPage() {
           <p className="text-muted-foreground mb-4">
             Support for text, PDF, images, and videos • Max 50MB per file
           </p>
-          <div className="flex gap-2 justify-center">
+          <div className="flex gap-2 justify-center flex-wrap">
             <Button onClick={() => fileInputRef.current?.click()}>
               <Upload className="w-4 h-4 mr-2" />
               Upload Files
             </Button>
-            <Button variant="outline" disabled={stats.pending === 0} onClick={handleClassifyAll}>
-              <Sparkles className="w-4 h-4 mr-2" />
-              Classify All ({stats.pending})
+            <Button 
+              variant="outline" 
+              disabled={stats.pending === 0 || batchProcessing} 
+              onClick={handleClassifyAll}
+            >
+              {batchProcessing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Classify All ({stats.pending})
+                </>
+              )}
             </Button>
+            {stats.classified > 0 && (
+              <Button variant="outline" onClick={handleAcceptAll}>
+                <CheckCircle2 className="w-4 h-4 mr-2" />
+                Accept All ({stats.classified})
+              </Button>
+            )}
           </div>
         </div>
       </Card>
@@ -442,6 +587,24 @@ export default function ClassificationPage() {
                       </div>
                     </div>
                   </div>
+                  
+                  {(selectedItem.classification.suggestedSection || selectedItem.classification.suggestedSubCategory) && (
+                    <div className="grid grid-cols-1 gap-2 text-sm">
+                      {selectedItem.classification.suggestedSection && (
+                        <div>
+                          <Label>Suggested Bible Section:</Label>
+                          <Badge variant="outline">{selectedItem.classification.suggestedSection}</Badge>
+                        </div>
+                      )}
+                      {selectedItem.classification.suggestedSubCategory && (
+                        <div>
+                          <Label>Suggested Volume Type:</Label>
+                          <Badge variant="outline">{selectedItem.classification.suggestedSubCategory}</Badge>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
                   <div>
                     <Label>AI Reasoning:</Label>
                     <p className="text-sm text-muted-foreground mt-1">
@@ -451,8 +614,8 @@ export default function ClassificationPage() {
                   {selectedItem.classification.suggestedTags && (
                     <div>
                       <Label>Suggested Tags:</Label>
-                      <div className="flex gap-1 mt-1">
-                        {selectedItem.classification.suggestedTags.map(tag => (
+                      <div className="flex gap-1 mt-1 flex-wrap">
+                        {selectedItem.classification.suggestedTags.map((tag: string) => (
                           <Badge key={tag} variant="outline" className="text-xs">
                             {tag}
                           </Badge>
@@ -467,6 +630,48 @@ export default function ClassificationPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setPreviewDialogOpen(false)}>
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Instructions Configuration Dialog */}
+      <Dialog open={instructionsDialogOpen} onOpenChange={setInstructionsDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>AI Classification Instructions</DialogTitle>
+            <DialogDescription>
+              Provide specific instructions to help the AI better classify your content into Bible (lore & reference) or Volumes (story content).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="instructions">Instructions</Label>
+              <Textarea
+                id="instructions"
+                placeholder="e.g., 'Prioritize character backgrounds and world-building details for Bible. Story drafts, plot outlines, and narrative content should go to Volumes. Look for keywords like adventure, mystery, or action for volume classification.'"
+                value={tempInstructions}
+                onChange={(e) => setTempInstructions(e.target.value)}
+                rows={6}
+                className="mt-1"
+              />
+            </div>
+            <div className="text-sm text-muted-foreground">
+              <p className="font-medium mb-1">Tips for better classification:</p>
+              <ul className="list-disc list-inside space-y-1 text-xs">
+                <li>Mention specific keywords that indicate Bible vs Volume content</li>
+                <li>Specify preferred sections (e.g., "Characters", "Locations" for Bible)</li>
+                <li>Describe content types (e.g., "reference material", "story drafts")</li>
+                <li>Include any special handling for your content workflow</li>
+              </ul>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInstructionsDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveInstructions}>
+              Save Instructions
             </Button>
           </DialogFooter>
         </DialogContent>
