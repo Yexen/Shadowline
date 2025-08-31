@@ -140,12 +140,33 @@ export default function ClassificationPage() {
         file
       }));
 
-      await addItems(newItems);
+      const itemIds = await addItems(newItems);
 
       toast({
         title: "Files added",
         description: `${validFiles.length} file(s) added to classification queue`
       });
+
+      // Auto-classify uploaded files after extraction completes
+      if (globalInstructions) {
+        toast({
+          title: "Auto-classifying files",
+          description: "AI is analyzing your uploaded files...",
+        });
+        
+        // Wait a moment for PDF extraction to complete, then classify
+        setTimeout(async () => {
+          try {
+            await classifyAllPending({ globalInstructions });
+            toast({
+              title: "Classification complete",
+              description: "Files have been automatically classified and are ready for review"
+            });
+          } catch (error) {
+            console.error('Auto-classification failed:', error);
+          }
+        }, 2000);
+      }
     }
   };
 

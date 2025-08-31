@@ -95,24 +95,28 @@ export function useClassification() {
     return newItem.id;
   }, [items, saveData]);
 
-  // Extract text from PDF files
+  // Extract text from PDF files using server-side API
   const extractPDFText = useCallback(async (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = async (_e) => {
-        try {
-          // const typedarray = new Uint8Array(e.target?.result as ArrayBuffer);
-          // For now, we'll simulate PDF extraction with a placeholder
-          // In a real implementation, you'd use pdf-lib or similar
-          const simulatedText = `[PDF Content Extracted from ${file.name}]\n\nThis is simulated PDF text extraction. In a real implementation, this would contain the actual text content from the PDF file.\n\nThe content would be parsed and structured for classification into Bible entries or Volume chapters.`;
-          resolve(simulatedText);
-        } catch (error) {
-          reject(error);
-        }
-      };
-      reader.onerror = reject;
-      reader.readAsArrayBuffer(file);
-    });
+    try {
+      const formData = new FormData();
+      formData.append('pdf', file);
+      
+      const response = await fetch('/api/pdf-extract', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error(`PDF extraction failed: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      return result.text || `[Failed to extract text from ${file.name}]`;
+    } catch (error) {
+      console.error('PDF extraction error:', error);
+      // Fallback to file reading for basic content
+      return `[PDF Content from ${file.name}]\n\nUnable to extract text from this PDF file. Please review the content manually and classify accordingly.`;
+    }
   }, []);
 
   // Add multiple items at once with text extraction
