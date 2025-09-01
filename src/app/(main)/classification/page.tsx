@@ -57,6 +57,7 @@ export default function ClassificationPage() {
     classifyItem,
     classifyAllPending,
     acceptClassification,
+    removeAfterProcessing,
     saveInstructions
   } = useClassification();
   
@@ -255,6 +256,9 @@ export default function ClassificationPage() {
           
           addOrUpdateEntry(section, entry);
           
+          // Remove from classification queue after successful save
+          removeAfterProcessing(item.id);
+          
           toast({
             title: "Bible entry created",
             description: `${entry.title} added to ${section} section with ${entry.fields.length} fields and ${entry.pages?.length || 0} pages`
@@ -262,22 +266,25 @@ export default function ClassificationPage() {
           
         } else if (result.category === 'volumes') {
           // Check if target volume is specified
-          if (result.item.classification?.targetVolume) {
-            const targetVolumeId = findVolumeByName(result.item.classification.targetVolume);
+          if (result.targetVolume) {
+            const targetVolumeId = findVolumeByName(result.targetVolume);
             if (targetVolumeId) {
               await createVolumeChapter(targetVolumeId, item, result);
+              // Remove from classification queue after successful save
+              removeAfterProcessing(item.id);
             } else {
-              // Show volume selection dialog
+              // Show volume selection dialog - don't remove yet
               setSelectedItemForVolume({ item, result });
               setVolumeSelectionDialogOpen(true);
             }
           } else {
-            // Show volume selection dialog
+            // Show volume selection dialog - don't remove yet
             setSelectedItemForVolume({ item, result });
             setVolumeSelectionDialogOpen(true);
           }
         }
       } catch (error) {
+        console.error('Failed to accept classification:', error);
         toast({
           title: "Error organizing content",
           description: "Failed to move content to the appropriate section",

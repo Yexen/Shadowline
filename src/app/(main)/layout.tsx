@@ -123,8 +123,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (modalType === 'chapter' && modalData?.chapter) {
+      console.log('Chapter modal triggered with data:', modalData.chapter);
       const { volumeId, chapterId } = modalData.chapter;
       const chapter = getChapter(volumeId, chapterId);
+      console.log('Found chapter:', chapter);
       setEditingChapter(chapter);
       setEditingVolumeId(volumeId);
     }

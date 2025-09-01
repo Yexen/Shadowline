@@ -59,6 +59,7 @@ export function VolumeEditor({ volume, onSave, onClose, onDeleteChapter, onAddCh
   
   const handleChapterClick = (chapterId: string) => {
     if (currentVolume) {
+        console.log('Opening chapter modal with:', { chapter: { volumeId: currentVolume.id, chapterId } });
         openModal('chapter', { chapter: { volumeId: currentVolume.id, chapterId: chapterId } });
     }
   };

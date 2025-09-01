@@ -379,17 +379,21 @@ export function useClassification() {
     const item = items.find(i => i.id === itemId);
     if (!item || !item.classification) return false;
 
-    // TODO: Integrate with Bible and Volumes systems to actually move the content
-    // This would involve calling useBible().addOrUpdateEntry() or useVolumes().addChapterToVolume()
-    // For now, we remove from classification queue
-    removeItem(itemId);
+    // Return the item data so it can be processed, but DON'T remove it yet
+    // The classification page will remove it after successful save
     return {
       category: item.classification.category,
       suggestedSection: item.classification.suggestedSection,
       suggestedSubCategory: item.classification.suggestedSubCategory,
+      targetVolume: item.classification.targetVolume,
       item
     };
-  }, [items, removeItem]);
+  }, [items]);
+
+  // Remove item after successful processing
+  const removeAfterProcessing = useCallback((itemId: string) => {
+    removeItem(itemId);
+  }, [removeItem]);
 
   // Batch accept all classified items
   const acceptAllClassified = useCallback(() => {
@@ -424,6 +428,7 @@ export function useClassification() {
     classifyAllPending,
     acceptClassification,
     acceptAllClassified,
+    removeAfterProcessing,
     saveInstructions,
     extractPDFText,
     importFromGallery,
