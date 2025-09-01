@@ -34,6 +34,7 @@ import { useVolumes } from '@/hooks/use-volumes';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { RefreshCw } from 'lucide-react';
 
 export default function ClassificationPage() {
   const [dragActive, setDragActive] = useState(false);
@@ -243,7 +244,7 @@ export default function ClassificationPage() {
           const entry = {
             title: parsedContent?.title || item.name,
             fields: parsedContent?.fields || [
-              { label: 'Content', value: item.extractedText || item.content || 'No content available' },
+              { label: 'Description', value: item.extractedText || item.content || 'No content available' },
               { label: 'Source', value: `Imported from ${item.source || 'classification'}` },
               { label: 'Tags', value: result.item.classification?.suggestedTags?.join(', ') || '' }
             ],
@@ -318,6 +319,8 @@ export default function ClassificationPage() {
   const handleVolumeSelection = async (volumeId: string) => {
     if (selectedItemForVolume) {
       await createVolumeChapter(volumeId, selectedItemForVolume.item, selectedItemForVolume.result);
+      // Remove from classification queue after successful save
+      removeAfterProcessing(selectedItemForVolume.item.id);
       setVolumeSelectionDialogOpen(false);
       setSelectedItemForVolume(null);
     }
@@ -931,6 +934,12 @@ function ClassificationItemCard({
               <X className="w-4 h-4" />
             </Button>
           </>
+        )}
+        
+        {item.error && (
+          <Button variant="ghost" size="sm" onClick={onClassify} className="text-yellow-600 hover:text-yellow-700">
+            <RefreshCw className="w-4 h-4" />
+            <span>Classification failed - click retry</span>
         )}
         
         <Button variant="ghost" size="sm" onClick={onRemove} className="text-destructive hover:text-destructive">

@@ -29,6 +29,7 @@ export interface ClassificationItem {
   originalPath?: string;
   userInstructions?: string;
   extractedText?: string;
+  error?: string;
 }
 
 interface BatchProcessingOptions {
@@ -216,127 +217,42 @@ export function useClassification() {
     // Set to classifying
     updateItem(itemId, { status: 'classifying' });
 
-    // Simulate AI processing delay (reduced for batch processing)
-    const delay = batchProcessing ? 500 + Math.random() * 1000 : 2000 + Math.random() * 3000;
-    await new Promise(resolve => setTimeout(resolve, delay));
-
-    // Get content and instructions
-    const content = item.extractedText || item.content || item.name || '';
-    const instructions = customInstructions || item.userInstructions || globalInstructions;
-    const lowerContent = content.toLowerCase();
-    const lowerInstructions = instructions.toLowerCase();
-    
-    // Parse content for structure
-    const parsedContent = parseContentStructure(content, instructions);
-    
-    // Enhanced classification logic with instructions
-    const bibleKeywords = [
-      'lore', 'world', 'character', 'bible', 'backstory', 'history',
-      'mythology', 'legend', 'origin', 'background', 'reference',
-      'gotham', 'batman', 'wayne', 'arkham', 'villain', 'hero',
-      'encyclopedia', 'wiki', 'database', 'catalog'
-    ];
-    
-    const volumeKeywords = [
-      'story', 'chapter', 'narrative', 'plot', 'scene', 'dialogue',
-      'action', 'adventure', 'mystery', 'crime', 'investigation',
-      'fight', 'chase', 'confrontation', 'resolution', 'script',
-      'screenplay', 'novel', 'comic', 'issue'
-    ];
-
-    // Score based on content
-    const bibleScore = bibleKeywords.reduce((score, keyword) => 
-      score + (lowerContent.includes(keyword) ? 1 : 0), 0);
-    const volumeScore = volumeKeywords.reduce((score, keyword) => 
-      score + (lowerContent.includes(keyword) ? 1 : 0), 0);
-
-    // Factor in user instructions
-    let instructionWeight = 0;
-    let instructionCategory: 'bible' | 'volumes' | null = null;
-    
-    if (instructions) {
-      if (lowerInstructions.includes('bible') || lowerInstructions.includes('reference') || 
-          lowerInstructions.includes('lore') || lowerInstructions.includes('world')) {
-        instructionWeight = 3;
-        instructionCategory = 'bible';
-      } else if (lowerInstructions.includes('volume') || lowerInstructions.includes('story') || 
-                 lowerInstructions.includes('chapter') || lowerInstructions.includes('narrative')) {
-        instructionWeight = 3;
-        instructionCategory = 'volumes';
+    try {
+      // Get content and instructions
+      const content = item.extractedText || item.content || item.name || '';
+      const instructions = customInstructions || item.userInstructions || globalInstructions;
+      
+      // Call the real AI classification API
+      const response = await fetch('/api/ai/classify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content,
+          instructions,
+          fileName: item.name
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Classification failed: ${response.status}`);
       }
+      
+      const classification = await response.json();
+      
+      updateItem(itemId, { 
+        status: 'classified',
+        classification 
+      });
+      
+      return classification;
+    } catch (error) {
+      console.error('Classification error:', error);
+      updateItem(itemId, { 
+        status: 'pending',
+        error: error instanceof Error ? error.message : 'Classification failed'
+      });
+      throw error;
     }
-
-    // Calculate final scores with instruction bias
-    const finalBibleScore = bibleScore + (instructionCategory === 'bible' ? instructionWeight : 0);
-    const finalVolumeScore = volumeScore + (instructionCategory === 'volumes' ? instructionWeight : 0);
-
-    const isBibleContent = finalBibleScore > finalVolumeScore || 
-                          (finalBibleScore === finalVolumeScore && item.source === 'batcave-archive');
-
-    // Enhanced confidence calculation
-    const baseConfidence = Math.max(finalBibleScore, finalVolumeScore) / Math.max(bibleKeywords.length, volumeKeywords.length) * 100;
-    const instructionBonus = instructionWeight > 0 ? 15 : 0;
-    const confidence = Math.min(95, Math.max(65, baseConfidence + instructionBonus + Math.random() * 15));
-
-    // Suggest specific sections/categories
-    let suggestedSection = '';
-    let suggestedSubCategory = '';
-    
-    if (isBibleContent) {
-      if (lowerContent.includes('character') || lowerContent.includes('person') || lowerContent.includes('villain') || lowerContent.includes('hero')) {
-        suggestedSection = 'Characters';
-      } else if (lowerContent.includes('place') || lowerContent.includes('location') || lowerContent.includes('building') || lowerContent.includes('arkham') || lowerContent.includes('wayne')) {
-        suggestedSection = 'Locations';
-      } else if (lowerContent.includes('gadget') || lowerContent.includes('weapon') || lowerContent.includes('technology') || lowerContent.includes('vehicle')) {
-        suggestedSection = 'Gadgets';
-      } else {
-        suggestedSection = 'General';
-      }
-    } else {
-      // For volumes, suggest based on content themes
-      if (lowerContent.includes('mystery') || lowerContent.includes('investigation')) {
-        suggestedSubCategory = 'Mystery';
-      } else if (lowerContent.includes('action') || lowerContent.includes('fight') || lowerContent.includes('combat')) {
-        suggestedSubCategory = 'Action';
-      } else if (lowerContent.includes('origin') || lowerContent.includes('beginning')) {
-        suggestedSubCategory = 'Origin Story';
-      } else {
-        suggestedSubCategory = 'General Story';
-      }
-    }
-
-    // Extract target volume from instructions if specified
-    let targetVolume = '';
-    const volumeMatch = lowerInstructions.match(/volume\s+(\d+|[ivx]+|"[^"]+"|'[^']+')/);
-    if (volumeMatch) {
-      targetVolume = volumeMatch[1].replace(/"/g, '').replace(/'/g, '');
-    }
-
-    const classification = {
-      category: isBibleContent ? 'bible' as const : 'volumes' as const,
-      confidence,
-      reasoning: instructions 
-        ? `Based on user instructions ("${instructions.substring(0, 100)}...") and content analysis: ${isBibleContent 
-            ? `Content appears to be reference material with ${finalBibleScore} world-building indicators.`
-            : `Content appears to be story material with ${finalVolumeScore} narrative indicators.`}`
-        : `Content analysis: ${isBibleContent 
-            ? `Found ${finalBibleScore} world-building indicators suggesting Bible section.`
-            : `Found ${finalVolumeScore} narrative indicators suggesting Volumes section.`}`,
-      suggestedTags: isBibleContent 
-        ? ['lore', 'world-building', 'reference', suggestedSection.toLowerCase()].filter(Boolean)
-        : ['story', 'narrative', 'creative', suggestedSubCategory.toLowerCase()].filter(Boolean),
-      suggestedSection: isBibleContent ? suggestedSection : undefined,
-      suggestedSubCategory: !isBibleContent ? suggestedSubCategory : undefined,
-      targetVolume: !isBibleContent && targetVolume ? targetVolume : undefined,
-      parsedContent
-    };
-
-    updateItem(itemId, { 
-      status: 'classified',
-      classification 
-    });
-
-    return classification;
   }, [items, updateItem, globalInstructions, batchProcessing]);
 
   // Batch classify all pending items with enhanced processing
@@ -359,10 +275,13 @@ export function useClassification() {
         
         // Process batch items in parallel
         const promises = batch.map(item => 
-          classifyItem(item.id, options?.globalInstructions)
+          classifyItem(item.id, options?.globalInstructions).catch(error => {
+            console.error(`Failed to classify ${item.name}:`, error);
+            return null;
+          })
         );
         
-        await Promise.all(promises);
+        await Promise.allSettled(promises);
         
         // Small delay between batches to prevent overwhelming
         if (i + batchSize < pendingItems.length) {
@@ -434,72 +353,5 @@ export function useClassification() {
     importFromGallery,
     importFromNotes,
     importFromBatcave
-  };
-}
-
-// Helper function to parse content structure
-function parseContentStructure(content: string, instructions: string) {
-  const lines = content.split('\n').filter(line => line.trim());
-  const sections: { title: string; content: string }[] = [];
-  const fields: { label: string; value: string }[] = [];
-  let title = '';
-  
-  // Extract title from first line or instructions
-  const titleMatch = instructions.match(/title[:\s]+"([^"]+)"|title[:\s]+([^\n,]+)/i);
-  if (titleMatch) {
-    title = titleMatch[1] || titleMatch[2];
-  } else if (lines.length > 0) {
-    title = lines[0].replace(/^[#*\-\s]+/, '').trim();
-  }
-  
-  // Parse content for sections (looking for headers)
-  let currentSection = '';
-  let currentContent = '';
-  
-  for (const line of lines) {
-    const trimmedLine = line.trim();
-    
-    // Check if line is a header (starts with #, *, -, or is in ALL CAPS)
-    if (trimmedLine.match(/^[#*\-]/) || 
-        (trimmedLine.length < 50 && trimmedLine === trimmedLine.toUpperCase() && trimmedLine.length > 3)) {
-      
-      // Save previous section
-      if (currentSection && currentContent) {
-        sections.push({ title: currentSection, content: currentContent.trim() });
-      }
-      
-      // Start new section
-      currentSection = trimmedLine.replace(/^[#*\-\s]+/, '');
-      currentContent = '';
-    } else {
-      currentContent += line + '\n';
-    }
-  }
-  
-  // Save last section
-  if (currentSection && currentContent) {
-    sections.push({ title: currentSection, content: currentContent.trim() });
-  }
-  
-  // Generate fields based on content analysis
-  if (content.includes('character') || content.includes('person')) {
-    fields.push({ label: 'Type', value: 'Character' });
-    if (content.match(/age[:\s]+(\d+)/i)) {
-      fields.push({ label: 'Age', value: content.match(/age[:\s]+(\d+)/i)![1] });
-    }
-  }
-  
-  if (content.includes('location') || content.includes('place')) {
-    fields.push({ label: 'Type', value: 'Location' });
-  }
-  
-  // Add source field
-  fields.push({ label: 'Source', value: 'Imported from Classification' });
-  fields.push({ label: 'Content', value: content.substring(0, 500) + (content.length > 500 ? '...' : '') });
-  
-  return {
-    title: title || 'Untitled',
-    sections: sections.length > 0 ? sections : undefined,
-    fields
   };
 }
