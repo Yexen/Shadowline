@@ -11,6 +11,9 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'batman-news.com' },
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: '**.wp.com' },
+      { protocol: 'https', hostname: 'static0.srcdn.com' },
+      { protocol: 'https', hostname: 'www.gamespot.com' },
+      { protocol: 'https', hostname: '**' }, // Allow all HTTPS images for development
     ],
   },
 

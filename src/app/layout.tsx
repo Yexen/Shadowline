@@ -7,17 +7,10 @@ export const metadata: Metadata = {
   title: 'Shadowline',
   description: 'Welcome to the Shadows, Shadows of Gotham',
   manifest: '/manifest.json',
-  themeColor: '#101014',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'Shadowline',
-  },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
   },
   icons: {
     icon: [
@@ -29,6 +22,16 @@ export const metadata: Metadata = {
     ],
   },
 };
+
+export function generateViewport() {
+  return {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    themeColor: '#101014',
+  };
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

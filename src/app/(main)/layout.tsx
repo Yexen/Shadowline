@@ -279,7 +279,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <span className="text-sm font-semibold group-data-[state=collapsed]:hidden">{activeWriter?.name || 'The Writer'}</span>
               </div>
               <div className="opacity-0 group-hover:opacity-100 group-data-[state=collapsed]:hidden ml-auto">
-                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); }}><LogOut/></Button>
+                <div className="p-2 rounded-md hover:bg-accent cursor-pointer" onClick={(e) => { e.stopPropagation(); logout(); }}>
+                  <LogOut className="h-4 w-4" />
+                </div>
               </div>
             </button>
           </div>

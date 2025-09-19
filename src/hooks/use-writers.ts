@@ -8,56 +8,60 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  User,
+  User as FirebaseUser,
   Auth,
 } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, deleteDoc, query, where, Firestore } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, deleteDoc, query, where, Firestore, Timestamp } from 'firebase/firestore';
 import { getAppStorage, getAppAuth, getAppFirestore } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { User, UserRole, UserStatus, hasPermission, canPerform, PERMISSIONS } from '@/types/auth';
+import { useInvites } from './use-invites';
+
+// Legacy interface for backward compatibility
+export interface Writer extends User {}
+
+// Legacy types for backward compatibility
+export type LegacyUserRole = 'head-writer' | 'writer' | 'reader';
+export type LegacyUserStatus = 'approved' | 'pending' | 'rejected';
 
 
-export type UserRole = 'head-writer' | 'writer' | 'reader';
-export type UserStatus = 'approved' | 'pending' | 'rejected';
-
-export interface Writer {
-  id: string; // This will be the Firebase Auth UID
-  name: string;
-  email: string;
-  avatarUrl: string;
-  dataAiHint: string;
-  role: UserRole;
-  status: UserStatus;
-}
-
-
-const headWriterDefault = {
-  id: 'head-writer-001',
+const authorDefault = {
+  id: 'author-001',
   name: 'Yekta Jokar',
   email: 'yekta.kjs@gmail.com',
   password: 'LivFreya',
   avatarUrl: 'https://placehold.co/128x128.png',
   dataAiHint: 'female writer serious',
-  role: 'head-writer' as UserRole,
+  role: 'author' as UserRole,
   status: 'approved' as UserStatus,
 };
 
 
 export function useWriters() {
-  const [writers, setWriters] = useState<Writer[]>([]);
-  const [activeWriter, setActiveWriter] = useState<Writer | null>(null);
+  const [writers, setWriters] = useState<User[]>([]);
+  const [activeWriter, setActiveWriter] = useState<User | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const { validateInvite, useInvite } = useInvites();
   const router = useRouter();
 
   const fetchAllUsers = useCallback(async () => {
-    if (activeWriter?.role !== 'head-writer') {
+    if (activeWriter?.role !== 'author') {
         setWriters(activeWriter ? [activeWriter] : []);
         return;
     }
     const db = getAppFirestore();
     const usersCollection = collection(db, "users");
     const userSnapshot = await getDocs(usersCollection);
-    const userList = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Writer));
+    const userList = userSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        invitedAt: data.invitedAt?.toDate() || null,
+        approvedAt: data.approvedAt?.toDate() || null,
+      } as User;
+    });
     setWriters(userList);
   }, [activeWriter]);
 
@@ -71,14 +75,19 @@ export function useWriters() {
 
     const auth = getAppAuth();
     const db = getAppFirestore();
-    const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
       if (user) {
         const userDocRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
-          const userData = userDoc.data() as Omit<Writer, 'id'>;
+          const userData = userDoc.data() as Omit<User, 'id'>;
            if (userData.status === 'approved') {
-              setActiveWriter({ id: user.uid, ...userData });
+              setActiveWriter({
+                id: user.uid,
+                ...userData,
+                invitedAt: userData.invitedAt?.toDate() || null,
+                approvedAt: userData.approvedAt?.toDate() || null,
+              });
            } else {
               signOut(auth);
               setActiveWriter(null);
@@ -98,7 +107,7 @@ export function useWriters() {
   }, [router]);
   
   useEffect(() => {
-    if (isLoaded && activeWriter?.role === 'head-writer') {
+    if (isLoaded && activeWriter?.role === 'author') {
         fetchAllUsers();
     } else if (isLoaded && activeWriter) {
         setWriters([activeWriter]);
@@ -107,9 +116,22 @@ export function useWriters() {
     }
   }, [isLoaded, activeWriter, fetchAllUsers]);
 
-  const addWriter = async (name: string, email: string, password: string, role: UserRole) => {
+  const addUser = async (name: string, email: string, password: string, role: UserRole, inviteToken?: string) => {
     if (!password) throw new Error("Password is required for signup.");
-    
+
+    // Validate invite if provided
+    let invite = null;
+    if (inviteToken) {
+      invite = await validateInvite(inviteToken);
+      if (!invite) {
+        throw new Error("Invalid or expired invite token.");
+      }
+      // Override role if invite specifies one
+      if (invite.targetRole) {
+        role = invite.targetRole;
+      }
+    }
+
     const auth = getAppAuth();
     const db = getAppFirestore();
     const usersRef = collection(db, "users");
@@ -127,17 +149,34 @@ export function useWriters() {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    const newWriter: Omit<Writer, 'id'> = {
+    const newUser: Omit<User, 'id'> = {
       name,
       email: email.toLowerCase(),
       avatarUrl: `https://placehold.co/128x128.png`,
-      dataAiHint: 'writer portrait',
+      dataAiHint: 'user portrait',
       role: role,
       status: 'pending',
+      inviteToken: inviteToken || undefined,
+      invitedBy: invite?.createdBy || undefined,
+      invitedAt: invite ? new Date() : undefined,
     };
-    
-    await setDoc(doc(db, "users", user.uid), newWriter);
+
+    await setDoc(doc(db, "users", user.uid), {
+      ...newUser,
+      invitedAt: newUser.invitedAt ? Timestamp.fromDate(newUser.invitedAt) : null,
+    });
+
+    // Mark invite as used if provided
+    if (inviteToken) {
+      await useInvite(inviteToken, user.uid);
+    }
+
     await signOut(auth);
+  };
+
+  // Legacy function for backward compatibility
+  const addWriter = async (name: string, email: string, password: string, role: UserRole) => {
+    return addUser(name, email, password, role);
   };
   
   const login = async (email: string, password?: string) => {
@@ -146,22 +185,27 @@ export function useWriters() {
     await signInWithEmailAndPassword(auth, email, password);
   };
 
-  const loginAsHeadWriter = async (email?: string, password?: string) => {
-    if (email?.toLowerCase() !== headWriterDefault.email || password !== headWriterDefault.password) {
-        throw new Error("Invalid Head Writer credentials.");
+  const loginAsAuthor = async (email?: string, password?: string) => {
+    if (email?.toLowerCase() !== authorDefault.email || password !== authorDefault.password) {
+        throw new Error("Invalid Author credentials.");
     }
 
-    const headWriterSession = {
-        id: headWriterDefault.id,
-        name: headWriterDefault.name,
-        email: headWriterDefault.email,
-        avatarUrl: headWriterDefault.avatarUrl,
-        dataAiHint: headWriterDefault.dataAiHint,
-        role: headWriterDefault.role,
-        status: headWriterDefault.status,
+    const authorSession = {
+        id: authorDefault.id,
+        name: authorDefault.name,
+        email: authorDefault.email,
+        avatarUrl: authorDefault.avatarUrl,
+        dataAiHint: authorDefault.dataAiHint,
+        role: authorDefault.role,
+        status: authorDefault.status,
     };
-    localStorage.setItem('gotham-bypassed-user', JSON.stringify(headWriterSession));
-    setActiveWriter(headWriterSession);
+    localStorage.setItem('gotham-bypassed-user', JSON.stringify(authorSession));
+    setActiveWriter(authorSession);
+  };
+
+  // Legacy function for backward compatibility
+  const loginAsHeadWriter = async (email?: string, password?: string) => {
+    return loginAsAuthor(email, password);
   };
 
   const updateWriterStatus = async (writerId: string, status: UserStatus) => {
@@ -189,8 +233,8 @@ export function useWriters() {
         finalAvatarUrl = await getDownloadURL(snapshot.ref);
     }
 
-    // If head writer is managing, update local storage for bypassed user
-    if(activeWriter?.id === 'head-writer-001' && activeWriter.id === writerId) {
+    // If author is managing, update local storage for bypassed user
+    if(activeWriter?.id === 'author-001' && activeWriter.id === writerId) {
       const updatedWriter = {...activeWriter, avatarUrl: finalAvatarUrl};
       localStorage.setItem('gotham-bypassed-user', JSON.stringify(updatedWriter));
       setActiveWriter(updatedWriter);
@@ -223,17 +267,45 @@ export function useWriters() {
     router.push('/auth');
   };
 
-  return { 
-    isLoaded, 
-    writers, 
-    activeWriter, 
-    addWriter, 
+  const approveUser = async (userId: string, approvedBy: string) => {
+    const db = getAppFirestore();
+    const userDocRef = doc(db, "users", userId);
+    await updateDoc(userDocRef, {
+      status: 'approved',
+      approvedBy,
+      approvedAt: Timestamp.fromDate(new Date()),
+    });
+    fetchAllUsers();
+  };
+
+  const checkPermission = (permission: typeof PERMISSIONS[keyof typeof PERMISSIONS]) => {
+    if (!activeWriter) return false;
+    return hasPermission(activeWriter.role, permission);
+  };
+
+  const checkAccess = (resource: string, action: string) => {
+    if (!activeWriter) return false;
+    return canPerform(activeWriter.role, resource, action);
+  };
+
+  return {
+    isLoaded,
+    writers,
+    users: writers, // Alias for new naming
+    activeWriter,
+    activeUser: activeWriter, // Alias for new naming
+    addWriter,
+    addUser,
     login,
     loginAsHeadWriter,
-    logout, 
-    updateWriterStatus, 
+    loginAsAuthor,
+    logout,
+    updateWriterStatus,
     updateWriterRole,
     updateWriterAvatar,
-    deleteWriter 
+    deleteWriter,
+    approveUser,
+    checkPermission,
+    checkAccess,
   };
 }

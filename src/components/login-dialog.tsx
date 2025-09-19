@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useWriters } from '@/hooks/use-writers';
+import { useAuth } from '@/hooks/use-simple-auth';
 import { PasswordInput } from '@/components/password-input';
 import { useToast } from '@/hooks/use-toast';
 
@@ -21,13 +21,13 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 interface LoginDialogProps {
-    role: 'writer' | 'reader' | 'head-writer' | null;
+    role: 'author' | 'viewer' | 'analyst' | 'contributor' | null;
     onClose: () => void;
 }
 
 export function LoginDialog({ role, onClose }: LoginDialogProps) {
   const router = useRouter();
-  const { login, loginAsHeadWriter, isLoaded } = useWriters();
+  const { login, loginAsAuthor, isLoaded } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -41,12 +41,11 @@ export function LoginDialog({ role, onClose }: LoginDialogProps) {
     setIsLoading(true);
     setError(null);
     try {
-      if (role === 'head-writer') {
-        await loginAsHeadWriter(data.email, data.password);
+      if (role === 'author') {
+        await loginAsAuthor(data.email, data.password);
       } else {
-        await login(data.email, data.password);
+        await login(data.email, data.password, role);
       }
-      router.push('/home');
     } catch (e: any) {
       const errorMessage = e.message || 'An unknown error occurred.';
       setError(errorMessage);
@@ -66,9 +65,10 @@ export function LoginDialog({ role, onClose }: LoginDialogProps) {
   }
 
   const getTitle = () => {
-    if (role === 'head-writer') return 'Head Writer Login';
-    if (role === 'writer') return 'Writer Login';
-    if (role === 'reader') return 'Reader Login';
+    if (role === 'author') return 'Author Login';
+    if (role === 'viewer') return 'Viewer Login';
+    if (role === 'analyst') return 'Analyst Login';
+    if (role === 'contributor') return 'Contributor Login';
     return 'Login';
   }
 
