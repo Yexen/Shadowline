@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Send, Save, Trash2, Sparkles, X, FileText, GitCommit, Upload, Play, BookOpen, Zap, Layers } from 'lucide-react';
+import { Loader2, Send, Save, Trash2, Sparkles, X, FileText, GitCommit, Upload, Play, BookOpen, Zap, Layers, Search, XCircle } from 'lucide-react';
 import { ChatMessage } from '@/components/chat-message';
 import { runOracleChat, OracleMode } from '@/ai/flows/oracle-chat-flow';
 import { useOracleChat, OracleChatSession } from '@/hooks/use-oracle-chat';
@@ -32,7 +32,7 @@ export function OracleChatTool() {
   const [contextMemory, setContextMemory] = useState<string[]>([]);
   const [currentMode, setCurrentMode] = useState<OracleMode>('shadows');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const { savedSessions, saveSession, deleteSession } = useOracleChat();
+  const { savedSessions, filteredSessions, searchQuery, saveSession, deleteSession, searchSessions, clearSearch } = useOracleChat();
   const { bibleData, isLoaded } = useBible();
   const { toast } = useToast();
 
@@ -474,23 +474,57 @@ export function OracleChatTool() {
              <CardContent>
                 <Accordion type="single" collapsible className="w-full">
                     <AccordionItem value="history">
-                        <AccordionTrigger className="font-headline">Conversation History</AccordionTrigger>
+                        <AccordionTrigger className="font-headline">
+                          Conversation History
+                          {searchQuery && (
+                            <span className="text-xs text-muted-foreground ml-2">
+                              ({filteredSessions.length} of {savedSessions.length} shown)
+                            </span>
+                          )}
+                        </AccordionTrigger>
                         <AccordionContent>
-                           <ScrollArea className="h-48">
-                            <div className="space-y-2 pr-4">
-                                {savedSessions.map(session => (
-                                    <div key={session.id} className="flex justify-between items-center p-2 rounded-md hover:bg-accent group">
-                                        <button className="text-left flex-grow" onClick={() => handleLoadSession(session)}>
-                                            <p className="font-semibold truncate">{session.name}</p>
-                                            <p className="text-xs text-muted-foreground">{session.timestamp.toLocaleString()}</p>
-                                        </button>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100" onClick={() => handleDeleteSession(session.id)}>
-                                            <Trash2 className="text-destructive h-4 w-4"/>
-                                        </Button>
-                                    </div>
-                                ))}
+                          <div className="space-y-3">
+                            <div className="relative">
+                              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                              <Input
+                                placeholder="Search conversations..."
+                                value={searchQuery}
+                                onChange={(e) => searchSessions(e.target.value)}
+                                className="pl-8 pr-8"
+                              />
+                              {searchQuery && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="absolute right-1 top-1 h-6 w-6"
+                                  onClick={clearSearch}
+                                >
+                                  <XCircle className="h-3 w-3" />
+                                </Button>
+                              )}
                             </div>
+                            <ScrollArea className="h-48">
+                              <div className="space-y-2 pr-4">
+                                  {filteredSessions.length > 0 ? (
+                                    filteredSessions.map(session => (
+                                      <div key={session.id} className="flex justify-between items-center p-2 rounded-md hover:bg-accent group">
+                                          <button className="text-left flex-grow" onClick={() => handleLoadSession(session)}>
+                                              <p className="font-semibold truncate">{session.name}</p>
+                                              <p className="text-xs text-muted-foreground">{session.timestamp.toLocaleString()}</p>
+                                          </button>
+                                          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100" onClick={() => handleDeleteSession(session.id)}>
+                                              <Trash2 className="text-destructive h-4 w-4"/>
+                                          </Button>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <div className="text-center text-muted-foreground py-4">
+                                      <p className="text-sm">No conversations found matching "{searchQuery}"</p>
+                                    </div>
+                                  )}
+                              </div>
                            </ScrollArea>
+                          </div>
                         </AccordionContent>
                     </AccordionItem>
                 </Accordion>

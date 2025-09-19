@@ -16,6 +16,8 @@ const ORACLE_CHAT_STORAGE_KEY = 'gotham-oracle-chat-history';
 export function useOracleChat() {
   const [savedSessions, setSavedSessions] = useState<OracleChatSession[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredSessions, setFilteredSessions] = useState<OracleChatSession[]>([]);
 
   useEffect(() => {
     try {
@@ -26,14 +28,37 @@ export function useOracleChat() {
             timestamp: new Date(s.timestamp)
         }));
         setSavedSessions(parsedData);
+        setFilteredSessions(parsedData);
       }
     } catch (error) {
       console.error("Failed to load oracle chat history from localStorage", error);
       setSavedSessions([]);
+      setFilteredSessions([]);
     } finally {
         setIsLoaded(true);
     }
   }, []);
+
+  // Search functionality
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredSessions(savedSessions);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+    const filtered = savedSessions.filter(session => {
+      // Search in session name
+      if (session.name.toLowerCase().includes(query)) return true;
+
+      // Search in message content
+      return session.messages.some(message =>
+        message.content.toLowerCase().includes(query)
+      );
+    });
+
+    setFilteredSessions(filtered);
+  }, [searchQuery, savedSessions]);
 
   const saveData = useCallback((newData: OracleChatSession[]) => {
     try {
@@ -41,6 +66,7 @@ export function useOracleChat() {
       const sortedData = newData.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       localStorage.setItem(ORACLE_CHAT_STORAGE_KEY, JSON.stringify(sortedData));
       setSavedSessions(sortedData);
+      setFilteredSessions(sortedData);
     } catch (error) {
       console.error("Failed to save oracle chat history", error);
     }
@@ -55,5 +81,22 @@ export function useOracleChat() {
     saveData(newSessions);
   };
 
-  return { isLoaded, savedSessions, saveSession, deleteSession };
+  const searchSessions = (query: string) => {
+    setSearchQuery(query);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+  };
+
+  return {
+    isLoaded,
+    savedSessions,
+    filteredSessions,
+    searchQuery,
+    saveSession,
+    deleteSession,
+    searchSessions,
+    clearSearch
+  };
 }

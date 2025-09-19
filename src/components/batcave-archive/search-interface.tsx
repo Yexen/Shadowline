@@ -5,16 +5,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Search, 
-  Filter, 
-  FileText, 
-  Quote, 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import {
+  Search,
+  Filter,
+  FileText,
+  Quote,
   ExternalLink,
   Download,
   Clock,
   Star,
-  TrendingUp
+  TrendingUp,
+  Calendar,
+  SlidersHorizontal,
+  ArrowUpDown,
+  ChevronDown,
+  X
 } from 'lucide-react';
 
 interface Document {
@@ -47,6 +57,16 @@ export function SearchInterface({
   const [isSearching, setIsSearching] = useState(false);
   const [searchType, setSearchType] = useState<'all' | 'exact' | 'semantic'>('all');
   const [selectedDocument, setSelectedDocument] = useState<string>('all');
+
+  // Advanced filter states
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [minRelevanceScore, setMinRelevanceScore] = useState(0);
+  const [maxRelevanceScore, setMaxRelevanceScore] = useState(100);
+  const [dateRange, setDateRange] = useState<'all' | 'today' | 'week' | 'month' | 'year'>('all');
+  const [contextTypes, setContextTypes] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<'relevance' | 'date' | 'document' | 'type'>('relevance');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [searchLogic, setSearchLogic] = useState<'and' | 'or'>('or');
 
   const mockResults: SearchResult[] = [
     {
@@ -117,11 +137,73 @@ export function SearchInterface({
     URL.revokeObjectURL(url);
   };
 
-  const filteredResults = results.filter(result => {
-    const matchesType = searchType === 'all' || result.type === searchType;
-    const matchesDocument = selectedDocument === 'all' || result.document === selectedDocument;
-    return matchesType && matchesDocument;
-  });
+  // Clear filters function
+  const clearAllFilters = () => {
+    setSearchType('all');
+    setSelectedDocument('all');
+    setMinRelevanceScore(0);
+    setMaxRelevanceScore(100);
+    setDateRange('all');
+    setContextTypes([]);
+    setSortBy('relevance');
+    setSortOrder('desc');
+    setSearchLogic('or');
+  };
+
+  // Get unique context types for filter options
+  const uniqueContextTypes = Array.from(new Set(results.map(r => r.context)));
+
+  // Advanced filtering logic
+  const filteredResults = results
+    .filter(result => {
+      // Basic filters
+      const matchesType = searchType === 'all' || result.type === searchType;
+      const matchesDocument = selectedDocument === 'all' || result.document === selectedDocument;
+
+      // Relevance score filter
+      const relevancePercent = result.relevanceScore * 100;
+      const matchesRelevance = relevancePercent >= minRelevanceScore && relevancePercent <= maxRelevanceScore;
+
+      // Date range filter
+      const resultDate = new Date(result.timestamp);
+      const now = new Date();
+      let matchesDate = true;
+
+      if (dateRange !== 'all') {
+        const ranges = {
+          today: () => resultDate.toDateString() === now.toDateString(),
+          week: () => (now.getTime() - resultDate.getTime()) <= (7 * 24 * 60 * 60 * 1000),
+          month: () => (now.getTime() - resultDate.getTime()) <= (30 * 24 * 60 * 60 * 1000),
+          year: () => (now.getTime() - resultDate.getTime()) <= (365 * 24 * 60 * 60 * 1000)
+        };
+        matchesDate = ranges[dateRange]();
+      }
+
+      // Context type filter
+      const matchesContext = contextTypes.length === 0 || contextTypes.includes(result.context);
+
+      return matchesType && matchesDocument && matchesRelevance && matchesDate && matchesContext;
+    })
+    .sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortBy) {
+        case 'relevance':
+          comparison = b.relevanceScore - a.relevanceScore;
+          break;
+        case 'date':
+          comparison = new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+          break;
+        case 'document':
+          comparison = a.document.localeCompare(b.document);
+          break;
+        case 'type':
+          comparison = a.type.localeCompare(b.type);
+          break;
+      }
+
+      return sortOrder === 'asc' ? -comparison : comparison;
+    });
 
   return (
     <div className="space-y-6">
@@ -155,31 +237,44 @@ export function SearchInterface({
             </Button>
           </div>
 
-          {/* Filters */}
-          <div className="flex items-center gap-4">
+          {/* Basic Filters */}
+          <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4" />
-              <select
-                value={searchType}
-                onChange={(e) => setSearchType(e.target.value as any)}
-                className="px-2 py-1 border rounded text-sm"
-              >
-                <option value="all">All Results</option>
-                <option value="exact">Exact Matches</option>
-                <option value="semantic">Semantic Matches</option>
-              </select>
+              <Select value={searchType} onValueChange={(value: any) => setSearchType(value)}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Search Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Results</SelectItem>
+                  <SelectItem value="exact">Exact Matches</SelectItem>
+                  <SelectItem value="semantic">Semantic Matches</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            
-            <select
-              value={selectedDocument}
-              onChange={(e) => setSelectedDocument(e.target.value)}
-              className="px-2 py-1 border rounded text-sm"
+
+            <Select value={selectedDocument} onValueChange={setSelectedDocument}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Select Document" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Documents</SelectItem>
+                {documents.map(doc => (
+                  <SelectItem key={doc.id} value={doc.name}>{doc.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className="flex items-center gap-2"
             >
-              <option value="all">All Documents</option>
-              {documents.map(doc => (
-                <option key={doc.id} value={doc.name}>{doc.name}</option>
-              ))}
-            </select>
+              <SlidersHorizontal className="w-4 h-4" />
+              Advanced Filters
+              <ChevronDown className={`w-4 h-4 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`} />
+            </Button>
 
             {results.length > 0 && (
               <Button variant="outline" size="sm" onClick={exportResults}>
@@ -187,7 +282,140 @@ export function SearchInterface({
                 Export
               </Button>
             )}
+
+            {(searchType !== 'all' || selectedDocument !== 'all' || minRelevanceScore > 0 || maxRelevanceScore < 100 || dateRange !== 'all' || contextTypes.length > 0) && (
+              <Button variant="ghost" size="sm" onClick={clearAllFilters}>
+                <X className="w-4 h-4 mr-1" />
+                Clear Filters
+              </Button>
+            )}
           </div>
+
+          {/* Advanced Filters */}
+          <Collapsible open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
+            <CollapsibleContent className="space-y-4 pt-4 border-t">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                {/* Relevance Score Filter */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Relevance Score Range</Label>
+                  <div className="px-3">
+                    <Slider
+                      value={[minRelevanceScore, maxRelevanceScore]}
+                      onValueChange={([min, max]) => {
+                        setMinRelevanceScore(min);
+                        setMaxRelevanceScore(max);
+                      }}
+                      max={100}
+                      min={0}
+                      step={5}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                      <span>{minRelevanceScore}%</span>
+                      <span>{maxRelevanceScore}%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Date Range Filter */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Date Range</Label>
+                  <Select value={dateRange} onValueChange={(value: any) => setDateRange(value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select date range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Time</SelectItem>
+                      <SelectItem value="today">Today</SelectItem>
+                      <SelectItem value="week">Past Week</SelectItem>
+                      <SelectItem value="month">Past Month</SelectItem>
+                      <SelectItem value="year">Past Year</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Sort Options */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Sort Results</Label>
+                  <div className="flex gap-2">
+                    <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Sort by" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="relevance">Relevance</SelectItem>
+                        <SelectItem value="date">Date</SelectItem>
+                        <SelectItem value="document">Document</SelectItem>
+                        <SelectItem value="type">Type</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                      className="px-3"
+                    >
+                      <ArrowUpDown className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {sortOrder === 'desc' ? 'Descending' : 'Ascending'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Context Types Filter */}
+              {uniqueContextTypes.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Context Types</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {uniqueContextTypes.map((context) => (
+                      <div key={context} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`context-${context}`}
+                          checked={contextTypes.includes(context)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setContextTypes([...contextTypes, context]);
+                            } else {
+                              setContextTypes(contextTypes.filter(c => c !== context));
+                            }
+                          }}
+                        />
+                        <Label
+                          htmlFor={`context-${context}`}
+                          className="text-sm font-normal cursor-pointer"
+                        >
+                          {context}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Search Logic */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Search Logic</Label>
+                <Select value={searchLogic} onValueChange={(value: any) => setSearchLogic(value)}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Search logic" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="or">Match Any (OR)</SelectItem>
+                    <SelectItem value="and">Match All (AND)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="text-xs text-muted-foreground">
+                  {searchLogic === 'or'
+                    ? 'Results match any search terms'
+                    : 'Results must match all search terms'
+                  }
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
 
           {documents.length === 0 && (
             <div className="text-center py-4 text-muted-foreground">

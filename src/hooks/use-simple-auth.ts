@@ -1,21 +1,81 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, UserRole } from '@/types/auth';
+
+// Auto-logout after 1 hour of inactivity (60 minutes = 3600000 ms)
+const INACTIVITY_TIMEOUT = 60 * 60 * 1000;
 
 export function useAuth() {
   const [activeUser, setActiveUser] = useState<User | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const inactivityTimer = useRef<NodeJS.Timeout | null>(null);
+  const lastActivityRef = useRef<number>(Date.now());
+
+  const logout = async () => {
+    localStorage.removeItem('shadowline-user');
+    setActiveUser(null);
+    if (inactivityTimer.current) {
+      clearTimeout(inactivityTimer.current);
+      inactivityTimer.current = null;
+    }
+    router.push('/auth');
+  };
+
+  // Reset inactivity timer
+  const resetInactivityTimer = useCallback(() => {
+    lastActivityRef.current = Date.now();
+    if (inactivityTimer.current) {
+      clearTimeout(inactivityTimer.current);
+    }
+
+    if (activeUser) {
+      inactivityTimer.current = setTimeout(() => {
+        console.log('Auto-logout due to inactivity');
+        logout();
+      }, INACTIVITY_TIMEOUT);
+    }
+  }, [activeUser]);
+
+  // Track user activity
+  useEffect(() => {
+    if (!activeUser) return;
+
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+
+    const activityHandler = () => {
+      resetInactivityTimer();
+    };
+
+    // Add event listeners for user activity
+    events.forEach(event => {
+      document.addEventListener(event, activityHandler, true);
+    });
+
+    // Start the inactivity timer
+    resetInactivityTimer();
+
+    // Cleanup function
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, activityHandler, true);
+      });
+      if (inactivityTimer.current) {
+        clearTimeout(inactivityTimer.current);
+      }
+    };
+  }, [activeUser, resetInactivityTimer]);
 
   useEffect(() => {
     // Check for stored user session
     const storedUser = localStorage.getItem('shadowline-user');
     if (storedUser) {
       try {
-        setActiveUser(JSON.parse(storedUser));
+        const user = JSON.parse(storedUser);
+        setActiveUser(user);
       } catch (e) {
         localStorage.removeItem('shadowline-user');
       }
@@ -67,11 +127,6 @@ export function useAuth() {
     return login(email || 'yekta.kjs@gmail.com', password || 'LivFreya', 'author');
   };
 
-  const logout = async () => {
-    localStorage.removeItem('shadowline-user');
-    setActiveUser(null);
-    router.push('/auth');
-  };
 
   const addUser = async (
     name: string,
