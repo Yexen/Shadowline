@@ -93,6 +93,19 @@ export async function POST(req: NextRequest) {
         temperature = 0.8; // More creative for scene generation
         break;
 
+      case 'chapter':
+        const { prompt: chapterPrompt, context: chapterContext } = params;
+        if (!chapterPrompt) {
+          return NextResponse.json({ error: 'Missing prompt for chapter mode' }, { status: 400 });
+        }
+        const chapterContextText = chapterContext ? `\n\nContext: ${chapterContext}` : '';
+        messages = [
+          { role: 'system', content: 'You are a master storyteller crafting chapters for a Gotham City narrative. Create compelling, well-structured chapters with rich character development, atmospheric world-building, and engaging plot progression. Write in a noir style befitting the dark streets of Gotham. Include vivid descriptions, meaningful dialogue, and dramatic tension.' },
+          { role: 'user', content: `Write a chapter based on this prompt: ${chapterPrompt}${chapterContextText}` }
+        ];
+        temperature = 0.8; // More creative for chapter generation
+        break;
+
       case 'image':
         const { imagePrompt } = params;
         if (!imagePrompt) {
@@ -162,7 +175,13 @@ export async function POST(req: NextRequest) {
           provider: provider.toUpperCase()
         });
       case 'scene':
-        return NextResponse.json({ 
+        return NextResponse.json({
+          text: result.content,
+          model: result.model,
+          provider: provider.toUpperCase()
+        });
+      case 'chapter':
+        return NextResponse.json({
           text: result.content,
           model: result.model,
           provider: provider.toUpperCase()

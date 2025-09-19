@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Save, Eye, EyeOff, Download, FileText, FileCode, Sparkles, PenLine, Library, BookPlus } from 'lucide-react';
+import { Save, Eye, EyeOff, Download, FileText, FileCode, Sparkles, PenLine, Library, BookPlus, StickyNote, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
@@ -16,16 +16,36 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from '@/components/ui/label';
 import { useDrafts, type Draft } from '@/hooks/use-drafts';
 import { useVolumes } from '@/hooks/use-volumes';
+import { useNotes } from '@/hooks/use-notes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AskOracleDialog } from '@/components/ask-oracle-dialog';
-import { SceneGenDialog } from '@/components/scene-gen-dialog';
+import { ChapterGenDialog } from '@/components/chapter-gen-dialog';
 import { RichTextEditor } from '@/components/rich-text-editor';
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
+import Underline from '@tiptap/extension-underline';
+import TextAlign from '@tiptap/extension-text-align';
+import Superscript from '@tiptap/extension-superscript';
+import Subscript from '@tiptap/extension-subscript';
+import Highlight from '@tiptap/extension-highlight';
+import TextStyle from '@tiptap/extension-text-style';
+import Color from '@tiptap/extension-color';
+import Link from '@tiptap/extension-link';
+import Image from '@tiptap/extension-image';
+import Table from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableHeader from '@tiptap/extension-table-header';
+import TableCell from '@tiptap/extension-table-cell';
 
 const translations = {
   en: {
@@ -44,11 +64,17 @@ const translations = {
     chapterSavedToast: 'Chapter Saved',
     chapterSavedToastDesc: 'has been added to the selected volume.',
     cancel: 'Cancel',
-    generateScene: 'Generate Scene',
+    generateChapter: 'Generate Chapter',
     askOracle: 'Ask Oracle',
     saveDraft: 'Save Draft',
-    exportMd: 'Export .md',
-    exportTxt: 'Export .txt',
+    saveToNotes: 'Save to Notes',
+    export: 'Export',
+    exportMd: 'Export as Markdown',
+    exportTxt: 'Export as Text',
+    exportHtml: 'Export as HTML',
+    exportPdf: 'Export as PDF',
+    noteSavedToast: 'Note Saved',
+    noteSavedToastDesc: 'has been saved to your notes.',
     placeholder: 'The darkness of Gotham is a canvas. Paint your story...'
   },
   fa: {
@@ -67,11 +93,17 @@ const translations = {
     chapterSavedToast: 'فصل ذخیره شد',
     chapterSavedToastDesc: 'به جلد انتخاب شده اضافه شد.',
     cancel: 'لغو',
-    generateScene: 'تولید صحنه',
+    generateChapter: 'تولید فصل',
     askOracle: 'از اوراکل بپرس',
     saveDraft: 'ذخیره پیش‌نویس',
-    exportMd: 'خروجی .md',
-    exportTxt: 'خروجی .txt',
+    saveToNotes: 'ذخیره در یادداشت‌ها',
+    export: 'خروجی گرفتن',
+    exportMd: 'خروجی مارک‌داون',
+    exportTxt: 'خروجی متنی',
+    exportHtml: 'خروجی HTML',
+    exportPdf: 'خروجی PDF',
+    noteSavedToast: 'یادداشت ذخیره شد',
+    noteSavedToastDesc: 'در یادداشت‌های شما ذخیره شد.',
     placeholder: 'تاریکی گاتهام یک بوم نقاشی است. داستان خود را نقاشی کنید...'
   }
 };
@@ -94,11 +126,12 @@ export default function EditorPage() {
   const { toast } = useToast();
 
   const { volumes, addChapterToVolume } = useVolumes();
+  const { addNote } = useNotes();
   const [showVolumeDialog, setShowVolumeDialog] = useState(false);
   const [selectedVolume, setSelectedVolume] = useState('');
 
   const [oracleOpen, setOracleOpen] = useState(false);
-  const [sceneGenOpen, setSceneGenOpen] = useState(false);
+  const [chapterGenOpen, setChapterGenOpen] = useState(false);
   const [selection, setSelection] = useState('');
   const [lang, setLang] = useState<'en' | 'fa'>('en');
 
@@ -121,8 +154,37 @@ export default function EditorPage() {
       Placeholder.configure({
         placeholder: t.placeholder, // initial placeholder
       }),
+      Underline,
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+      Superscript,
+      Subscript,
+      Highlight.configure({
+        multicolor: true,
+      }),
+      TextStyle,
+      Color,
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'text-primary underline underline-offset-2',
+        },
+      }),
+      Image.configure({
+        HTMLAttributes: {
+          class: 'max-w-full h-auto rounded-lg',
+        },
+      }),
+      Table.configure({
+        resizable: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content: content,
+    immediatelyRender: false,
     onUpdate: ({ editor }) => {
       setContent(editor.getHTML());
     },
@@ -200,9 +262,60 @@ export default function EditorPage() {
     }, 500);
   };
 
-  const handleExport = (format: 'txt' | 'md') => {
-    const textToExport = format === 'txt' ? editor?.getText() || '' : content;
-    const blob = new Blob([textToExport], { type: 'text/plain;charset=utf-8' });
+  const handleExport = (format: 'txt' | 'md' | 'html' | 'pdf') => {
+    let textToExport = '';
+    let mimeType = 'text/plain;charset=utf-8';
+
+    switch (format) {
+      case 'txt':
+        textToExport = editor?.getText() || '';
+        break;
+      case 'md':
+        textToExport = editor?.storage.markdown?.getMarkdown() || content.replace(/<[^>]*>/g, '');
+        break;
+      case 'html':
+        textToExport = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${title}</title>
+  <style>
+    body { font-family: 'Georgia', serif; max-width: 800px; margin: 0 auto; padding: 2rem; line-height: 1.6; }
+    h1, h2, h3 { color: #d4af37; }
+  </style>
+</head>
+<body>
+  <h1>${title}</h1>
+  ${content}
+</body>
+</html>`;
+        mimeType = 'text/html;charset=utf-8';
+        break;
+      case 'pdf':
+        // For now, we'll create a simple HTML that can be printed to PDF
+        textToExport = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${title}</title>
+  <style>
+    @page { margin: 1in; }
+    body { font-family: 'Georgia', serif; line-height: 1.6; color: #333; }
+    h1, h2, h3 { color: #000; page-break-after: avoid; }
+    p { page-break-inside: avoid; }
+  </style>
+</head>
+<body>
+  <h1>${title}</h1>
+  ${content}
+  <script>window.print();</script>
+</body>
+</html>`;
+        mimeType = 'text/html;charset=utf-8';
+        break;
+    }
+
+    const blob = new Blob([textToExport], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -211,6 +324,14 @@ export default function EditorPage() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const handleSaveToNotes = () => {
+    addNote(title, content);
+    toast({
+      title: t.noteSavedToast,
+      description: `"${title}" ${t.noteSavedToastDesc}`,
+    });
   };
 
   const handleSaveToVolume = () => {
@@ -237,7 +358,7 @@ export default function EditorPage() {
   const handleInsertText = (text: string) => {
     if (editor) {
       editor.chain().focus().insertContent(text).run();
-      setSceneGenOpen(false);
+      setChapterGenOpen(false);
     }
   };
 
@@ -254,9 +375,9 @@ export default function EditorPage() {
             className="font-headline text-2xl bg-transparent outline-none focus:border-b border-primary"
           />
           <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="ghost" size="sm" onClick={() => setSceneGenOpen(true)}>
+            <Button variant="ghost" size="sm" onClick={() => setChapterGenOpen(true)}>
               <PenLine />
-              {t.generateScene}
+              {t.generateChapter}
             </Button>
 
             <Button variant="ghost" size="sm" onClick={handleOpenOracle}>
@@ -302,18 +423,43 @@ export default function EditorPage() {
               </DialogContent>
             </Dialog>
 
+            <Button variant="ghost" size="sm" onClick={handleSaveToNotes}>
+              <StickyNote />
+              {t.saveToNotes}
+            </Button>
+
             <Button variant="ghost" size="sm" onClick={handleSave} disabled={isSaving}>
               <Save />
               {t.saveDraft}
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => handleExport('md')}>
-              <FileCode />
-              {t.exportMd}
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => handleExport('txt')}>
-              <FileText />
-              {t.exportTxt}
-            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <Download />
+                  {t.export}
+                  <ChevronDown className="h-4 w-4 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExport('txt')}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  {t.exportTxt}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('md')}>
+                  <FileCode className="h-4 w-4 mr-2" />
+                  {t.exportMd}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('html')}>
+                  <FileCode className="h-4 w-4 mr-2" />
+                  {t.exportHtml}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('pdf')}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  {t.exportPdf}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
@@ -340,9 +486,9 @@ export default function EditorPage() {
         onClose={() => setOracleOpen(false)}
         contextText={selection}
       />
-      <SceneGenDialog
-        isOpen={sceneGenOpen}
-        onClose={() => setSceneGenOpen(false)}
+      <ChapterGenDialog
+        isOpen={chapterGenOpen}
+        onClose={() => setChapterGenOpen(false)}
         onInsert={handleInsertText}
       />
     </>
