@@ -89,17 +89,26 @@ export function useAuth() {
       // Simulate authentication
       let user: User;
 
-      if (email === 'yekta.kjs@gmail.com' && password === 'LivFreya' && role === 'author') {
-        user = {
-          id: 'author-001',
-          email: 'yekta.kjs@gmail.com',
-          name: 'Yekta Jokar',
-          avatarUrl: 'https://placehold.co/128x128.png',
-          dataAiHint: 'author portrait',
-          role: 'author',
-          status: 'approved',
-        };
-      } else if (role && role !== 'author') {
+      if (role === 'author') {
+        // Author requires specific credentials
+        if (email === 'yekta.kjs@gmail.com' && password === 'LivFreya') {
+          user = {
+            id: 'author-001',
+            email: 'yekta.kjs@gmail.com',
+            name: 'Yekta Jokar',
+            avatarUrl: 'https://placehold.co/128x128.png',
+            dataAiHint: 'author portrait',
+            role: 'author',
+            status: 'approved',
+          };
+        } else {
+          throw new Error('Invalid author credentials');
+        }
+      } else if (role && ['viewer', 'analyst', 'contributor'].includes(role)) {
+        // Other roles accept any credentials (for demo purposes)
+        if (!email || !password) {
+          throw new Error('Email and password are required');
+        }
         user = {
           id: `user-${Date.now()}`,
           email: email,
@@ -110,7 +119,7 @@ export function useAuth() {
           status: 'approved',
         };
       } else {
-        throw new Error('Invalid credentials');
+        throw new Error('Invalid role or credentials');
       }
 
       localStorage.setItem('shadowline-user', JSON.stringify(user));
