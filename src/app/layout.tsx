@@ -1,8 +1,7 @@
 // src/app/layout.tsx
 import type { Metadata } from 'next';
 import './globals.css';
-import { UserDataSyncProvider } from '@/components/providers/user-data-sync-provider';
-import { AuthProvider } from '@/components/providers/auth-provider';
+import { ClientProviders } from '@/components/providers/client-providers';
 
 export const metadata: Metadata = {
   title: 'Shadowline',
@@ -38,16 +37,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <AuthProvider>
-          <UserDataSyncProvider>
-            <main className="min-h-screen">{children}</main>
-            <footer className="border-t border-white/10 bg-black/40">
-              <div className="mx-auto max-w-6xl px-4 py-6 text-xs opacity-75">
-                © {new Date().getFullYear()} Shadowline
-              </div>
-            </footer>
-          </UserDataSyncProvider>
-        </AuthProvider>
+        <ClientProviders>
+          <main className="min-h-screen">{children}</main>
+          <footer className="border-t border-white/10 bg-black/40">
+            <div className="mx-auto max-w-6xl px-4 py-6 text-xs opacity-75">
+              © {new Date().getFullYear()} Shadowline
+            </div>
+          </footer>
+        </ClientProviders>
       </body>
     </html>
   );

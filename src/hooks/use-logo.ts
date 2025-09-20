@@ -11,7 +11,9 @@ export function useLogo() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    const url = localStorage.getItem(LOGO_STORAGE_KEY) || DEFAULT_LOGO_URL;
+    // Clear old cached logo and force use of new Vercel storage URL
+    localStorage.removeItem(LOGO_STORAGE_KEY);
+    const url = DEFAULT_LOGO_URL;
 
     // Preload so broken URLs don’t render a broken img
     const img = new Image();
