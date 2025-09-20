@@ -1,4 +1,5 @@
 # Shadowline App Master Plan
+*The Ultimate Batcomputer Development Roadmap*
 
 ## 1) Authentication System
 - ✅ No "stay signed in" option
@@ -55,22 +56,23 @@
 ## 9) AI Tools
 - Shortcut to AI tools + chats already there
 
-## 10) Bible
-- Get rid of the black thing
-- Working suggest fields AI
-- Fixed form, not costume, in the first popup
-- Option to add fixed fields
-- Profile pages can have subpages
-- Export button for each page
-- Get rid of black things/boxes
-- Turn it to a page, not a sidebar
-- Categories: two tabs (Fields + Edit)
-- Option to edit fields with popup to add & edit fixed fields
-- Profile static pages with subpages:
-  - Buttons to add page entries
-  - Edit popup with auto-save
-  - Placeholder for pictures (only for characters)
-  - For other entries/categories → optional
+## 10) Bible (Enhanced Sidebar System)
+- ✅ Keep as sidebar (better UX than page)
+- 🔄 **ACTIVE**: Fixed Gotham-themed fields system:
+  - Name, Alias, Position (multiple dropdown: Hero, Villain, Civilian, Vigilante, etc.)
+  - Group affiliation (Justice League, Titans, Batfamily, League of Assassins, Rogues Gallery, GCPD, etc.)
+  - Keep custom field addition + AI suggestions
+- 🔄 **ACTIVE**: Picture placeholders with upload functionality and persistence
+- 🔄 **ACTIVE**: Remove black boxes and improve layout styling
+- 🔄 **ACTIVE**: Export buttons for each entry (PDF, JSON, etc.)
+- 🔄 **ACTIVE**: Static reading mode vs edit mode toggle
+- 🔄 **ACTIVE**: Notion-like tabs system:
+  - Profile tab (main info + picture)
+  - Relationships tab (clickable character links, AI-fillable)
+  - Subpages system (popup pages for detailed sections)
+- 🔄 **ACTIVE**: AI field suggestions based on character type and existing data
+- Enhanced relationship system with clickable cross-references
+- Auto-save functionality for all edits
 
 ## 11) Volumes
 - Turn to page
