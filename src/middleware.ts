@@ -17,7 +17,16 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Auth protection for main app routes
+  // NON-BLOCKING AUTH MODE: Allow access but preserve auth functionality
+  // This allows production testing while keeping auth system intact
+  const nonBlockingAuth = true; // Set to false to re-enable auth protection
+
+  if (nonBlockingAuth) {
+    // Allow all access, auth system still works but doesn't block
+    return NextResponse.next();
+  }
+
+  // Auth protection for main app routes (disabled in non-blocking mode)
   if (url.pathname.startsWith('/(main)') || url.pathname === '/home') {
     // Check for Firebase auth cookies (common names)
     const hasAuthSession = request.cookies.get('session')?.value ||
