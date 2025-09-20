@@ -373,8 +373,25 @@ export default function ProfilePage() {
 
     if (!isLoaded || !activeWriter) {
         return (
-            <div className="flex h-screen w-full items-center justify-center bg-background">
-                <BatLogo className="w-24 h-12 text-primary animate-pulse" />
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-background via-background/95 to-background/90 backdrop-blur-sm">
+                <div className="relative">
+                    {/* Large pulsing logo */}
+                    <BatLogo className="w-32 h-32 text-primary animate-pulse" />
+
+                    {/* Animated rings around logo */}
+                    <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-ping"></div>
+                    <div className="absolute inset-4 rounded-full border border-primary/10 animate-pulse"></div>
+
+                    {/* Loading text */}
+                    <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 text-center">
+                        <p className="text-lg font-medium text-primary animate-pulse">Loading Shadowline...</p>
+                        <div className="flex justify-center mt-2 space-x-1">
+                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }
