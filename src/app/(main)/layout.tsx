@@ -52,6 +52,7 @@ import { useVolumes } from '@/hooks/use-volumes';
 import { useModalStore } from '@/hooks/use-modal-store';
 import { useWriters } from '@/hooks/use-writers';
 import { useTimer } from '@/hooks/use-timer';
+import { useAuth } from '@/hooks/use-auth';
 
 import { BibleEditor } from '@/components/bible-editor';
 import { WriterProfile } from '@/components/writer-profile';
@@ -106,6 +107,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const { activeWriter } = useWriters();
   const { modalType, modalData, closeModal, openModal } = useModalStore();
   const { volumes, updateChapter, getChapter } = useVolumes();
+  const { logout } = useAuth();
 
   const [editingEntry, setEditingEntry] = useState<{ category: string; entry: BibleEntry } | null>(null);
   const [newCategory, setNewCategory] = useState('');

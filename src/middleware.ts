@@ -13,8 +13,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Skip auth protection in development mode for easier testing
-  // TEMPORARILY: Also skip in production for debugging
-  if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === 'development') {
     return NextResponse.next();
   }
 

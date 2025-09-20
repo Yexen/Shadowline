@@ -10,13 +10,15 @@ import { useWatchlist, type Video } from '@/hooks/use-watchlist';
 import { useReadlist, type NewsArticle } from '@/hooks/use-readlist';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { PlayCircle, Trash2, Camera, Link as LinkIcon, Newspaper } from 'lucide-react';
+import { PlayCircle, Trash2, Camera, Link as LinkIcon, Newspaper, UserPlus, Users, Copy, Shield } from 'lucide-react';
 import { PasswordInput } from '@/components/password-input';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { UserRole } from '@/types/auth';
 
 function WatchlistSection() {
     const { videos, removeVideo, isLoaded } = useWatchlist();
@@ -157,6 +159,211 @@ function ChangePasswordSection() {
     )
 }
 
+interface InviteLink {
+  id: string;
+  token: string;
+  role: UserRole;
+  createdAt: Date;
+  expiresAt?: Date;
+  maxUses?: number;
+  currentUses: number;
+  isActive: boolean;
+}
+
+function InvitationsManagementSection() {
+    const { activeUser } = useWriters();
+    const { toast } = useToast();
+    const [selectedRole, setSelectedRole] = useState<UserRole>('viewer');
+    const [maxUses, setMaxUses] = useState<string>('1');
+    const [invites, setInvites] = useState<InviteLink[]>([]);
+
+    // Only show for authors
+    if (!activeUser || activeUser.role !== 'author') {
+        return null;
+    }
+
+    const generateInviteToken = (role: UserRole): string => {
+        const randomId = Math.random().toString(36).substring(2, 15);
+        return `${role}-${randomId}`;
+    };
+
+    const createInvite = () => {
+        const token = generateInviteToken(selectedRole);
+        const newInvite: InviteLink = {
+            id: `invite-${Date.now()}`,
+            token,
+            role: selectedRole,
+            createdAt: new Date(),
+            maxUses: maxUses === 'unlimited' ? undefined : parseInt(maxUses),
+            currentUses: 0,
+            isActive: true,
+        };
+
+        setInvites(prev => [newInvite, ...prev]);
+
+        toast({
+            title: 'Invitation Created!',
+            description: `New ${selectedRole} invitation link generated.`,
+        });
+    };
+
+    const copyInviteLink = (token: string) => {
+        const baseUrl = window.location.origin;
+        const inviteUrl = `${baseUrl}/invite/${token}`;
+        navigator.clipboard.writeText(inviteUrl);
+
+        toast({
+            title: 'Link Copied!',
+            description: 'Invitation link has been copied to clipboard.',
+        });
+    };
+
+    const deactivateInvite = (id: string) => {
+        setInvites(prev =>
+            prev.map(invite =>
+                invite.id === id
+                    ? { ...invite, isActive: false }
+                    : invite
+            )
+        );
+
+        toast({
+            title: 'Invitation Deactivated',
+            description: 'The invitation link has been deactivated.',
+        });
+    };
+
+    const getRoleColor = (role: UserRole) => {
+        switch (role) {
+            case 'viewer': return 'text-blue-500';
+            case 'analyst': return 'text-green-500';
+            case 'contributor': return 'text-purple-500';
+            default: return 'text-gray-500';
+        }
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <UserPlus className="h-5 w-5" />
+                    Invitation Management
+                </CardTitle>
+                <CardDescription>Create and manage invitation links for guest access.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                {/* Create New Invitation */}
+                <div className="space-y-4">
+                    <h4 className="font-semibold">Create New Invitation</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="role">Role</Label>
+                            <Select value={selectedRole} onValueChange={(value: UserRole) => setSelectedRole(value)}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select role" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="viewer">Viewer</SelectItem>
+                                    <SelectItem value="analyst">Analyst</SelectItem>
+                                    <SelectItem value="contributor">Contributor</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="maxUses">Max Uses</Label>
+                            <Select value={maxUses} onValueChange={setMaxUses}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select max uses" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="1">1 use</SelectItem>
+                                    <SelectItem value="5">5 uses</SelectItem>
+                                    <SelectItem value="10">10 uses</SelectItem>
+                                    <SelectItem value="unlimited">Unlimited</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    <Button onClick={createInvite} className="w-full md:w-auto">
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Generate Invitation Link
+                    </Button>
+                </div>
+
+                <Separator />
+
+                {/* Existing Invitations */}
+                <div className="space-y-4">
+                    <h4 className="font-semibold">Active Invitations</h4>
+                    {invites.length === 0 ? (
+                        <div className="text-center py-6">
+                            <Users className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                            <p className="text-muted-foreground text-sm">No invitations created yet.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {invites.map((invite) => (
+                                <div
+                                    key={invite.id}
+                                    className={`border rounded-lg p-3 ${!invite.isActive ? 'opacity-50' : ''}`}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className={getRoleColor(invite.role)}>
+                                                <Users className="h-4 w-4" />
+                                            </div>
+                                            <div>
+                                                <p className="font-medium capitalize text-sm">
+                                                    {invite.role} Invitation
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Created {invite.createdAt.toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                            <div className="text-right text-xs">
+                                                <p className="text-muted-foreground">
+                                                    Uses: {invite.currentUses}/{invite.maxUses || '∞'}
+                                                </p>
+                                                <p className={`text-xs ${invite.isActive ? 'text-green-500' : 'text-red-500'}`}>
+                                                    {invite.isActive ? 'Active' : 'Inactive'}
+                                                </p>
+                                            </div>
+
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => copyInviteLink(invite.token)}
+                                                disabled={!invite.isActive}
+                                            >
+                                                <Copy className="h-3 w-3" />
+                                            </Button>
+
+                                            {invite.isActive && (
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={() => deactivateInvite(invite.id)}
+                                                >
+                                                    Deactivate
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
 export default function ProfilePage() {
     const { activeWriter, isLoaded, updateWriterAvatar } = useWriters();
     const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
@@ -255,6 +462,7 @@ export default function ProfilePage() {
        <WatchlistSection />
        <ReadlistSection />
        <ChangePasswordSection />
+       <InvitationsManagementSection />
     </div>
   );
 }
