@@ -8,6 +8,12 @@ export function useUserData() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
+    // Only access localStorage in browser environment
+    if (typeof window === 'undefined') {
+      setIsLoaded(true);
+      return;
+    }
+
     try {
       const stored = localStorage.getItem('user-data');
       if (stored) {
@@ -21,6 +27,8 @@ export function useUserData() {
   }, []);
 
   const updateUserData = (data: any) => {
+    if (typeof window === 'undefined') return;
+    
     try {
       localStorage.setItem('user-data', JSON.stringify(data));
       setUserData(data);
@@ -29,9 +37,21 @@ export function useUserData() {
     }
   };
 
+  const updateWatchlist = (watchlist: any[]) => {
+    const newUserData = { ...userData, watchlist };
+    updateUserData(newUserData);
+  };
+
+  const updateReadlist = (readlist: any[]) => {
+    const newUserData = { ...userData, readlist };
+    updateUserData(newUserData);
+  };
+
   return {
-    userData,
+    userData: userData || {},
     updateUserData,
+    updateWatchlist,
+    updateReadlist,
     isLoaded,
   };
 }
