@@ -86,13 +86,13 @@ export function AppHeader() {
     return (
         <div className="relative w-full h-64 md:h-80 lg:h-96 rounded-lg overflow-hidden mb-6 group">
             <Image 
-                src={coverImage}
+                src="https://qh7zmtvimx9i7m9w.public.blob.vercel-storage.com/Header.png"
                 alt="Gotham City skyline with Bat-signal"
                 fill
                 className="object-cover"
                 style={{ objectPosition: `center ${coverImagePosition}%` }}
-                data-ai-hint={dataAiHint}
-                key={coverImage} // Force re-render on image change
+                data-ai-hint="gotham city batman header"
+                key="hardcoded-header"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
             <div className="absolute top-2 right-2">
@@ -112,7 +112,7 @@ export function AppHeader() {
                         </DialogHeader>
                         <div className="space-y-4">
                             <div className="relative h-32 w-full rounded-md overflow-hidden border">
-                                <Image src={newImageUrl} alt="Cover preview" fill className="object-cover" style={{ objectPosition: `center ${newPosition[0]}%` }} />
+                                <Image src="https://qh7zmtvimx9i7m9w.public.blob.vercel-storage.com/Header.png" alt="Cover preview" fill className="object-cover" style={{ objectPosition: `center ${newPosition[0]}%` }} />
                             </div>
                             <div className="space-y-2">
                                 <Label>Adjust Vertical Position</Label>
