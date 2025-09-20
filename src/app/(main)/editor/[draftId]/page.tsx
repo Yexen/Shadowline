@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Save, Eye, EyeOff, Download, FileText, FileCode, Sparkles, PenLine, Library, BookPlus, StickyNote, ChevronDown } from 'lucide-react';
+import { Save, Eye, EyeOff, Download, FileText, FileCode, Sparkles, PenLine, Library, BookPlus, StickyNote, ChevronDown, Focus, Target, Clock, History } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
@@ -75,7 +75,17 @@ const translations = {
     exportPdf: 'Export as PDF',
     noteSavedToast: 'Note Saved',
     noteSavedToastDesc: 'has been saved to your notes.',
-    placeholder: 'The darkness of Gotham is a canvas. Paint your story...'
+    placeholder: 'The darkness of Gotham is a canvas. Paint your story...',
+    focusMode: 'Focus Mode',
+    exitFocus: 'Exit Focus',
+    readingTime: 'Reading Time',
+    minutes: 'min',
+    writingGoals: 'Writing Goals',
+    dailyGoal: 'Daily Goal',
+    progress: 'Progress',
+    wordsToday: 'words today',
+    versionHistory: 'Version History',
+    characterCount: 'Characters'
   },
   fa: {
     untitledDraft: 'پیش‌نویس بدون عنوان',
@@ -134,6 +144,14 @@ export default function EditorPage() {
   const [chapterGenOpen, setChapterGenOpen] = useState(false);
   const [selection, setSelection] = useState('');
   const [lang, setLang] = useState<'en' | 'fa'>('en');
+
+  // Enhancement states
+  const [focusMode, setFocusMode] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [showWritingGoals, setShowWritingGoals] = useState(false);
+  const [dailyWordGoal, setDailyWordGoal] = useState(500);
+  const [dailyWordsWritten, setDailyWordsWritten] = useState(0);
+  const [versions, setVersions] = useState<Array<{id: string, content: string, timestamp: Date, wordCount: number}>>([]);
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -238,9 +256,33 @@ export default function EditorPage() {
     return text.trim().split(/\s+/).filter(Boolean).length;
   }, [content, editor]);
 
+  const readingTime = useMemo(() => {
+    const wordsPerMinute = 200; // Average reading speed
+    const minutes = Math.ceil(wordCount / wordsPerMinute);
+    return minutes || 1;
+  }, [wordCount]);
+
+  const dailyProgress = useMemo(() => {
+    return Math.min((dailyWordsWritten / dailyWordGoal) * 100, 100);
+  }, [dailyWordsWritten, dailyWordGoal]);
+
+  const saveVersion = () => {
+    const newVersion = {
+      id: Date.now().toString(),
+      content,
+      timestamp: new Date(),
+      wordCount: wordCount
+    };
+    setVersions(prev => [newVersion, ...prev].slice(0, 10)); // Keep only last 10 versions
+  };
+
   const handleSave = () => {
     setIsSaving(true);
     const savedDate = new Date();
+
+    // Save version before updating
+    saveVersion();
+
     if (draftId === 'new') {
       const newDraftId = addDraft(title, content);
       router.replace(`/editor/${newDraftId}`);
@@ -366,15 +408,24 @@ export default function EditorPage() {
 
   return (
     <>
-      <div className="flex flex-col h-[calc(100vh-14rem)]">
-        <header className="flex items-center justify-between mb-4 flex-wrap gap-4">
+      <div className={cn(
+        "flex flex-col transition-all duration-300",
+        focusMode ? "h-[calc(100vh-8rem)] max-w-4xl mx-auto" : "h-[calc(100vh-14rem)]"
+      )}>
+        <header className={cn(
+          "flex items-center justify-between mb-4 flex-wrap gap-4 transition-opacity duration-300",
+          focusMode && "opacity-30 hover:opacity-100"
+        )}>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="font-headline text-2xl bg-transparent outline-none focus:border-b border-primary"
           />
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className={cn(
+            "flex items-center gap-2 flex-wrap transition-opacity duration-300",
+            focusMode && "opacity-0 hover:opacity-100"
+          )}>
             <Button variant="ghost" size="sm" onClick={() => setChapterGenOpen(true)}>
               <PenLine />
               {t.generateChapter}
@@ -383,6 +434,25 @@ export default function EditorPage() {
             <Button variant="ghost" size="sm" onClick={handleOpenOracle}>
               <Sparkles />
               {t.askOracle}
+            </Button>
+
+            <Button
+              variant={focusMode ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setFocusMode(!focusMode)}
+            >
+              <Focus />
+              {focusMode ? t.exitFocus : t.focusMode}
+            </Button>
+
+            <Button variant="ghost" size="sm" onClick={() => setShowWritingGoals(!showWritingGoals)}>
+              <Target />
+              {t.writingGoals}
+            </Button>
+
+            <Button variant="ghost" size="sm" onClick={() => setShowVersionHistory(!showVersionHistory)}>
+              <History />
+              {t.versionHistory}
             </Button>
 
             <Dialog open={showVolumeDialog} onOpenChange={setShowVolumeDialog}>
@@ -467,10 +537,112 @@ export default function EditorPage() {
           <RichTextEditor editor={editor} />
         </div>
 
-        <footer className="mt-4 text-sm text-muted-foreground flex justify-between items-center">
-          <span>
-            {t.wordCount}: {wordCount}
-          </span>
+        {/* Writing Goals Panel */}
+        {showWritingGoals && (
+          <Card className="mt-4">
+            <CardContent className="p-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Target className="h-5 w-5" />
+                    {t.writingGoals}
+                  </h3>
+                  <Button variant="ghost" size="sm" onClick={() => setShowWritingGoals(false)}>
+                    <EyeOff className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>{t.dailyGoal}</span>
+                    <span>{dailyWordsWritten} / {dailyWordGoal} {t.wordsToday}</span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-2">
+                    <div
+                      className="bg-primary h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${dailyProgress}%` }}
+                    />
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {t.progress}: {Math.round(dailyProgress)}%
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Version History Panel */}
+        {showVersionHistory && (
+          <Card className="mt-4">
+            <CardContent className="p-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <History className="h-5 w-5" />
+                    {t.versionHistory}
+                  </h3>
+                  <Button variant="ghost" size="sm" onClick={() => setShowVersionHistory(false)}>
+                    <EyeOff className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {versions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No versions saved yet. Save your draft to create version history.
+                    </p>
+                  ) : (
+                    versions.map((version, index) => (
+                      <div
+                        key={version.id}
+                        className="border rounded-lg p-3 hover:bg-accent cursor-pointer transition-colors"
+                        onClick={() => {
+                          if (editor) {
+                            editor.commands.setContent(version.content);
+                            setContent(version.content);
+                          }
+                        }}
+                      >
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium">Version {versions.length - index}</span>
+                          <span className="text-muted-foreground">
+                            {version.timestamp.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {version.wordCount} words
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1 truncate">
+                          {version.content.replace(/<[^>]*>/g, '').substring(0, 100)}...
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <footer className={cn(
+          "mt-4 text-sm text-muted-foreground flex justify-between items-center flex-wrap gap-2 transition-opacity duration-300",
+          focusMode && "opacity-30 hover:opacity-100"
+        )}>
+          <div className="flex items-center gap-4 flex-wrap">
+            <span>{t.wordCount}: {wordCount}</span>
+            <span>{t.characterCount}: {content.replace(/<[^>]*>/g, '').length}</span>
+            <span className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {t.readingTime}: {readingTime} {t.minutes}
+            </span>
+            {showWritingGoals && (
+              <span className="flex items-center gap-1">
+                <Target className="h-3 w-3" />
+                {dailyWordsWritten}/{dailyWordGoal} {t.wordsToday}
+              </span>
+            )}
+          </div>
           <p ref={statusRef} className="transition-colors">
             {isSaving
               ? t.saving

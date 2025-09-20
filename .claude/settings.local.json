@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Read(//c/Users/Yekta/Pictures/Screenshots/**)"
+      "Read(//c/Users/Yekta/Pictures/Screenshots/**)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []
