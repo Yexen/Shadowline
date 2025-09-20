@@ -14,7 +14,6 @@ import { cn } from '@/lib/utils';
 import { useAiProvider } from '@/hooks/use-ai-provider';
 import { EnhancedTerminal, EnhancedTerminalHandle } from '@/components/dev-console/enhanced-terminal';
 import { MonacoCodeEditor } from '@/components/dev-console/monaco-editor';
-import { FirebaseManager } from '@/components/dev-console/firebase-manager';
 import { useToast } from '@/hooks/use-toast';
 
 // API endpoints
@@ -90,7 +89,7 @@ function buildTree(paths: string[]): FsItem[] {
 
 export default function EnhancedDevConsolePage() {
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<'chat'|'editor'|'terminal'|'firebase'|'system'>('terminal');
+  const [activeTab, setActiveTab] = useState<'chat'|'editor'|'terminal'|'system'>('terminal');
   const { selectedProvider, getCurrentApiKey } = useAiProvider();
   const { toast } = useToast();
   const terminalRef = useRef<EnhancedTerminalHandle>(null);
@@ -502,7 +501,7 @@ export default function EnhancedDevConsolePage() {
 • build - Build the project
 • deploy - Deploy the project
 • status - Show system status
-• firebase - Open Firebase manager`;
+• database - Database info (migrated to Vercel)`;
           break;
           
         case 'ls':
@@ -608,9 +607,8 @@ Last Deployment: ${new Date(systemStats.lastDeployment).toLocaleString()}
 Status: 🟢 All systems operational`;
           break;
           
-        case 'firebase':
-          setActiveTab('firebase');
-          output = 'Opening Firebase management console...';
+        case 'database':
+          output = 'Database functionality has been migrated to Vercel Postgres. Use the system tab for monitoring.';
           break;
           
         case 'build':
@@ -661,10 +659,6 @@ Type 'help' to see available commands`;
                     </TabsTrigger>
                     <TabsTrigger value="terminal" className="data-[state=active]:border data-[state=active]:border-amber-500 data-[state=active]:text-amber-400">
                       Terminal
-                    </TabsTrigger>
-                    <TabsTrigger value="firebase" className="data-[state=active]:border data-[state=active]:border-amber-500 data-[state=active]:text-amber-400">
-                      <Database className="w-4 h-4 mr-1" />
-                      Firebase
                     </TabsTrigger>
                     <TabsTrigger value="system" className="data-[state=active]:border data-[state=active]:border-amber-500 data-[state=active]:text-amber-400">
                       <Activity className="w-4 h-4 mr-1" />
@@ -855,12 +849,6 @@ Type 'help' to see available commands`;
                   </div>
                 </TabsContent>
 
-                {/* Firebase */}
-                <TabsContent value="firebase" className="p-0 m-0">
-                  <div className="p-3">
-                    <FirebaseManager />
-                  </div>
-                </TabsContent>
 
                 {/* System */}
                 <TabsContent value="system" className="p-0 m-0">

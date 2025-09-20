@@ -10,8 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ImagePlus, Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { getAppStorage } from '@/lib/firebase';
-import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+// Firebase storage removed - using direct URLs for now
 import { useToast } from '@/hooks/use-toast';
 
 interface MapCardProps {
@@ -33,20 +32,9 @@ export function MapCard({ map, onOpenMap, onUpdateMap }: MapCardProps) {
     let finalUrl = newImageUrl;
 
     if (newImageUrl.startsWith('data:image')) {
-        setIsUploading(true);
-        try {
-            const storage = getAppStorage();
-            toast({ title: 'Uploading map cover...' });
-            const storageRef = ref(storage, `maps/${map.id}-cover-${Date.now()}`);
-            const snapshot = await uploadString(storageRef, newImageUrl, 'data_url');
-            finalUrl = await getDownloadURL(snapshot.ref);
-            toast({ title: 'Upload complete!' });
-        } catch (error) {
-            console.error('Map cover upload failed', error);
-            toast({ variant: 'destructive', title: 'Upload Failed' });
-            setIsUploading(false);
-            return;
-        }
+        // For now, just use the data URL directly
+        // In production, you could upload to Vercel Blob Storage
+        finalUrl = newImageUrl;
     }
     
     onUpdateMap(map.id, { imageUrl: finalUrl });

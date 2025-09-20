@@ -14,8 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Card, CardContent } from './ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
-import { getAppStorage } from '@/lib/firebase';
-import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
+// Firebase storage removed - using direct URLs for now
 import { useToast } from '@/hooks/use-toast';
 
 
@@ -55,17 +54,9 @@ export function GalleryFolder({ folder, filter, onAddItem, onUpdateItem, onDelet
     let finalUrl = newItemUrl;
 
     if (newItemUrl.startsWith('data:')) {
-        try {
-            const storage = getAppStorage();
-            const storageRef = ref(storage, `gallery/${folder.id}/${Date.now()}`);
-            const snapshot = await uploadString(storageRef, newItemUrl, 'data_url');
-            finalUrl = await getDownloadURL(snapshot.ref);
-        } catch (error) {
-            console.error("Upload failed", error);
-            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload the file to storage.' });
-            setIsUploading(false);
-            return;
-        }
+        // For now, just use the data URL directly
+        // In production, you could upload to Vercel Blob Storage
+        finalUrl = newItemUrl;
     }
     
     onAddItem(folder.id, newItemType, finalUrl, newItemCaption, newItemDataAiHint);
@@ -90,24 +81,10 @@ export function GalleryFolder({ folder, filter, onAddItem, onUpdateItem, onDelet
     if (editingItem && newItemUrl.trim() && newItemCaption.trim()) {
         setIsUploading(true);
         let finalUrl = newItemUrl;
-        const storage = getAppStorage();
 
-        // If a new file was selected (data URI), upload it and delete the old one
-        if (newItemUrl.startsWith('data:') && editingItem.url.includes('firebasestorage')) {
-             try {
-                // Delete old object
-                const oldRef = ref(storage, editingItem.url);
-                await deleteObject(oldRef);
-                // Upload new object
-                const newRef = ref(storage, `gallery/${folder.id}/${Date.now()}`);
-                const snapshot = await uploadString(newRef, newItemUrl, 'data_url');
-                finalUrl = await getDownloadURL(snapshot.ref);
-             } catch (error) {
-                console.error("Update failed", error);
-                toast({ variant: 'destructive', title: 'Update Failed', description: 'Could not update the file in storage.' });
-                setIsUploading(false);
-                return;
-            }
+        // If a new file was selected (data URI), just use it directly
+        if (newItemUrl.startsWith('data:')) {
+            finalUrl = newItemUrl;
         }
         
         onUpdateItem(folder.id, editingItem.id, finalUrl, newItemCaption, newItemDataAiHint, newItemType);

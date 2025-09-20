@@ -28,11 +28,10 @@ export function middleware(request: NextRequest) {
 
   // Auth protection for main app routes (disabled in non-blocking mode)
   if (url.pathname.startsWith('/(main)') || url.pathname === '/home') {
-    // Check for Firebase auth cookies (common names)
+    // Check for NextAuth session cookies
     const hasAuthSession = request.cookies.get('session')?.value ||
-                          request.cookies.get('firebase-auth')?.value ||
                           request.cookies.get('__session')?.value ||
-                          request.cookies.get('firebase-token')?.value;
+                          request.cookies.get('next-auth.session-token')?.value;
 
     // Check for bypass token for head writer
     const hasBypassToken = request.cookies.get('gotham-bypassed-user')?.value;

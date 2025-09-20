@@ -15,7 +15,6 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'oaidalleapiprodscus.blob.core.windows.net' },
       { protocol: 'https', hostname: 'i.ytimg.com' },
       { protocol: 'https', hostname: 'img.youtube.com' },
-      { protocol: 'https', hostname: 'firebasestorage.googleapis.com' },
       { protocol: 'https', hostname: 'assets-prd.ignimgs.com' },
       { protocol: 'https', hostname: 'www.dc.com' },
       { protocol: 'https', hostname: 'www.gamespot.com' },

@@ -26,7 +26,6 @@ const nextConfig: NextConfig = {
     config.externals = config.externals || [];
     config.externals.push({
       '@opentelemetry/exporter-jaeger': 'commonjs @opentelemetry/exporter-jaeger',
-      '@genkit-ai/firebase': 'commonjs @genkit-ai/firebase',
       handlebars: 'commonjs handlebars',
       dotprompt: 'commonjs dotprompt',
     });
