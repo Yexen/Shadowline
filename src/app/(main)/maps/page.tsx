@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useMaps } from "@/hooks/use-maps";
 import { GothamMap } from "@/components/gotham-map";
@@ -19,7 +19,7 @@ const translations = {
   }
 };
 
-export default function MapsPage() {
+function MapsPageContent() {
   const { maps, updateMap, isLoaded } = useMaps();
   const [activeMap, setActiveMap] = useState<MapData | null>(null);
   const [lang, setLang] = useState<'en' | 'fa'>('en');
@@ -96,5 +96,13 @@ export default function MapsPage() {
         />
       )}
     </>
+  );
+}
+
+export default function MapsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <MapsPageContent />
+    </Suspense>
   );
 }
