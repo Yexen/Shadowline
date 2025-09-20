@@ -38,7 +38,9 @@ export const useReadlist = create<ReadlistState>()(
             const newArticles = get().articles.filter((a) => a.id !== article.id);
             set({ articles: newArticles });
             // Sync to persistent storage
-            window.syncReadlist?.(newArticles);
+            if (typeof window !== 'undefined') {
+              window.syncReadlist?.(newArticles);
+            }
             toast({
                 title: "Removed from Read List",
                 variant: "destructive"
@@ -47,7 +49,9 @@ export const useReadlist = create<ReadlistState>()(
             const newArticles = [article, ...get().articles];
             set({ articles: newArticles });
             // Sync to persistent storage
-            window.syncReadlist?.(newArticles);
+            if (typeof window !== 'undefined') {
+              window.syncReadlist?.(newArticles);
+            }
             toast({
                 title: "Added to Read List",
                 description: `"${article.title}" has been added.`,
@@ -58,7 +62,9 @@ export const useReadlist = create<ReadlistState>()(
         const newArticles = get().articles.filter((a) => a.id !== articleId);
         set({ articles: newArticles });
         // Sync to persistent storage
-        window.syncReadlist?.(newArticles);
+        if (typeof window !== 'undefined') {
+          window.syncReadlist?.(newArticles);
+        }
          toast({
             title: "Removed from Read List",
             variant: "destructive"
@@ -97,10 +103,12 @@ export function useReadlistSync() {
 
   useEffect(() => {
     // Set up global sync function
-    window.syncReadlist = updateReadlist;
-    return () => {
-      delete window.syncReadlist;
-    };
+    if (typeof window !== 'undefined') {
+      window.syncReadlist = updateReadlist;
+      return () => {
+        delete window.syncReadlist;
+      };
+    }
   }, [updateReadlist]);
 
   return { isLoaded: userDataLoaded };

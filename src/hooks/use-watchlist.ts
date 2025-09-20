@@ -46,7 +46,9 @@ export const useWatchlist = create<WatchlistState>()(
             const newVideos = get().videos.filter((v) => v.id !== video.id);
             set({ videos: newVideos });
             // Sync to persistent storage
-            window.syncWatchlist?.(newVideos);
+            if (typeof window !== 'undefined') {
+              window.syncWatchlist?.(newVideos);
+            }
             toast({
                 title: "Removed from Watchlist",
                 variant: "destructive"
@@ -56,7 +58,9 @@ export const useWatchlist = create<WatchlistState>()(
             const newVideos = [video, ...get().videos];
             set({ videos: newVideos });
             // Sync to persistent storage
-            window.syncWatchlist?.(newVideos);
+            if (typeof window !== 'undefined') {
+              window.syncWatchlist?.(newVideos);
+            }
             toast({
                 title: "Added to Watchlist",
                 description: `"${video.title}" has been added.`,
@@ -67,7 +71,9 @@ export const useWatchlist = create<WatchlistState>()(
         const newVideos = get().videos.filter((v) => v.id !== videoId);
         set({ videos: newVideos });
         // Sync to persistent storage
-        window.syncWatchlist?.(newVideos);
+        if (typeof window !== 'undefined') {
+          window.syncWatchlist?.(newVideos);
+        }
          toast({
             title: "Removed from Watchlist",
             variant: "destructive"
@@ -106,10 +112,12 @@ export function useWatchlistSync() {
 
   useEffect(() => {
     // Set up global sync function
-    window.syncWatchlist = updateWatchlist;
-    return () => {
-      delete window.syncWatchlist;
-    };
+    if (typeof window !== 'undefined') {
+      window.syncWatchlist = updateWatchlist;
+      return () => {
+        delete window.syncWatchlist;
+      };
+    }
   }, [updateWatchlist]);
 
   return { isLoaded: userDataLoaded };
