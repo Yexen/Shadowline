@@ -38,8 +38,8 @@ export function middleware(request: NextRequest) {
 
   // API route protection (minimal in development)
   if (url.pathname.startsWith('/api/')) {
-    // Skip auth for public API routes
-    const publicRoutes = ['/api/debug', '/api/health'];
+    // Skip auth for public API routes and NextAuth routes
+    const publicRoutes = ['/api/debug', '/api/health', '/api/auth'];
     const isPublicRoute = publicRoutes.some(route => url.pathname.startsWith(route));
 
     if (!isPublicRoute && process.env.NODE_ENV === 'production') {
