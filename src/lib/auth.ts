@@ -1,18 +1,10 @@
 import { NextAuthOptions } from 'next-auth';
-import { PostgresAdapter } from '@auth/pg-adapter';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { Pool } from '@vercel/postgres';
+import { sql } from '@vercel/postgres';
 import bcrypt from 'bcryptjs';
 import { User, UserRole } from '@/types/auth';
 
-// Create a connection pool for Vercel Postgres
-const pool = new Pool({
-  connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
-});
-
 export const authOptions: NextAuthOptions = {
-  // Only use adapter if database URL is available
-  ...(process.env.POSTGRES_URL || process.env.DATABASE_URL ? { adapter: PostgresAdapter(pool) } : {}),
   providers: [
     CredentialsProvider({
       id: 'credentials',
@@ -47,10 +39,11 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
-          const { rows } = await pool.query(
-            'SELECT id, email, name, password_hash, role, status, avatar_url, created_at FROM users WHERE email = $1',
-            [credentials.email.toLowerCase()]
-          );
+          const { rows } = await sql`
+            SELECT id, email, name, password_hash, role, status, avatar_url, created_at 
+            FROM users 
+            WHERE email = ${credentials.email.toLowerCase()}
+          `;
 
           if (rows.length === 0) {
             return null;
