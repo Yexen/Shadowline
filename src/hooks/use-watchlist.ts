@@ -104,6 +104,11 @@ export function useWatchlistSync() {
   const { syncFromUserData } = useWatchlist();
 
   useEffect(() => {
+    // Mark as loaded on initial client-side mount
+    useWatchlist.setState({ isLoaded: true });
+  }, []);
+
+  useEffect(() => {
     if (userDataLoaded && userData.watchlist) {
       // Sync from user data to local store
       syncFromUserData(userData.watchlist);
@@ -123,7 +128,4 @@ export function useWatchlistSync() {
   return { isLoaded: userDataLoaded };
 }
 
-// Mark as loaded on initial client-side mount
-if (typeof window !== 'undefined') {
-    useWatchlist.setState({ isLoaded: true });
-}
+// Mark as loaded on initial client-side mount - moved to useEffect to avoid SSR issues

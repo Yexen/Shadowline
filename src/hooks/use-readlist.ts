@@ -95,6 +95,11 @@ export function useReadlistSync() {
   const { syncFromUserData } = useReadlist();
 
   useEffect(() => {
+    // Mark as loaded on initial client-side mount
+    useReadlist.setState({ isLoaded: true });
+  }, []);
+
+  useEffect(() => {
     if (userDataLoaded && userData.readlist) {
       // Sync from user data to local store
       syncFromUserData(userData.readlist);
@@ -114,6 +119,4 @@ export function useReadlistSync() {
   return { isLoaded: userDataLoaded };
 }
 
-if (typeof window !== 'undefined') {
-    useReadlist.setState({ isLoaded: true });
-}
+// Mark as loaded on initial client-side mount - moved to useEffect to avoid SSR issues
