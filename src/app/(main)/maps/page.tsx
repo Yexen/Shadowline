@@ -1,6 +1,7 @@
 
 'use client';
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useMaps } from "@/hooks/use-maps";
 import { GothamMap } from "@/components/gotham-map";
 import { MapCard } from "@/components/map-card";
@@ -22,6 +23,7 @@ export default function MapsPage() {
   const { maps, updateMap, isLoaded } = useMaps();
   const [activeMap, setActiveMap] = useState<MapData | null>(null);
   const [lang, setLang] = useState<'en' | 'fa'>('en');
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -31,6 +33,19 @@ export default function MapsPage() {
     }
   }, []);
 
+  // Auto-open map from URL parameter
+  useEffect(() => {
+    if (isLoaded && maps.length > 0) {
+      const mapId = searchParams.get('map');
+      if (mapId && !activeMap) {
+        const requestedMap = maps.find(map => map.id === mapId);
+        if (requestedMap) {
+          setActiveMap(requestedMap);
+        }
+      }
+    }
+  }, [isLoaded, maps, searchParams, activeMap]);
+
   const t = translations[lang];
 
   const handleOpenMap = (map: MapData) => {
@@ -39,6 +54,8 @@ export default function MapsPage() {
 
   const handleCloseMap = () => {
     setActiveMap(null);
+    // Clear URL parameter when closing
+    window.history.replaceState({}, '', '/maps');
   };
 
   return (

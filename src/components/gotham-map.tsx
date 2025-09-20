@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogHeader } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,7 +32,111 @@ export function GothamMap({ isOpen, onClose, mapHtml, title }: GothamMapProps) {
   const [currentQuestion, setCurrentQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const { toast } = useToast();
+
+  // Check for location to highlight when map opens
+  useEffect(() => {
+    if (isOpen && iframeRef.current) {
+      const highlightLocation = localStorage.getItem('map-highlight-location');
+      if (highlightLocation) {
+        // Clear the stored location
+        localStorage.removeItem('map-highlight-location');
+        
+        // Wait for iframe to load then highlight location
+        setTimeout(() => {
+          try {
+            if (iframeRef.current?.contentWindow) {
+              // Inject JavaScript to find and navigate to the location
+              const script = `
+                // Function to find and navigate to a location
+                function highlightLocation(locationName) {
+                  console.log('Looking for location:', locationName);
+                  
+                  // Wait a bit more for the map to be fully ready
+                  setTimeout(() => {
+                    // Find location in the locations list
+                    const locationElements = document.querySelectorAll('.location');
+                    let found = false;
+                    
+                    console.log('Found', locationElements.length, 'location elements');
+                    
+                    for (let element of locationElements) {
+                      const text = element.textContent || '';
+                      const cleanText = text.replace(/[🏰🦇🏥🏛️🌉🎭🏢⚖️🔬🏦🎪🌆🏪🏭]/g, '').trim();
+                      const cleanLocationName = locationName.replace(/[🏰🦇🏥🏛️🌉🎭🏢⚖️🔬🏦🎪🌆🏪🏭]/g, '').trim();
+                      
+                      console.log('Checking:', cleanText, 'vs', cleanLocationName);
+                      
+                      if (cleanText.toLowerCase().includes(cleanLocationName.toLowerCase()) || 
+                          cleanLocationName.toLowerCase().includes(cleanText.toLowerCase())) {
+                        
+                        // Get position from data-pos attribute
+                        const posStr = element.getAttribute('data-pos');
+                        if (posStr) {
+                          const [x, y, z] = posStr.split(',').map(Number);
+                          console.log('Found location at:', x, y, z);
+                          
+                          // Move camera to location with better positioning
+                          if (window.camera && window.controls) {
+                            // Animate camera movement
+                            const startPos = window.camera.position.clone();
+                            const targetPos = { x: x + 80, y: y + 60, z: z + 80 };
+                            
+                            let progress = 0;
+                            const animate = () => {
+                              progress += 0.05;
+                              if (progress <= 1) {
+                                window.camera.position.lerpVectors(startPos, new THREE.Vector3(targetPos.x, targetPos.y, targetPos.z), progress);
+                                window.controls.target.lerp(new THREE.Vector3(x, y, z), progress);
+                                window.controls.update();
+                                requestAnimationFrame(animate);
+                              } else {
+                                // Final position
+                                window.camera.position.set(targetPos.x, targetPos.y, targetPos.z);
+                                window.controls.target.set(x, y, z);
+                                window.controls.update();
+                                
+                                // Click the location to show details
+                                setTimeout(() => element.click(), 500);
+                              }
+                            };
+                            animate();
+                            
+                            found = true;
+                            break;
+                          }
+                        }
+                      }
+                    }
+                    
+                    if (!found) {
+                      console.log('Location not found. Available locations:');
+                      locationElements.forEach(el => console.log('  -', el.textContent));
+                    }
+                  }, 1000);
+                  
+                  return true; // Always return true since we're doing async work
+                }
+                
+                // Highlight the location
+                highlightLocation('${highlightLocation}');
+              `;
+              
+              iframeRef.current.contentWindow.eval(script);
+              
+              toast({
+                title: "Location Found",
+                description: `Navigated to ${highlightLocation} on the map`,
+              });
+            }
+          } catch (error) {
+            console.error('Failed to highlight location:', error);
+          }
+        }, 2000); // Wait for map to fully load
+      }
+    }
+  }, [isOpen, toast]);
 
   const handleAskQuestion = async () => {
     if (!currentQuestion.trim()) return;
@@ -70,7 +174,9 @@ export function GothamMap({ isOpen, onClose, mapHtml, title }: GothamMapProps) {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) onClose();
+    }}>
       <DialogContent className="w-[95vw] h-[90vh] max-w-none p-0 overflow-hidden">
         <DialogHeader className="sr-only">
           <DialogTitle>{title}</DialogTitle>
@@ -79,6 +185,7 @@ export function GothamMap({ isOpen, onClose, mapHtml, title }: GothamMapProps) {
         <div className="relative w-full h-full">
           {/* Map iframe */}
           <iframe
+            ref={iframeRef}
             srcDoc={mapHtml}
             className="w-full h-full border-0"
             title={title}
