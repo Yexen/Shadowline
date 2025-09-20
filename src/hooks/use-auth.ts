@@ -25,6 +25,7 @@ export function useAuth() {
   const login = async (email: string, password: string, role?: UserRole) => {
     setIsLoading(true);
     try {
+      console.log('Starting login with:', { email, role });
       const result = await signIn('credentials', {
         email,
         password,
@@ -32,14 +33,22 @@ export function useAuth() {
         redirect: false,
       });
 
+      console.log('SignIn result:', result);
+
       if (result?.error) {
+        console.error('Login error:', result.error);
         throw new Error(result.error);
       }
 
       if (result?.ok) {
+        console.log('Login successful, redirecting to /home');
         router.push('/home');
+      } else {
+        console.log('Login not ok, result:', result);
+        throw new Error('Login failed');
       }
     } catch (error) {
+      console.error('Login catch error:', error);
       throw error;
     } finally {
       setIsLoading(false);
