@@ -7,11 +7,12 @@ import { User, UserRole } from '@/types/auth';
 
 // Create a connection pool for Vercel Postgres
 const pool = new Pool({
-  connectionString: process.env.POSTGRES_URL,
+  connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
 });
 
 export const authOptions: NextAuthOptions = {
-  adapter: PostgresAdapter(pool),
+  // Only use adapter if database URL is available
+  ...(process.env.POSTGRES_URL || process.env.DATABASE_URL ? { adapter: PostgresAdapter(pool) } : {}),
   providers: [
     CredentialsProvider({
       id: 'credentials',
@@ -41,7 +42,11 @@ export const authOptions: NextAuthOptions = {
             };
           }
 
-          // Query database for regular users
+          // Query database for regular users (skip if no database connection)
+          if (!process.env.POSTGRES_URL && !process.env.DATABASE_URL) {
+            return null;
+          }
+
           const { rows } = await pool.query(
             'SELECT id, email, name, password_hash, role, status, avatar_url, created_at FROM users WHERE email = $1',
             [credentials.email.toLowerCase()]
@@ -91,16 +96,15 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      if (token) {
-        session.user.id = token.sub;
+      if (token && session.user) {
+        session.user.id = token.sub || '';
         session.user.role = token.role as UserRole;
-        session.user.status = token.status as string;
+        session.user.status = token.status as any;
       }
       return session;
     },
   },
   pages: {
     signIn: '/auth',
-    signUp: '/signup',
   },
 };
