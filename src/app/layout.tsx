@@ -14,11 +14,11 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+      { url: 'https://qh7zmtvimx9i7m9w.public.blob.vercel-storage.com/apple-touch-icon.png', sizes: '192x192', type: 'image/png' },
+      { url: 'https://qh7zmtvimx9i7m9w.public.blob.vercel-storage.com/apple-touch-icon.png', sizes: '512x512', type: 'image/png' },
     ],
     apple: [
-      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: 'https://qh7zmtvimx9i7m9w.public.blob.vercel-storage.com/apple-touch-icon.png', sizes: '192x192', type: 'image/png' },
     ],
   },
 };
