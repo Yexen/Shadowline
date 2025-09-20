@@ -103,7 +103,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   const pathname = usePathname();
 
-  const { isLoaded: bibleLoaded, bibleData, addCategory, addOrUpdateEntry } = useBible();
+  const { isLoaded: bibleLoaded, bibleData, addCategory, addOrUpdateEntry, deleteEntry } = useBible();
   const { activeWriter } = useWriters();
   const { modalType, modalData, closeModal, openModal } = useModalStore();
   const { volumes, updateChapter, getChapter } = useVolumes();
@@ -136,6 +136,22 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const handleSaveEntry = (category: string, entry: BibleEntry) => {
     addOrUpdateEntry(category, entry, editingEntry?.entry.title);
+    setEditingEntry(null);
+    closeModal();
+  };
+
+  const handleDeleteEntry = (category: string, entryTitle: string) => {
+    deleteEntry(category, entryTitle);
+    setEditingEntry(null);
+    closeModal();
+  };
+
+  const handleViewOnMap = (locationName: string) => {
+    // Store the location to highlight in localStorage for the map to read
+    localStorage.setItem('map-highlight-location', locationName);
+    // Navigate to the 3D Gotham map
+    router.push('/maps?map=map-gotham-3d');
+    // Close the Bible editor
     setEditingEntry(null);
     closeModal();
   };
@@ -338,6 +354,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         category={editingEntry?.category ?? ''}
         onClose={handleCloseEditor}
         onSave={handleSaveEntry}
+        onDelete={handleDeleteEntry}
+        onViewOnMap={handleViewOnMap}
       />
       
       {/* Writer Profile */}

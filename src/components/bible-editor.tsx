@@ -29,7 +29,7 @@ import {
   RESOURCE_STATUS_OPTIONS,
   FACTION_ALIGNMENT_OPTIONS
 } from '@/hooks/use-bible';
-import { PlusCircle, Trash2, Sparkles, BookUser, List, Loader2, Upload, Download, Eye, Edit, Camera, Users, FileText, Plus } from 'lucide-react';
+import { PlusCircle, Trash2, Sparkles, BookUser, List, Loader2, Upload, Download, Eye, Edit, Camera, Users, FileText, Plus, FileUp, MapPin } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from './ui/textarea';
@@ -38,6 +38,7 @@ import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Card } from './ui/card';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { ProfilePageEditor } from './profile-page-editor';
 import { suggestBibleFields } from '@/ai/flows/bible-fields-flow';
 
@@ -45,6 +46,8 @@ interface BibleEditorProps {
   entry: BibleEntry | null;
   category: string;
   onSave: (category: string, entry: BibleEntry) => void;
+  onDelete?: (category: string, entryTitle: string) => void;
+  onViewOnMap?: (locationName: string) => void;
   onClose: () => void;
 }
 
@@ -80,13 +83,14 @@ const getTabGridCols = (category: string): string => {
   return category === 'Characters' ? 'grid-cols-5' : 'grid-cols-3';
 };
 
-export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorProps) {
+export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, onClose }: BibleEditorProps) {
   const [currentEntry, setCurrentEntry] = useState<BibleEntry | null>(null);
   const [activeTab, setActiveTab] = useState<EditorView>('identity');
   const [editMode, setEditMode] = useState<EditMode>('view');
   const [editingPage, setEditingPage] = useState<BiblePage | null>(null);
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -185,6 +189,13 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
     }
   };
 
+  const handleDeleteEntry = () => {
+    if (currentEntry && onDelete) {
+      onDelete(category, currentEntry.title);
+      onClose();
+    }
+  };
+
   const handleSuggestFields = async () => {
     if (!currentEntry || !currentEntry.title) return;
     setIsGenerating(true);
@@ -235,6 +246,73 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
     setEditingPage({ id: `page-${Date.now()}`, title: 'New Page', content: '' });
   };
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !currentEntry) return;
+
+    setIsProcessingFile(true);
+    try {
+      let content = '';
+      
+      if (file.type === 'application/pdf') {
+        // For PDF files, we'd need a PDF parser library
+        // For now, show a message that PDF processing is not yet implemented
+        toast({
+          title: 'PDF Processing',
+          description: 'PDF processing will be implemented soon. Please use HTML files for now.',
+        });
+        return;
+      } else if (file.type === 'text/html' || file.name.endsWith('.html')) {
+        // Process HTML files
+        content = await file.text();
+        
+        // Extract text content from HTML (basic implementation)
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(content, 'text/html');
+        const textContent = doc.body?.textContent || doc.textContent || '';
+        
+        // Create new fields based on content
+        const newFields = [
+          { label: 'Imported Content', value: textContent.trim() },
+          { label: 'Original HTML', value: content }
+        ];
+        
+        // Also try to extract a title if available
+        const titleElement = doc.querySelector('title, h1, h2');
+        if (titleElement && titleElement.textContent?.trim()) {
+          newFields.unshift({ label: 'Extracted Title', value: titleElement.textContent.trim() });
+        }
+        
+        setCurrentEntry({
+          ...currentEntry,
+          fields: [...(currentEntry.fields || []), ...newFields]
+        });
+        
+        toast({
+          title: 'File Processed',
+          description: `Successfully imported content from ${file.name}`,
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Unsupported File Type',
+          description: 'Please upload HTML or PDF files only.',
+        });
+      }
+    } catch (error) {
+      console.error('File processing error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Processing Error',
+        description: 'Failed to process the uploaded file.',
+      });
+    } finally {
+      setIsProcessingFile(false);
+      // Reset file input
+      event.target.value = '';
+    }
+  };
+
   const isOpen = !!entry;
 
   if (!currentEntry) {
@@ -256,6 +334,40 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
+              {category === 'Locations' && onViewOnMap && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => onViewOnMap(currentEntry?.title || '')}
+                >
+                  <MapPin className="h-4 w-4 mr-2" />
+                  View on Map
+                </Button>
+              )}
+              {editMode === 'edit' && (
+                <>
+                  <input
+                    type="file"
+                    accept=".html,.pdf"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="file-feed-input"
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => document.getElementById('file-feed-input')?.click()}
+                    disabled={isProcessingFile}
+                  >
+                    {isProcessingFile ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <FileUp className="h-4 w-4 mr-2" />
+                    )}
+                    Feed
+                  </Button>
+                </>
+              )}
               <Button 
                 variant={editMode === 'view' ? 'default' : 'outline'} 
                 size="sm" 
@@ -1381,14 +1493,42 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
         </Tabs>
 
         <DialogFooter className="mt-6">
-          <Button variant="outline" onClick={onClose}>
-            Close
-          </Button>
-          {editMode === 'edit' && (
-            <Button onClick={handleSave}>
-              Save Changes
-            </Button>
-          )}
+          <div className="flex justify-between w-full">
+            {editMode === 'edit' && onDelete && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Entry
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete {currentEntry?.title}?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete this {category.toLowerCase().slice(0, -1)} entry and all its data.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteEntry} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Delete Entry
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            <div className="flex gap-2 ml-auto">
+              <Button variant="outline" onClick={onClose}>
+                Close
+              </Button>
+              {editMode === 'edit' && (
+                <Button onClick={handleSave}>
+                  Save Changes
+                </Button>
+              )}
+            </div>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

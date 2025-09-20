@@ -522,5 +522,16 @@ export function useBible() {
     saveData(newData);
   };
 
-  return { isLoaded, bibleData, addCategory, addOrUpdateEntry };
+  const deleteEntry = (categoryName: string, entryTitle: string) => {
+    const newData = bibleData.map(category => {
+      if (category.category === categoryName) {
+        const newItems = category.items.filter(item => item.title !== entryTitle);
+        return { ...category, items: newItems };
+      }
+      return category;
+    });
+    saveData(newData);
+  };
+
+  return { isLoaded, bibleData, addCategory, addOrUpdateEntry, deleteEntry };
 }
