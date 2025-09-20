@@ -42,11 +42,10 @@ export const authOptions: NextAuthOptions = {
           }
 
           // Query database for regular users
-          const { rows } = await pool.sql`
-            SELECT id, email, name, password_hash, role, status, avatar_url, created_at
-            FROM users
-            WHERE email = ${credentials.email.toLowerCase()}
-          `;
+          const { rows } = await pool.query(
+            'SELECT id, email, name, password_hash, role, status, avatar_url, created_at FROM users WHERE email = $1',
+            [credentials.email.toLowerCase()]
+          );
 
           if (rows.length === 0) {
             return null;
