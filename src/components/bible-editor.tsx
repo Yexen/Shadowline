@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -15,19 +14,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { BibleEntry, BiblePage, BibleField, BibleFixedFields, BibleRelationship } from '@/hooks/use-bible';
 import { 
-  POSITION_OPTIONS, 
-  GROUP_AFFILIATION_OPTIONS, 
+  ALIGNMENT_OPTIONS,
+  AFFILIATION_OPTIONS,
   RELATIONSHIP_TYPES,
-  THREAT_LEVEL_OPTIONS,
-  ACCESS_LEVEL_OPTIONS,
+  LOCATION_THREAT_LEVEL_OPTIONS,
+  CONTROL_OPTIONS,
+  FUNCTION_OPTIONS,
   DISTRICT_OPTIONS,
-  STATUS_OPTIONS,
   GADGET_TYPE_OPTIONS,
-  MANUFACTURER_OPTIONS,
-  EFFECTIVENESS_OPTIONS,
-  AVAILABILITY_OPTIONS
+  CREATOR_OPTIONS,
+  VEHICLE_MANUFACTURER_OPTIONS,
+  ANIMAL_ROLE_OPTIONS,
+  RELATIONSHIP_STATUS_OPTIONS,
+  RESOURCE_STATUS_OPTIONS,
+  FACTION_ALIGNMENT_OPTIONS
 } from '@/hooks/use-bible';
-import { PlusCircle, Trash2, Sparkles, BookUser, List, Loader2, Upload, Download, Eye, Edit, Camera, Users, FileText } from 'lucide-react';
+import { PlusCircle, Trash2, Sparkles, BookUser, List, Loader2, Upload, Download, Eye, Edit, Camera, Users, FileText, Plus } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from './ui/textarea';
@@ -35,6 +37,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Card } from './ui/card';
 import { ProfilePageEditor } from './profile-page-editor';
 import { suggestBibleFields } from '@/ai/flows/bible-fields-flow';
 
@@ -45,12 +48,41 @@ interface BibleEditorProps {
   onClose: () => void;
 }
 
-type EditorView = 'profile' | 'relationships' | 'fields' | 'pages' | 'description';
+type EditorView = 'identity' | 'traits' | 'relationships' | 'arcs' | 'dossier' | 'overview' | 'description' | 'fields';
 type EditMode = 'view' | 'edit';
+
+type TabConfig = {
+  value: string;
+  label: string;
+  icon: any;
+};
+
+const getTabsForCategory = (category: string): TabConfig[] => {
+  switch (category) {
+    case 'Characters':
+      return [
+        { value: 'identity', label: 'Identity', icon: BookUser },
+        { value: 'traits', label: 'Traits', icon: List },
+        { value: 'relationships', label: 'Relationships', icon: Users },
+        { value: 'arcs', label: 'Arcs', icon: FileText },
+        { value: 'dossier', label: 'Dossier', icon: FileText }
+      ];
+    default:
+      return [
+        { value: 'overview', label: 'Overview', icon: BookUser },
+        { value: 'description', label: 'Description', icon: FileText },
+        { value: 'fields', label: 'Custom Fields', icon: List }
+      ];
+  }
+};
+
+const getTabGridCols = (category: string): string => {
+  return category === 'Characters' ? 'grid-cols-5' : 'grid-cols-3';
+};
 
 export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorProps) {
   const [currentEntry, setCurrentEntry] = useState<BibleEntry | null>(null);
-  const [view, setView] = useState<EditorView>('profile');
+  const [activeTab, setActiveTab] = useState<EditorView>('identity');
   const [editMode, setEditMode] = useState<EditMode>('view');
   const [editingPage, setEditingPage] = useState<BiblePage | null>(null);
 
@@ -61,13 +93,13 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
     if (entry) {
       // Create a deep copy to avoid direct mutation
       setCurrentEntry(JSON.parse(JSON.stringify(entry)));
-      // Reset view when a new entry is opened
-      setView('profile'); 
+      // Reset view when a new entry is opened based on category
+      setActiveTab(category === 'Characters' ? 'identity' : 'overview'); 
       setEditingPage(null);
     } else {
       setCurrentEntry(null);
     }
-  }, [entry]);
+  }, [entry, category]);
 
   const handleFieldChange = (index: number, type: 'label' | 'value', value: string) => {
     if (!currentEntry) return;
@@ -179,11 +211,6 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
     }
   };
 
-  const handleTitleChange = (newTitle: string) => {
-    if (!currentEntry) return;
-    setCurrentEntry({ ...currentEntry, title: newTitle });
-  }
-
   const handlePageSave = (page: BiblePage) => {
     if (!currentEntry) return;
     const pages = [...(currentEntry.pages || [])];
@@ -207,7 +234,6 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
   const handleAddNewPage = () => {
     setEditingPage({ id: `page-${Date.now()}`, title: 'New Page', content: '' });
   };
-
 
   const isOpen = !!entry;
 
@@ -245,38 +271,23 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
           </p>
         </DialogHeader>
 
-        <Tabs value={view} onValueChange={(value) => setView(value as EditorView)} className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className={`grid w-full ${category === 'Characters' ? 'grid-cols-4' : 'grid-cols-3'}`}>
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <BookUser className="h-4 w-4" />
-              Profile
-            </TabsTrigger>
-            {category === 'Characters' && (
-              <TabsTrigger value="relationships" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Relations
-              </TabsTrigger>
-            )}
-            {category !== 'Characters' && (
-              <TabsTrigger value="description" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Description
-              </TabsTrigger>
-            )}
-            <TabsTrigger value="fields" className="flex items-center gap-2">
-              <List className="h-4 w-4" />
-              Custom Fields
-            </TabsTrigger>
-            {category === 'Characters' && (
-              <TabsTrigger value="pages" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Pages
-              </TabsTrigger>
-            )}
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+          <TabsList className={`grid w-full ${getTabGridCols(category)}`}>
+            {getTabsForCategory(category).map(tab => {
+              const IconComponent = tab.icon;
+              return (
+                <TabsTrigger key={tab.value} value={tab.value} className="flex items-center gap-2">
+                  <IconComponent className="h-4 w-4" />
+                  {tab.label}
+                </TabsTrigger>
+              );
+            })}
           </TabsList>
 
-          <TabsContent value="profile" className="mt-4 space-y-6 overflow-y-auto">
-            {category === 'Characters' ? (
+          {/* Identity Tab - Characters Only */}
+          <TabsContent value="identity" className="flex-1 overflow-y-auto space-y-6 p-1">
+            <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Picture Section */}
                 <div className="space-y-4">
@@ -315,49 +326,79 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
 
                 {/* Fixed Fields */}
                 <div className="md:col-span-2 space-y-4">
-                  {/* Name */}
+                  {/* Real Name */}
                   <div>
-                    <Label className="text-sm font-medium">Name</Label>
+                    <Label className="text-sm font-medium">Real Name</Label>
                     {editMode === 'edit' ? (
                       <Input
-                        value={currentEntry.fixedFields?.name || ''}
-                        onChange={(e) => handleFixedFieldChange('name', e.target.value)}
+                        value={currentEntry.fixedFields?.realName || ''}
+                        onChange={(e) => handleFixedFieldChange('realName', e.target.value)}
                         placeholder="Real name"
                         className="mt-1"
                       />
                     ) : (
-                      <p className="mt-1 text-sm">{currentEntry.fixedFields?.name || 'Unknown'}</p>
+                      <p className="mt-1 text-sm">{currentEntry.fixedFields?.realName || 'Unknown'}</p>
                     )}
                   </div>
 
-                  {/* Alias */}
+                  {/* Aliases */}
                   <div>
-                    <Label className="text-sm font-medium">Alias</Label>
+                    <Label className="text-sm font-medium">Aliases</Label>
                     {editMode === 'edit' ? (
                       <Input
-                        value={currentEntry.fixedFields?.alias || ''}
-                        onChange={(e) => handleFixedFieldChange('alias', e.target.value)}
-                        placeholder="Known aliases"
+                        value={currentEntry.fixedFields?.aliases || ''}
+                        onChange={(e) => handleFixedFieldChange('aliases', e.target.value)}
+                        placeholder="Known aliases (comma separated)"
                         className="mt-1"
                       />
                     ) : (
-                      <p className="mt-1 text-sm">{currentEntry.fixedFields?.alias || 'None'}</p>
+                      <p className="mt-1 text-sm">{currentEntry.fixedFields?.aliases || 'None'}</p>
                     )}
                   </div>
 
-                  {/* Position */}
+                  {/* Age */}
                   <div>
-                    <Label className="text-sm font-medium">Position</Label>
+                    <Label className="text-sm font-medium">Age</Label>
+                    {editMode === 'edit' ? (
+                      <Input
+                        value={currentEntry.fixedFields?.age || ''}
+                        onChange={(e) => handleFixedFieldChange('age', e.target.value)}
+                        placeholder="Age or age range"
+                        className="mt-1"
+                      />
+                    ) : (
+                      <p className="mt-1 text-sm">{currentEntry.fixedFields?.age || 'Unknown'}</p>
+                    )}
+                  </div>
+
+                  {/* Nationality */}
+                  <div>
+                    <Label className="text-sm font-medium">Nationality</Label>
+                    {editMode === 'edit' ? (
+                      <Input
+                        value={currentEntry.fixedFields?.nationality || ''}
+                        onChange={(e) => handleFixedFieldChange('nationality', e.target.value)}
+                        placeholder="Nationality"
+                        className="mt-1"
+                      />
+                    ) : (
+                      <p className="mt-1 text-sm">{currentEntry.fixedFields?.nationality || 'Unknown'}</p>
+                    )}
+                  </div>
+
+                  {/* Alignment */}
+                  <div>
+                    <Label className="text-sm font-medium">Alignment</Label>
                     {editMode === 'edit' ? (
                       <Select
-                        value={currentEntry.fixedFields?.position?.[0] || ''}
-                        onValueChange={(value) => handleFixedFieldChange('position', [value])}
+                        value={currentEntry.fixedFields?.alignment || ''}
+                        onValueChange={(value) => handleFixedFieldChange('alignment', value)}
                       >
                         <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Select position" />
+                          <SelectValue placeholder="Select alignment" />
                         </SelectTrigger>
                         <SelectContent>
-                          {POSITION_OPTIONS.map((option) => (
+                          {ALIGNMENT_OPTIONS.map((option) => (
                             <SelectItem key={option} value={option}>
                               {option}
                             </SelectItem>
@@ -365,27 +406,25 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
                         </SelectContent>
                       </Select>
                     ) : (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {currentEntry.fixedFields?.position?.map((pos) => (
-                          <Badge key={pos} variant="secondary">{pos}</Badge>
-                        )) || <span className="text-sm text-muted-foreground">None</span>}
+                      <div className="mt-1">
+                        <Badge variant="secondary">{currentEntry.fixedFields?.alignment || 'Unknown'}</Badge>
                       </div>
                     )}
                   </div>
 
-                  {/* Group Affiliation */}
+                  {/* Affiliation */}
                   <div>
-                    <Label className="text-sm font-medium">Group Affiliation</Label>
+                    <Label className="text-sm font-medium">Affiliation</Label>
                     {editMode === 'edit' ? (
                       <Select
-                        value={currentEntry.fixedFields?.groupAffiliation?.[0] || ''}
-                        onValueChange={(value) => handleFixedFieldChange('groupAffiliation', [value])}
+                        value={currentEntry.fixedFields?.affiliation?.[0] || ''}
+                        onValueChange={(value) => handleFixedFieldChange('affiliation', [value])}
                       >
                         <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Select group" />
+                          <SelectValue placeholder="Select affiliation" />
                         </SelectTrigger>
                         <SelectContent>
-                          {GROUP_AFFILIATION_OPTIONS.map((option) => (
+                          {AFFILIATION_OPTIONS.map((option) => (
                             <SelectItem key={option} value={option}>
                               {option}
                             </SelectItem>
@@ -394,7 +433,7 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
                       </Select>
                     ) : (
                       <div className="mt-1 flex flex-wrap gap-1">
-                        {currentEntry.fixedFields?.groupAffiliation?.map((group) => (
+                        {currentEntry.fixedFields?.affiliation?.map((group) => (
                           <Badge key={group} variant="outline">{group}</Badge>
                         )) || <span className="text-sm text-muted-foreground">Independent</span>}
                       </div>
@@ -402,262 +441,77 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
                   </div>
                 </div>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Picture Section for non-characters */}
-                <div className="space-y-4">
-                  <Label className="text-sm font-medium">Image</Label>
-                  <div className="relative">
-                    <Avatar className="w-32 h-32 mx-auto">
-                      <AvatarImage 
-                        src={currentEntry.fixedFields?.picture} 
-                        alt={currentEntry.title} 
-                      />
-                      <AvatarFallback className="text-lg">
-                        {currentEntry.title.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    {editMode === 'edit' && (
-                      <div className="mt-2">
-                        <label htmlFor="picture-upload" className="cursor-pointer">
-                          <Button variant="outline" size="sm" asChild>
-                            <span>
-                              <Camera className="h-4 w-4 mr-2" />
-                              Upload
-                            </span>
+            </div>
+          </TabsContent>
+
+          {/* Traits Tab - Characters Only */}
+          <TabsContent value="traits" className="flex-1 overflow-y-auto space-y-4 p-1">
+            <div className="space-y-4">
+              {editMode === 'edit' && (
+                <div className="flex justify-between items-center">
+                  <Label className="text-base font-medium">Character Traits</Label>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={handleSuggestFields} disabled={isGenerating}>
+                      {isGenerating ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4 mr-2" />
+                      )}
+                      AI Suggest
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleAddField}>
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                      Add Trait
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                {(currentEntry.fields || []).map((field, index) => (
+                  <div key={index} className="p-4 border rounded-lg">
+                    {editMode === 'edit' ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={field.label}
+                            onChange={(e) => handleFieldChange(index, 'label', e.target.value)}
+                            placeholder="Trait name"
+                            className="flex-1"
+                          />
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleRemoveField(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                        </label>
-                        <input
-                          id="picture-upload"
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          className="hidden"
+                        </div>
+                        <Textarea
+                          value={field.value}
+                          onChange={(e) => handleFieldChange(index, 'value', e.target.value)}
+                          placeholder="Trait description"
+                          className="min-h-[80px]"
                         />
+                      </div>
+                    ) : (
+                      <div>
+                        <Label className="text-sm font-medium">{field.label}</Label>
+                        <p className="mt-1 text-sm">{field.value}</p>
                       </div>
                     )}
                   </div>
-                </div>
+                ))}
 
-                {/* Category-Specific Fields */}
-                <div className="md:col-span-2 space-y-4">
-                  {category === 'Locations' && (
-                    <>
-                      {/* Threat Level */}
-                      <div>
-                        <Label className="text-sm font-medium">Threat Level</Label>
-                        {editMode === 'edit' ? (
-                          <Select
-                            value={currentEntry.fixedFields?.threatLevel || ''}
-                            onValueChange={(value) => handleFixedFieldChange('threatLevel', value)}
-                          >
-                            <SelectTrigger className="mt-1">
-                              <SelectValue placeholder="Select threat level" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {THREAT_LEVEL_OPTIONS.map((option) => (
-                                <SelectItem key={option} value={option}>
-                                  {option}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <div className="mt-1">
-                            <Badge variant="secondary">{currentEntry.fixedFields?.threatLevel || 'Unknown'}</Badge>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Access Level */}
-                      <div>
-                        <Label className="text-sm font-medium">Access Level</Label>
-                        {editMode === 'edit' ? (
-                          <Select
-                            value={currentEntry.fixedFields?.accessLevel || ''}
-                            onValueChange={(value) => handleFixedFieldChange('accessLevel', value)}
-                          >
-                            <SelectTrigger className="mt-1">
-                              <SelectValue placeholder="Select access level" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {ACCESS_LEVEL_OPTIONS.map((option) => (
-                                <SelectItem key={option} value={option}>
-                                  {option}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <div className="mt-1">
-                            <Badge variant="outline">{currentEntry.fixedFields?.accessLevel || 'Unknown'}</Badge>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* District */}
-                      <div>
-                        <Label className="text-sm font-medium">District</Label>
-                        {editMode === 'edit' ? (
-                          <Select
-                            value={currentEntry.fixedFields?.district || ''}
-                            onValueChange={(value) => handleFixedFieldChange('district', value)}
-                          >
-                            <SelectTrigger className="mt-1">
-                              <SelectValue placeholder="Select district" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {DISTRICT_OPTIONS.map((option) => (
-                                <SelectItem key={option} value={option}>
-                                  {option}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.district || 'Unknown'}</p>
-                        )}
-                      </div>
-
-                      {/* Status */}
-                      <div>
-                        <Label className="text-sm font-medium">Status</Label>
-                        {editMode === 'edit' ? (
-                          <Select
-                            value={currentEntry.fixedFields?.status || ''}
-                            onValueChange={(value) => handleFixedFieldChange('status', value)}
-                          >
-                            <SelectTrigger className="mt-1">
-                              <SelectValue placeholder="Select status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {STATUS_OPTIONS.map((option) => (
-                                <SelectItem key={option} value={option}>
-                                  {option}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <div className="mt-1">
-                            <Badge variant="secondary">{currentEntry.fixedFields?.status || 'Unknown'}</Badge>
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  )}
-
-                  {category === 'Gadgets' && (
-                    <>
-                      {/* Type */}
-                      <div>
-                        <Label className="text-sm font-medium">Type</Label>
-                        {editMode === 'edit' ? (
-                          <Select
-                            value={currentEntry.fixedFields?.type || ''}
-                            onValueChange={(value) => handleFixedFieldChange('type', value)}
-                          >
-                            <SelectTrigger className="mt-1">
-                              <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {GADGET_TYPE_OPTIONS.map((option) => (
-                                <SelectItem key={option} value={option}>
-                                  {option}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <div className="mt-1">
-                            <Badge variant="secondary">{currentEntry.fixedFields?.type || 'Unknown'}</Badge>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Manufacturer */}
-                      <div>
-                        <Label className="text-sm font-medium">Manufacturer</Label>
-                        {editMode === 'edit' ? (
-                          <Select
-                            value={currentEntry.fixedFields?.manufacturer || ''}
-                            onValueChange={(value) => handleFixedFieldChange('manufacturer', value)}
-                          >
-                            <SelectTrigger className="mt-1">
-                              <SelectValue placeholder="Select manufacturer" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {MANUFACTURER_OPTIONS.map((option) => (
-                                <SelectItem key={option} value={option}>
-                                  {option}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.manufacturer || 'Unknown'}</p>
-                        )}
-                      </div>
-
-                      {/* Effectiveness */}
-                      <div>
-                        <Label className="text-sm font-medium">Effectiveness</Label>
-                        {editMode === 'edit' ? (
-                          <Select
-                            value={currentEntry.fixedFields?.effectiveness || ''}
-                            onValueChange={(value) => handleFixedFieldChange('effectiveness', value)}
-                          >
-                            <SelectTrigger className="mt-1">
-                              <SelectValue placeholder="Select effectiveness" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {EFFECTIVENESS_OPTIONS.map((option) => (
-                                <SelectItem key={option} value={option}>
-                                  {option}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <div className="mt-1">
-                            <Badge variant="outline">{currentEntry.fixedFields?.effectiveness || 'Unknown'}</Badge>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Availability */}
-                      <div>
-                        <Label className="text-sm font-medium">Availability</Label>
-                        {editMode === 'edit' ? (
-                          <Select
-                            value={currentEntry.fixedFields?.availability || ''}
-                            onValueChange={(value) => handleFixedFieldChange('availability', value)}
-                          >
-                            <SelectTrigger className="mt-1">
-                              <SelectValue placeholder="Select availability" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {AVAILABILITY_OPTIONS.map((option) => (
-                                <SelectItem key={option} value={option}>
-                                  {option}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <div className="mt-1">
-                            <Badge variant="secondary">{currentEntry.fixedFields?.availability || 'Unknown'}</Badge>
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
+                {(!currentEntry.fields || currentEntry.fields.length === 0) && (
+                  <p className="text-center text-muted-foreground py-8">No character traits yet.</p>
+                )}
               </div>
-            )}
+            </div>
           </TabsContent>
 
-          <TabsContent value="relationships" className="mt-4 overflow-y-auto">
+          {/* Relationships Tab - Characters Only */}
+          <TabsContent value="relationships" className="flex-1 overflow-y-auto space-y-4 p-1">
             <div className="space-y-4">
               {editMode === 'edit' && (
                 <div className="flex justify-between items-center">
@@ -741,7 +595,398 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
             </div>
           </TabsContent>
 
-          <TabsContent value="description" className="mt-4 overflow-y-auto">
+          {/* Arcs Tab - Characters Only */}
+          <TabsContent value="arcs" className="flex-1 overflow-y-auto space-y-4 p-1">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold">Character Arcs</h3>
+                {editMode === 'edit' && (
+                  <Button
+                    onClick={() => {
+                      const newArc = { id: Date.now().toString(), title: 'New Arc', content: '' };
+                      setCurrentEntry({
+                        ...currentEntry,
+                        pages: [...(currentEntry.pages || []), newArc]
+                      });
+                    }}
+                    size="sm"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Arc
+                  </Button>
+                )}
+              </div>
+              
+              {currentEntry.pages && currentEntry.pages.length > 0 ? (
+                <div className="space-y-2">
+                  {currentEntry.pages.map((page, index) => (
+                    <Card key={page.id} className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        {editMode === 'edit' ? (
+                          <Input
+                            value={page.title}
+                            onChange={(e) => {
+                              const newPages = [...(currentEntry.pages || [])];
+                              newPages[index] = { ...page, title: e.target.value };
+                              setCurrentEntry({ ...currentEntry, pages: newPages });
+                            }}
+                            className="font-medium bg-transparent border-none p-0 h-auto"
+                            placeholder="Arc title..."
+                          />
+                        ) : (
+                          <h4 className="font-medium">{page.title}</h4>
+                        )}
+                        {editMode === 'edit' && (
+                          <Button
+                            onClick={() => {
+                              const newPages = currentEntry.pages?.filter((_, i) => i !== index) || [];
+                              setCurrentEntry({ ...currentEntry, pages: newPages });
+                            }}
+                            variant="ghost"
+                            size="sm"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      {editMode === 'edit' ? (
+                        <Textarea
+                          value={page.content}
+                          onChange={(e) => {
+                            const newPages = [...(currentEntry.pages || [])];
+                            newPages[index] = { ...page, content: e.target.value };
+                            setCurrentEntry({ ...currentEntry, pages: newPages });
+                          }}
+                          placeholder="Describe this character arc..."
+                          className="min-h-[100px]"
+                        />
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          {page.content || 'No content yet'}
+                        </p>
+                      )}
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No character arcs yet. Add one to get started.</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Dossier Tab - Characters Only */}
+          <TabsContent value="dossier" className="flex-1 overflow-y-auto space-y-4 p-1">
+            <div className="space-y-4">
+              {editMode === 'edit' && (
+                <div className="flex justify-between items-center">
+                  <Label className="text-base font-medium">Character Dossier</Label>
+                  <Button variant="outline" size="sm" onClick={handleAddNewPage}>
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Add Page
+                  </Button>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {(currentEntry.pages || []).map((page) => (
+                  <div 
+                    key={page.id} 
+                    className="p-4 border rounded-lg hover:bg-accent cursor-pointer transition-colors"
+                    onClick={() => setEditingPage(page)}
+                  >
+                    <h4 className="font-medium">{page.title}</h4>
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                      {page.content || 'No content yet'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {(!currentEntry.pages || currentEntry.pages.length === 0) && (
+                <p className="text-center text-muted-foreground py-8">No dossier pages created yet.</p>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Overview Tab for Non-Characters */}
+          <TabsContent value="overview" className="flex-1 overflow-y-auto space-y-6 p-1">
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Picture Section */}
+                <div className="space-y-4">
+                  <Label className="text-sm font-medium">Image</Label>
+                  <div className="relative">
+                    <Avatar className="w-32 h-32 mx-auto">
+                      <AvatarImage 
+                        src={currentEntry.fixedFields?.picture} 
+                        alt={currentEntry.title} 
+                      />
+                      <AvatarFallback className="text-lg">
+                        {currentEntry.title.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    {editMode === 'edit' && (
+                      <div className="mt-2">
+                        <label htmlFor="picture-upload-overview" className="cursor-pointer">
+                          <Button variant="outline" size="sm" asChild>
+                            <span>
+                              <Camera className="h-4 w-4 mr-2" />
+                              Upload
+                            </span>
+                          </Button>
+                        </label>
+                        <input
+                          id="picture-upload-overview"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Category-Specific Fields */}
+                <div className="md:col-span-2 space-y-4">
+                  {category === 'Locations' && (
+                    <>
+                      {/* District */}
+                      <div>
+                        <Label className="text-sm font-medium">District</Label>
+                        {editMode === 'edit' ? (
+                          <Select
+                            value={currentEntry.fixedFields?.district || ''}
+                            onValueChange={(value) => handleFixedFieldChange('district', value)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select district" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {DISTRICT_OPTIONS.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.district || 'Unknown'}</p>
+                        )}
+                      </div>
+
+                      {/* Threat Level */}
+                      <div>
+                        <Label className="text-sm font-medium">Threat Level</Label>
+                        {editMode === 'edit' ? (
+                          <Select
+                            value={currentEntry.fixedFields?.threatLevel || ''}
+                            onValueChange={(value) => handleFixedFieldChange('threatLevel', value)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select threat level" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {LOCATION_THREAT_LEVEL_OPTIONS.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="mt-1">
+                            <Badge variant="secondary">{currentEntry.fixedFields?.threatLevel || 'Unknown'}</Badge>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Control */}
+                      <div>
+                        <Label className="text-sm font-medium">Control</Label>
+                        {editMode === 'edit' ? (
+                          <Select
+                            value={currentEntry.fixedFields?.control || ''}
+                            onValueChange={(value) => handleFixedFieldChange('control', value)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select control" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {CONTROL_OPTIONS.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.control || 'Unknown'}</p>
+                        )}
+                      </div>
+
+                      {/* Function */}
+                      <div>
+                        <Label className="text-sm font-medium">Function</Label>
+                        {editMode === 'edit' ? (
+                          <Select
+                            value={currentEntry.fixedFields?.function || ''}
+                            onValueChange={(value) => handleFixedFieldChange('function', value)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select function" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {FUNCTION_OPTIONS.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.function || 'Unknown'}</p>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {category === 'Gadgets' && (
+                    <>
+                      {/* Creator */}
+                      <div>
+                        <Label className="text-sm font-medium">Creator</Label>
+                        {editMode === 'edit' ? (
+                          <Select
+                            value={currentEntry.fixedFields?.creator || ''}
+                            onValueChange={(value) => handleFixedFieldChange('creator', value)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select creator" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {CREATOR_OPTIONS.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.creator || 'Unknown'}</p>
+                        )}
+                      </div>
+
+                      {/* Current Owner */}
+                      <div>
+                        <Label className="text-sm font-medium">Current Owner</Label>
+                        {editMode === 'edit' ? (
+                          <Input
+                            value={currentEntry.fixedFields?.currentOwner || ''}
+                            onChange={(e) => handleFixedFieldChange('currentOwner', e.target.value)}
+                            placeholder="Current owner"
+                            className="mt-1"
+                          />
+                        ) : (
+                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.currentOwner || 'Unknown'}</p>
+                        )}
+                      </div>
+
+                      {/* Gadget Type */}
+                      <div>
+                        <Label className="text-sm font-medium">Type</Label>
+                        {editMode === 'edit' ? (
+                          <Select
+                            value={currentEntry.fixedFields?.gadgetType || ''}
+                            onValueChange={(value) => handleFixedFieldChange('gadgetType', value)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {GADGET_TYPE_OPTIONS.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="mt-1">
+                            <Badge variant="secondary">{currentEntry.fixedFields?.gadgetType || 'Unknown'}</Badge>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {category === 'Vehicles' && (
+                    <>
+                      {/* Vehicle Name */}
+                      <div>
+                        <Label className="text-sm font-medium">Vehicle Name</Label>
+                        {editMode === 'edit' ? (
+                          <Input
+                            value={currentEntry.fixedFields?.vehicleName || ''}
+                            onChange={(e) => handleFixedFieldChange('vehicleName', e.target.value)}
+                            placeholder="Vehicle name"
+                            className="mt-1"
+                          />
+                        ) : (
+                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.vehicleName || 'Unknown'}</p>
+                        )}
+                      </div>
+
+                      {/* Owner */}
+                      <div>
+                        <Label className="text-sm font-medium">Owner</Label>
+                        {editMode === 'edit' ? (
+                          <Input
+                            value={currentEntry.fixedFields?.owner || ''}
+                            onChange={(e) => handleFixedFieldChange('owner', e.target.value)}
+                            placeholder="Vehicle owner"
+                            className="mt-1"
+                          />
+                        ) : (
+                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.owner || 'Unknown'}</p>
+                        )}
+                      </div>
+
+                      {/* Manufacturer */}
+                      <div>
+                        <Label className="text-sm font-medium">Manufacturer</Label>
+                        {editMode === 'edit' ? (
+                          <Select
+                            value={currentEntry.fixedFields?.manufacturer || ''}
+                            onValueChange={(value) => handleFixedFieldChange('manufacturer', value)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select manufacturer" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {VEHICLE_MANUFACTURER_OPTIONS.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.manufacturer || 'Unknown'}</p>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Description Tab for Non-Characters */}
+          <TabsContent value="description" className="flex-1 overflow-y-auto space-y-4 p-1">
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <Label className="text-base font-medium">Description</Label>
@@ -780,56 +1025,11 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
                   </div>
                 )}
               </div>
-
-              {/* Quick info cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-2">Quick Info</h4>
-                  <div className="space-y-1 text-sm">
-                    <p><span className="text-muted-foreground">Category:</span> {category}</p>
-                    <p><span className="text-muted-foreground">Custom Fields:</span> {currentEntry.fields?.length || 0}</p>
-                    {category === 'Characters' && (
-                      <p><span className="text-muted-foreground">Pages:</span> {currentEntry.pages?.length || 0}</p>
-                    )}
-                  </div>
-                </div>
-                
-                {category === 'Locations' && currentEntry.fixedFields && (
-                  <div className="p-4 border rounded-lg">
-                    <h4 className="font-medium mb-2">Security Status</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Threat:</span>
-                        <Badge variant="secondary">{currentEntry.fixedFields.threatLevel || 'Unknown'}</Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Access:</span>
-                        <Badge variant="outline">{currentEntry.fixedFields.accessLevel || 'Unknown'}</Badge>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {category === 'Gadgets' && currentEntry.fixedFields && (
-                  <div className="p-4 border rounded-lg">
-                    <h4 className="font-medium mb-2">Operational Status</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Type:</span>
-                        <Badge variant="secondary">{currentEntry.fixedFields.type || 'Unknown'}</Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Status:</span>
-                        <Badge variant="outline">{currentEntry.fixedFields.availability || 'Unknown'}</Badge>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
           </TabsContent>
 
-          <TabsContent value="fields" className="mt-4 overflow-y-auto">
+          {/* Custom Fields Tab */}
+          <TabsContent value="fields" className="flex-1 overflow-y-auto space-y-4 p-1">
             <div className="space-y-4">
               {editMode === 'edit' && (
                 <div className="flex justify-between items-center">
@@ -891,39 +1091,6 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
                   <p className="text-center text-muted-foreground py-8">No custom fields yet.</p>
                 )}
               </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="pages" className="mt-4 overflow-y-auto">
-            <div className="space-y-4">
-              {editMode === 'edit' && (
-                <div className="flex justify-between items-center">
-                  <Label className="text-base font-medium">Profile Pages</Label>
-                  <Button variant="outline" size="sm" onClick={handleAddNewPage}>
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    Add Page
-                  </Button>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {(currentEntry.pages || []).map((page) => (
-                  <div 
-                    key={page.id} 
-                    className="p-4 border rounded-lg hover:bg-accent cursor-pointer transition-colors"
-                    onClick={() => setEditingPage(page)}
-                  >
-                    <h4 className="font-medium">{page.title}</h4>
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                      {page.content || 'No content yet'}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              {(!currentEntry.pages || currentEntry.pages.length === 0) && (
-                <p className="text-center text-muted-foreground py-8">No pages created yet.</p>
-              )}
             </div>
           </TabsContent>
         </Tabs>
