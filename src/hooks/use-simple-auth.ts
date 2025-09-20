@@ -105,18 +105,30 @@ export function useAuth() {
           throw new Error('Invalid author credentials');
         }
       } else if (role && ['viewer', 'analyst', 'contributor'].includes(role)) {
-        // Other roles accept any credentials (for demo purposes)
-        if (!email || !password) {
-          throw new Error('Email and password are required');
+        // For guest roles, check if user was created through invitation
+        const existingUsers = Object.keys(localStorage)
+          .filter(key => key.startsWith('shadowline-user-'))
+          .map(key => JSON.parse(localStorage.getItem(key) || '{}'))
+          .filter(u => u.email === email && u.role === role);
+
+        if (existingUsers.length === 0) {
+          throw new Error('Account not found. Please use an invitation link to create an account.');
         }
+
+        // Validate password (in a real app, this would be hashed)
+        const existingUser = existingUsers[0];
+        if (existingUser.password !== password) {
+          throw new Error('Invalid password');
+        }
+
         user = {
-          id: `user-${Date.now()}`,
-          email: email,
-          name: email.split('@')[0],
-          avatarUrl: 'https://placehold.co/128x128.png',
-          dataAiHint: 'user portrait',
-          role: role,
-          status: 'approved',
+          id: existingUser.id,
+          email: existingUser.email,
+          name: existingUser.name,
+          avatarUrl: existingUser.avatarUrl || 'https://placehold.co/128x128.png',
+          dataAiHint: existingUser.dataAiHint || 'user portrait',
+          role: existingUser.role,
+          status: existingUser.status,
         };
       } else {
         throw new Error('Invalid role or credentials');

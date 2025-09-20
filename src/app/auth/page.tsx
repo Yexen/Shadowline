@@ -129,7 +129,7 @@ export default function AuthPage() {
 
           <div className="text-center text-sm">
               <p className="text-muted-foreground">
-                  {t.needAccount} <Link href="/signup" className="text-primary hover:underline">{t.requestAccess}</Link>
+                  Guest access is invitation only.
               </p>
           </div>
         </div>
