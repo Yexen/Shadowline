@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/hooks/use-simple-auth';
+import { useAuth } from '@/hooks/use-auth';
 import { PasswordInput } from '@/components/password-input';
 import { useToast } from '@/hooks/use-toast';
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/hooks/use-simple-auth';
+import { useAuth } from '@/hooks/use-auth';
 import { BatLogo } from '@/components/bat-logo';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
