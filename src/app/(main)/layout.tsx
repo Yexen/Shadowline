@@ -42,7 +42,8 @@ import {
   FolderOpen,
   MessageSquare,
   Book,
-  Terminal
+  Terminal,
+  Trash2
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -103,7 +104,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   const pathname = usePathname();
 
-  const { isLoaded: bibleLoaded, bibleData, addCategory, addOrUpdateEntry, deleteEntry } = useBible();
+  const { isLoaded: bibleLoaded, bibleData, addCategory, addOrUpdateEntry, deleteEntry, deleteCategory } = useBible();
   const { activeWriter } = useWriters();
   const { modalType, modalData, closeModal, openModal } = useModalStore();
   const { volumes, updateChapter, getChapter } = useVolumes();
@@ -164,6 +165,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     if (newCategory.trim()) {
         addCategory(newCategory.trim());
         setNewCategory('');
+    }
+  };
+
+  const handleDeleteCategory = (categoryName: string) => {
+    if (confirm(`Are you sure you want to delete the "${categoryName}" category and all its entries? This action cannot be undone.`)) {
+      deleteCategory(categoryName);
     }
   };
 
@@ -231,7 +238,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         return (
                           <AccordionItem value={categoryName} key={categoryName}>
                             <AccordionTrigger className="font-headline text-base">
-                              {categoryName} {items.length > 0 && `(${items.length})`}
+                              <div className="flex items-center justify-between w-full pr-4">
+                                <span>{categoryName} {items.length > 0 && `(${items.length})`}</span>
+                              </div>
                             </AccordionTrigger>
                             <AccordionContent>
                               <ul className="space-y-2">
@@ -260,7 +269,22 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                       {/* Show any additional custom categories that might exist */}
                       {bibleData.filter(entry => !['Characters', 'Locations', 'Gadgets', 'Vehicles', 'Animals', 'Couples', 'Resources', 'Factions'].includes(entry.category)).map(entry => (
                         <AccordionItem value={entry.category} key={entry.category}>
-                          <AccordionTrigger className="font-headline text-base">{entry.category} ({entry.items.length})</AccordionTrigger>
+                          <AccordionTrigger className="font-headline text-base">
+                            <div className="flex items-center justify-between w-full pr-4">
+                              <span>{entry.category} ({entry.items.length})</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteCategory(entry.category);
+                                }}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </AccordionTrigger>
                           <AccordionContent>
                             <ul className="space-y-2">
                               {entry.items.map(item => (

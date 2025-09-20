@@ -533,5 +533,10 @@ export function useBible() {
     saveData(newData);
   };
 
-  return { isLoaded, bibleData, addCategory, addOrUpdateEntry, deleteEntry };
+  const deleteCategory = (categoryName: string) => {
+    const newData = bibleData.filter(category => category.category !== categoryName);
+    saveData(newData);
+  };
+
+  return { isLoaded, bibleData, addCategory, addOrUpdateEntry, deleteEntry, deleteCategory };
 }
