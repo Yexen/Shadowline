@@ -2,6 +2,7 @@ import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     CredentialsProvider({
       id: 'credentials',
@@ -69,4 +70,5 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/auth',
   },
+  debug: process.env.NODE_ENV === 'development',
 };
