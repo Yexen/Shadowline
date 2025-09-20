@@ -3,6 +3,7 @@
 
 import { useState, useRef } from 'react';
 import { useWriters } from '@/hooks/use-writers';
+import { useAuth } from '@/hooks/use-auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BatLogo } from '@/components/bat-logo';
@@ -171,7 +172,7 @@ interface InviteLink {
 }
 
 function InvitationsManagementSection() {
-    const { activeUser } = useWriters();
+    const { activeUser } = useAuth();
     const { toast } = useToast();
     const [selectedRole, setSelectedRole] = useState<UserRole>('viewer');
     const [maxUses, setMaxUses] = useState<string>('1');
