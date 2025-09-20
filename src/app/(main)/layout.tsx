@@ -207,9 +207,44 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </div>
                   ) : (
                     <Accordion type="single" collapsible className="w-full mt-4 flex-grow overflow-y-auto">
-                      {bibleData.map(entry => (
+                      {/* Show all available categories including new ones */}
+                      {['Characters', 'Locations', 'Gadgets', 'Vehicles', 'Animals', 'Couples', 'Resources', 'Factions'].map(categoryName => {
+                        const categoryData = bibleData.find(entry => entry.category === categoryName);
+                        const items = categoryData?.items || [];
+                        
+                        return (
+                          <AccordionItem value={categoryName} key={categoryName}>
+                            <AccordionTrigger className="font-headline text-base">
+                              {categoryName} {items.length > 0 && `(${items.length})`}
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <ul className="space-y-2">
+                                {items.map(item => (
+                                  <li key={item.title} className="p-2 rounded-md hover:bg-accent cursor-pointer" onClick={() => setEditingEntry({ category: categoryName, entry: item })}>
+                                    <h4 className="font-bold">{item.title}</h4>
+                                    <p className="text-sm text-muted-foreground truncate">{item.fields?.[0]?.value || 'No description'}</p>
+                                  </li>
+                                ))}
+                                {items.length === 0 && (
+                                  <li className="p-2 text-sm text-muted-foreground text-center">
+                                    No entries yet
+                                  </li>
+                                )}
+                                <li>
+                                  <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => handleAddNewEntry(categoryName)}>
+                                    <PlusCircle className="mr-2" /> Add New Entry
+                                  </Button>
+                                </li>
+                              </ul>
+                            </AccordionContent>
+                          </AccordionItem>
+                        );
+                      })}
+                      
+                      {/* Show any additional custom categories that might exist */}
+                      {bibleData.filter(entry => !['Characters', 'Locations', 'Gadgets', 'Vehicles', 'Animals', 'Couples', 'Resources', 'Factions'].includes(entry.category)).map(entry => (
                         <AccordionItem value={entry.category} key={entry.category}>
-                          <AccordionTrigger className="font-headline text-base">{entry.category}</AccordionTrigger>
+                          <AccordionTrigger className="font-headline text-base">{entry.category} ({entry.items.length})</AccordionTrigger>
                           <AccordionContent>
                             <ul className="space-y-2">
                               {entry.items.map(item => (

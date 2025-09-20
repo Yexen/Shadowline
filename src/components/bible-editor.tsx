@@ -980,6 +980,291 @@ export function BibleEditor({ entry, category, onSave, onClose }: BibleEditorPro
                       </div>
                     </>
                   )}
+
+                  {category === 'Animals' && (
+                    <>
+                      {/* Species */}
+                      <div>
+                        <Label className="text-sm font-medium">Species</Label>
+                        {editMode === 'edit' ? (
+                          <Input
+                            value={currentEntry.fixedFields?.species || ''}
+                            onChange={(e) => handleFixedFieldChange('species', e.target.value)}
+                            placeholder="Animal species"
+                            className="mt-1"
+                          />
+                        ) : (
+                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.species || 'Unknown'}</p>
+                        )}
+                      </div>
+
+                      {/* Animal Alias */}
+                      <div>
+                        <Label className="text-sm font-medium">Alias</Label>
+                        {editMode === 'edit' ? (
+                          <Input
+                            value={currentEntry.fixedFields?.animalAlias || ''}
+                            onChange={(e) => handleFixedFieldChange('animalAlias', e.target.value)}
+                            placeholder="Animal alias or codename"
+                            className="mt-1"
+                          />
+                        ) : (
+                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.animalAlias || 'None'}</p>
+                        )}
+                      </div>
+
+                      {/* Companion Of */}
+                      <div>
+                        <Label className="text-sm font-medium">Companion Of</Label>
+                        {editMode === 'edit' ? (
+                          <Input
+                            value={currentEntry.fixedFields?.companionOf || ''}
+                            onChange={(e) => handleFixedFieldChange('companionOf', e.target.value)}
+                            placeholder="Character this animal companions"
+                            className="mt-1"
+                          />
+                        ) : (
+                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.companionOf || 'None'}</p>
+                        )}
+                      </div>
+
+                      {/* Role */}
+                      <div>
+                        <Label className="text-sm font-medium">Role</Label>
+                        {editMode === 'edit' ? (
+                          <Select
+                            value={currentEntry.fixedFields?.role || ''}
+                            onValueChange={(value) => handleFixedFieldChange('role', value)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ANIMAL_ROLE_OPTIONS.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="mt-1">
+                            <Badge variant="secondary">{currentEntry.fixedFields?.role || 'Unknown'}</Badge>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {category === 'Couples' && (
+                    <>
+                      {/* Members */}
+                      <div>
+                        <Label className="text-sm font-medium">Members</Label>
+                        {editMode === 'edit' ? (
+                          <Input
+                            value={currentEntry.fixedFields?.members || ''}
+                            onChange={(e) => handleFixedFieldChange('members', e.target.value)}
+                            placeholder="Couple members"
+                            className="mt-1"
+                          />
+                        ) : (
+                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.members || 'Unknown'}</p>
+                        )}
+                      </div>
+
+                      {/* Relationship Status */}
+                      <div>
+                        <Label className="text-sm font-medium">Relationship Status</Label>
+                        {editMode === 'edit' ? (
+                          <Select
+                            value={currentEntry.fixedFields?.relationshipStatus || ''}
+                            onValueChange={(value) => handleFixedFieldChange('relationshipStatus', value)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {RELATIONSHIP_STATUS_OPTIONS.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="mt-1">
+                            <Badge variant="secondary">{currentEntry.fixedFields?.relationshipStatus || 'Unknown'}</Badge>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Volumes */}
+                      <div>
+                        <Label className="text-sm font-medium">Volumes</Label>
+                        {editMode === 'edit' ? (
+                          <Input
+                            value={currentEntry.fixedFields?.volumes || ''}
+                            onChange={(e) => handleFixedFieldChange('volumes', e.target.value)}
+                            placeholder="Story volumes (e.g., I-VI)"
+                            className="mt-1"
+                          />
+                        ) : (
+                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.volumes || 'Unknown'}</p>
+                        )}
+                      </div>
+
+                      {/* Themes */}
+                      <div>
+                        <Label className="text-sm font-medium">Themes</Label>
+                        {editMode === 'edit' ? (
+                          <Input
+                            value={currentEntry.fixedFields?.themes || ''}
+                            onChange={(e) => handleFixedFieldChange('themes', e.target.value)}
+                            placeholder="Relationship themes"
+                            className="mt-1"
+                          />
+                        ) : (
+                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.themes || 'None'}</p>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {category === 'Resources' && (
+                    <>
+                      {/* Source */}
+                      <div>
+                        <Label className="text-sm font-medium">Source</Label>
+                        {editMode === 'edit' ? (
+                          <Input
+                            value={currentEntry.fixedFields?.source || ''}
+                            onChange={(e) => handleFixedFieldChange('source', e.target.value)}
+                            placeholder="Resource source"
+                            className="mt-1"
+                          />
+                        ) : (
+                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.source || 'Unknown'}</p>
+                        )}
+                      </div>
+
+                      {/* Linked To */}
+                      <div>
+                        <Label className="text-sm font-medium">Linked To</Label>
+                        {editMode === 'edit' ? (
+                          <Input
+                            value={currentEntry.fixedFields?.linkedTo || ''}
+                            onChange={(e) => handleFixedFieldChange('linkedTo', e.target.value)}
+                            placeholder="Character or entity linked to"
+                            className="mt-1"
+                          />
+                        ) : (
+                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.linkedTo || 'None'}</p>
+                        )}
+                      </div>
+
+                      {/* Volume */}
+                      <div>
+                        <Label className="text-sm font-medium">Volume</Label>
+                        {editMode === 'edit' ? (
+                          <Input
+                            value={currentEntry.fixedFields?.volume || ''}
+                            onChange={(e) => handleFixedFieldChange('volume', e.target.value)}
+                            placeholder="Story volume"
+                            className="mt-1"
+                          />
+                        ) : (
+                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.volume || 'Unknown'}</p>
+                        )}
+                      </div>
+
+                      {/* Resource Status */}
+                      <div>
+                        <Label className="text-sm font-medium">Status</Label>
+                        {editMode === 'edit' ? (
+                          <Select
+                            value={currentEntry.fixedFields?.resourceStatus || ''}
+                            onValueChange={(value) => handleFixedFieldChange('resourceStatus', value)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {RESOURCE_STATUS_OPTIONS.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="mt-1">
+                            <Badge variant="secondary">{currentEntry.fixedFields?.resourceStatus || 'Unknown'}</Badge>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {category === 'Factions' && (
+                    <>
+                      {/* Purpose */}
+                      <div>
+                        <Label className="text-sm font-medium">Purpose</Label>
+                        {editMode === 'edit' ? (
+                          <Input
+                            value={currentEntry.fixedFields?.purpose || ''}
+                            onChange={(e) => handleFixedFieldChange('purpose', e.target.value)}
+                            placeholder="Faction purpose"
+                            className="mt-1"
+                          />
+                        ) : (
+                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.purpose || 'Unknown'}</p>
+                        )}
+                      </div>
+
+                      {/* Faction Alignment */}
+                      <div>
+                        <Label className="text-sm font-medium">Alignment</Label>
+                        {editMode === 'edit' ? (
+                          <Select
+                            value={currentEntry.fixedFields?.factionAlignment || ''}
+                            onValueChange={(value) => handleFixedFieldChange('factionAlignment', value)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select alignment" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {FACTION_ALIGNMENT_OPTIONS.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="mt-1">
+                            <Badge variant="secondary">{currentEntry.fixedFields?.factionAlignment || 'Unknown'}</Badge>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Strengths */}
+                      <div>
+                        <Label className="text-sm font-medium">Strengths</Label>
+                        {editMode === 'edit' ? (
+                          <Input
+                            value={currentEntry.fixedFields?.strengths || ''}
+                            onChange={(e) => handleFixedFieldChange('strengths', e.target.value)}
+                            placeholder="Faction strengths"
+                            className="mt-1"
+                          />
+                        ) : (
+                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.strengths || 'Unknown'}</p>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
