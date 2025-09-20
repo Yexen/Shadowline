@@ -3,7 +3,9 @@
 import { useState } from 'react';
 
 export function useCoverImage() {
-  const [coverImage, setCoverImage] = useState<string>('');
+  const [coverImage, setCoverImage] = useState<string>('https://placehold.co/1200x600.png');
+  const [coverImagePosition, setCoverImagePosition] = useState<number>(50);
+  const [dataAiHint, setDataAiHint] = useState<string>('hero banner image');
   const [isUploading, setIsUploading] = useState(false);
 
   const uploadCoverImage = async (imageData: string) => {
@@ -22,12 +24,16 @@ export function useCoverImage() {
   };
 
   const removeCoverImage = async () => {
-    setCoverImage('');
+    setCoverImage('https://placehold.co/1200x600.png');
   };
 
   return {
     coverImage,
     setCoverImage,
+    coverImagePosition,
+    setCoverImagePosition,
+    dataAiHint,
+    setDataAiHint,
     uploadCoverImage,
     removeCoverImage,
     isUploading,
