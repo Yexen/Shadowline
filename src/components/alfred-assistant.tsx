@@ -4,13 +4,15 @@ import { useState, useRef, useEffect } from 'react';
 import { ClientMemoryManager } from '@/lib/alfred-memory-service';
 import { alfredNotifications } from '@/lib/alfred-notifications';
 import { AlfredBadge } from '@/components/alfred-notifications';
+import { alfredSearch } from '@/lib/alfred-search';
+import { AlfredSettings } from '@/components/alfred-settings';
 import { getAlfredResponse, getRelevantKnowledge, personalInfo } from '@/lib/alfred-knowledge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, X, Minimize2, Maximize2, Coffee, Bell, Brain, Heart, Paperclip, FileText, Image as ImageIcon, Video, Music } from 'lucide-react';
+import { MessageSquare, X, Minimize2, Maximize2, Coffee, Bell, Brain, Heart, Paperclip, FileText, Image as ImageIcon, Video, Music, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 
@@ -77,6 +79,7 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
   const [alfredEmotion, setAlfredEmotion] = useState<'neutral' | 'happy' | 'thinking' | 'concerned'>('happy');
   const [attachments, setAttachments] = useState<AttachmentInfo[]>([]);
   const [badgeCount, setBadgeCount] = useState(0);
+  const [showSettings, setShowSettings] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const memoryManager = useRef<ClientMemoryManager>(new ClientMemoryManager());
@@ -195,6 +198,65 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
     }
   };
 
+  const handleSearchCommand = async (query: string) => {
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      content: `/search ${query}`,
+      sender: 'user',
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setCurrentMessage('');
+    setAlfredEmotion('thinking');
+
+    try {
+      // Perform search
+      const searchResults = await alfredSearch.searchExternalSources(query);
+      const summary = alfredSearch.generateResearchSummary(query, searchResults);
+
+      const alfredResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        content: `Splendid! I've searched external sources for "${query}". Here's what I found:\n\n${summary}`,
+        sender: 'alfred',
+        timestamp: new Date(),
+        emotion: 'excited'
+      };
+
+      setMessages(prev => [...prev, alfredResponse]);
+      setAlfredEmotion('excited');
+
+      // Show research findings notification
+      if (searchResults.length > 0) {
+        setTimeout(() => {
+          alfredNotifications.showResearchFindings(query, searchResults.map(r => r.title));
+        }, 1000);
+      }
+
+      // Store search in memory
+      memoryManager.current.addMemory({
+        type: 'insight',
+        content: `Research conducted: "${query}" - Found ${searchResults.length} relevant sources`,
+        context: ['research', 'external-search'],
+        importance: 'high',
+        tags: ['research', 'search', query.split(' ')[0]]
+      });
+
+    } catch (error) {
+      console.error('Search error:', error);
+      const errorResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        content: `I do apologize, Miss. I encountered some difficulty with that search. Perhaps we could try a different approach?`,
+        sender: 'alfred',
+        timestamp: new Date(),
+        emotion: 'concerned'
+      };
+
+      setMessages(prev => [...prev, errorResponse]);
+      setAlfredEmotion('concerned');
+    }
+  };
+
   const triggerContextualNotifications = (userMessage: string, alfredResponse: string) => {
     const messageLower = userMessage.toLowerCase();
     const responseLower = alfredResponse.toLowerCase();
@@ -276,6 +338,12 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
 
   const handleSendMessage = async () => {
     if (!currentMessage.trim() && attachments.length === 0) return;
+
+    // Check for search commands
+    if (currentMessage.toLowerCase().startsWith('/search ')) {
+      await handleSearchCommand(currentMessage.substring(8));
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -440,6 +508,15 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
             <Button
               variant="ghost"
               size="sm"
+              onClick={() => setShowSettings(true)}
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
+              title="Alfred Settings"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setIsMinimized(!isMinimized)}
               className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
             >
@@ -597,6 +674,14 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
           </CardContent>
         )}
       </Card>
+
+      {/* Alfred Settings Modal */}
+      {showSettings && (
+        <AlfredSettings
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
     </div>
   );
 }
