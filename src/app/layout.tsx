@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { ClientProviders } from '@/components/providers/client-providers';
 import { AlfredAssistant } from '@/components/alfred-assistant';
+import { AlfredNotificationContainer } from '@/components/alfred-notifications';
 
 export const metadata: Metadata = {
   title: 'Shadowline',
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </footer>
           <AlfredAssistant />
+          <AlfredNotificationContainer />
         </ClientProviders>
       </body>
     </html>

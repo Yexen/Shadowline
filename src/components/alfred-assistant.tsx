@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { ClientMemoryManager } from '@/lib/alfred-memory-service';
+import { alfredNotifications } from '@/lib/alfred-notifications';
+import { AlfredBadge } from '@/components/alfred-notifications';
 import { getAlfredResponse, getRelevantKnowledge, personalInfo } from '@/lib/alfred-knowledge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -36,15 +38,35 @@ interface AlfredAssistantProps {
 export function AlfredAssistant({ className }: AlfredAssistantProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const now = new Date();
+    const hour = now.getHours();
+    const greetings = [
+      // Time-based greetings
+      hour < 6 ? `Good heavens, ${personalInfo.name}! Up rather early today, aren't we? Or perhaps late from last night's creative endeavours? Either way, I'm at your service.` :
+      hour < 12 ? `Good morning, ${personalInfo.name}! The dawn brings fresh possibilities for your Batman universe. What shall we craft today?` :
+      hour < 17 ? `Good afternoon, ${personalInfo.name}! I trust the day has been productive. Shall we dive into some creative work together?` :
+      hour < 21 ? `Good evening, ${personalInfo.name}! Perfect time for some atmospheric Batman storytelling, wouldn't you say?` :
+      `Working late again, ${personalInfo.name}? Admirable dedication. The night is when the best Batman stories come alive.`,
+
+      // Varied general greetings
+      `Ah, ${personalInfo.name}! How delightful to see you return. I've been organizing the digital Batcave in your absence.`,
+      `Welcome back, ${personalInfo.name}! I do hope you're prepared for another session of brilliant creativity.`,
+      `${personalInfo.name}, splendid timing! I was just pondering some intriguing possibilities for your projects.`,
+      `Ah, Miss! Ready to tackle another chapter of your extraordinary Batman saga today?`,
+      `Greetings, ${personalInfo.name}! The tea is fresh, my wit is sharp, and I'm entirely at your disposal.`
+    ];
+
+    const selectedGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+
+    return [{
       id: '1',
-      content: `Ah, ${personalInfo.name}! Splendid to see you again. I've been keeping a watchful eye on your creative universe whilst you were away. The Batcave's systems are running smoothly, and my memory banks are operational. Tea's fresh, and I'm entirely at your disposal for any assistance with your Batman saga, the rather ingenious Codex system, or whatever brilliant scheme you've concocted today.`,
+      content: selectedGreeting,
       sender: 'alfred',
       timestamp: new Date(),
       emotion: 'happy'
-    }
-  ]);
+    }];
+  });
   const [conversationContext, setConversationContext] = useState({
     currentTopic: 'general',
     recentMessages: [],
@@ -54,6 +76,7 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
   const [currentMessage, setCurrentMessage] = useState('');
   const [alfredEmotion, setAlfredEmotion] = useState<'neutral' | 'happy' | 'thinking' | 'concerned'>('happy');
   const [attachments, setAttachments] = useState<AttachmentInfo[]>([]);
+  const [badgeCount, setBadgeCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const memoryManager = useRef<ClientMemoryManager>(new ClientMemoryManager());
@@ -65,6 +88,59 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    // Subscribe to notification updates for badge count
+    const unsubscribe = alfredNotifications.subscribe((notifications) => {
+      setBadgeCount(alfredNotifications.getBadgeCount());
+    });
+
+    // Demo: Send a welcome notification after 3 seconds
+    const welcomeTimer = setTimeout(() => {
+      alfredNotifications.addNotification({
+        type: 'toast',
+        priority: 'low',
+        title: 'Alfred here',
+        message: 'I\'ll occasionally send helpful notifications. You can manage these in settings.',
+        autoHide: true,
+        hideAfter: 8000,
+        tags: ['welcome', 'demo']
+      });
+    }, 3000);
+
+    // Demo: Send a proactive suggestion after 15 seconds
+    const suggestionTimer = setTimeout(() => {
+      alfredNotifications.addNotification({
+        type: 'toast',
+        priority: 'medium',
+        title: 'Alfred suggests',
+        message: 'Would you like to explore some Batman character relationships today? I have some fascinating insights.',
+        actions: [
+          {
+            id: 'explore',
+            label: 'Tell me more',
+            action: 'accept',
+            style: 'primary'
+          },
+          {
+            id: 'later',
+            label: 'Maybe later',
+            action: 'dismiss',
+            style: 'secondary'
+          }
+        ],
+        autoHide: true,
+        hideAfter: 12000,
+        tags: ['suggestion', 'batman']
+      });
+    }, 15000);
+
+    return () => {
+      unsubscribe();
+      clearTimeout(welcomeTimer);
+      clearTimeout(suggestionTimer);
+    };
+  }, []);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -116,6 +192,85 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
       case 'video': return <Video className="h-4 w-4" />;
       case 'audio': return <Music className="h-4 w-4" />;
       default: return <FileText className="h-4 w-4" />;
+    }
+  };
+
+  const triggerContextualNotifications = (userMessage: string, alfredResponse: string) => {
+    const messageLower = userMessage.toLowerCase();
+    const responseLower = alfredResponse.toLowerCase();
+
+    // Check for work completion mentions
+    if (messageLower.includes('done') || messageLower.includes('finished') || messageLower.includes('completed')) {
+      setTimeout(() => {
+        alfredNotifications.addNotification({
+          type: 'toast',
+          priority: 'medium',
+          title: 'Alfred commends',
+          message: 'Excellent work, Miss! Shall I help you document this progress or move on to the next task?',
+          actions: [
+            {
+              id: 'document',
+              label: 'Document progress',
+              action: 'accept',
+              style: 'primary'
+            },
+            {
+              id: 'next',
+              label: 'Next task',
+              action: 'accept',
+              style: 'secondary'
+            }
+          ],
+          autoHide: true,
+          hideAfter: 10000,
+          tags: ['completion', 'progress']
+        });
+      }, 2000);
+    }
+
+    // Check for creative blocks or struggles
+    if (messageLower.includes('stuck') || messageLower.includes('blocked') || messageLower.includes('help')) {
+      setTimeout(() => {
+        alfredNotifications.addNotification({
+          type: 'banner',
+          priority: 'medium',
+          title: 'Alfred offers assistance',
+          message: 'I sense you might benefit from a different perspective. Would you like me to suggest some approaches?',
+          actions: [
+            {
+              id: 'suggest',
+              label: 'Yes, please',
+              action: 'accept',
+              style: 'primary'
+            },
+            {
+              id: 'dismiss',
+              label: 'I\'ll figure it out',
+              action: 'dismiss',
+              style: 'secondary'
+            }
+          ],
+          tags: ['support', 'creativity']
+        });
+      }, 3000);
+    }
+
+    // Check for Batman/Codex work patterns
+    if (messageLower.includes('batman') || messageLower.includes('codex') || messageLower.includes('character')) {
+      // Random chance to suggest related work
+      if (Math.random() < 0.3) {
+        setTimeout(() => {
+          alfredNotifications.addNotification({
+            type: 'toast',
+            priority: 'low',
+            title: 'Alfred observes',
+            message: 'Your creative energy seems focused today. Perhaps it\'s a good time to explore some character backstories?',
+            autoHide: true,
+            hideAfter: 8000,
+            tags: ['observation', 'creative-flow']
+          });
+        }, 5000);
+      }
     }
   };
 
@@ -186,6 +341,9 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
           tags: ['conversation', conversationContext.currentTopic, data.emotion]
         });
 
+        // Trigger contextual notifications based on conversation
+        triggerContextualNotifications(currentMessage, data.response);
+
       } catch (error) {
         console.error('Alfred API error:', error);
 
@@ -218,7 +376,7 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
       <div className={cn("fixed bottom-6 right-6 z-50", className)}>
         <div
           onClick={() => setIsOpen(true)}
-          className="h-16 w-16 cursor-pointer transition-all duration-300 group"
+          className="h-16 w-16 cursor-pointer transition-all duration-300 group relative"
           style={{ boxShadow: '0 0 20px rgba(255, 255, 255, 0.15), 0 4px 20px rgba(0, 0, 0, 0.3)' }}
         >
           <Image
@@ -232,6 +390,7 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
               borderRadius: '0'
             }}
           />
+          <AlfredBadge count={badgeCount} />
         </div>
       </div>
     );
