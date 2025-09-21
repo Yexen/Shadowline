@@ -3,6 +3,48 @@ import bcrypt from 'bcryptjs';
 import { User, UserRole, UserStatus, Invite, InviteType } from '@/types/auth';
 import { nanoid } from 'nanoid';
 
+// Application data types
+export interface BibleEntry {
+  id: string;
+  category: string;
+  title: string;
+  fixedFields?: Record<string, any>;
+  fields: Array<{ label: string; value: string }>;
+  relationships?: Array<{ characterName: string; relationshipType: string; description?: string }>;
+  pages?: Array<{ id: string; title: string; content: string }>;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Volume {
+  id: string;
+  title: string;
+  description: string;
+  chapters: Array<{ id: string; title: string; content: string; order: number }>;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Draft {
+  id: string;
+  title: string;
+  content: string;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Database initialization
 export async function initializeDatabase() {
   try {
@@ -45,11 +87,69 @@ export async function initializeDatabase() {
       );
     `;
 
+    // Create bible_entries table
+    await sql`
+      CREATE TABLE IF NOT EXISTS bible_entries (
+        id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        category TEXT NOT NULL,
+        title TEXT NOT NULL,
+        fixed_fields JSONB DEFAULT '{}',
+        fields JSONB DEFAULT '[]',
+        relationships JSONB DEFAULT '[]',
+        pages JSONB DEFAULT '[]',
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+    `;
+
+    // Create volumes table
+    await sql`
+      CREATE TABLE IF NOT EXISTS volumes (
+        id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        title TEXT NOT NULL,
+        description TEXT DEFAULT '',
+        chapters JSONB DEFAULT '[]',
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+    `;
+
+    // Create drafts table
+    await sql`
+      CREATE TABLE IF NOT EXISTS drafts (
+        id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        title TEXT NOT NULL,
+        content TEXT DEFAULT '',
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+    `;
+
+    // Create notes table
+    await sql`
+      CREATE TABLE IF NOT EXISTS notes (
+        id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        title TEXT NOT NULL,
+        content TEXT DEFAULT '',
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+    `;
+
     // Create indexes for better performance
     await sql`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);`;
     await sql`CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);`;
     await sql`CREATE INDEX IF NOT EXISTS idx_invites_token ON invites(token);`;
     await sql`CREATE INDEX IF NOT EXISTS idx_invites_active ON invites(is_active);`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_bible_entries_user_id ON bible_entries(user_id);`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_bible_entries_category ON bible_entries(category);`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_volumes_user_id ON volumes(user_id);`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_drafts_user_id ON drafts(user_id);`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_notes_user_id ON notes(user_id);`;
 
     console.log('Database initialized successfully');
   } catch (error) {
@@ -264,5 +364,302 @@ function mapRowToInvite(row: any): Invite {
     isActive: row.is_active,
     maxUses: row.max_uses,
     currentUses: row.current_uses,
+  };
+}
+
+// Bible Entries operations
+export async function createBibleEntry(
+  category: string,
+  title: string,
+  fixedFields: Record<string, any> = {},
+  fields: Array<{ label: string; value: string }> = [],
+  relationships: Array<{ characterName: string; relationshipType: string; description?: string }> = [],
+  pages: Array<{ id: string; title: string; content: string }> = [],
+  userId: string
+): Promise<BibleEntry> {
+  const entryId = nanoid();
+
+  const { rows } = await sql`
+    INSERT INTO bible_entries (
+      id, category, title, fixed_fields, fields, relationships, pages, user_id
+    )
+    VALUES (
+      ${entryId}, ${category}, ${title}, ${JSON.stringify(fixedFields)},
+      ${JSON.stringify(fields)}, ${JSON.stringify(relationships)},
+      ${JSON.stringify(pages)}, ${userId}
+    )
+    RETURNING *;
+  `;
+
+  return mapRowToBibleEntry(rows[0]);
+}
+
+export async function getBibleEntriesByUser(userId: string): Promise<BibleEntry[]> {
+  const { rows } = await sql`
+    SELECT * FROM bible_entries
+    WHERE user_id = ${userId}
+    ORDER BY category, title;
+  `;
+
+  return rows.map(mapRowToBibleEntry);
+}
+
+export async function updateBibleEntry(
+  id: string,
+  updates: Partial<Pick<BibleEntry, 'title' | 'fixedFields' | 'fields' | 'relationships' | 'pages'>>
+): Promise<BibleEntry> {
+  const setClause = [];
+  const values = [];
+
+  if (updates.title !== undefined) {
+    setClause.push(`title = $${setClause.length + 1}`);
+    values.push(updates.title);
+  }
+  if (updates.fixedFields !== undefined) {
+    setClause.push(`fixed_fields = $${setClause.length + 1}`);
+    values.push(JSON.stringify(updates.fixedFields));
+  }
+  if (updates.fields !== undefined) {
+    setClause.push(`fields = $${setClause.length + 1}`);
+    values.push(JSON.stringify(updates.fields));
+  }
+  if (updates.relationships !== undefined) {
+    setClause.push(`relationships = $${setClause.length + 1}`);
+    values.push(JSON.stringify(updates.relationships));
+  }
+  if (updates.pages !== undefined) {
+    setClause.push(`pages = $${setClause.length + 1}`);
+    values.push(JSON.stringify(updates.pages));
+  }
+
+  setClause.push(`updated_at = NOW()`);
+
+  const { rows } = await sql.query(
+    `UPDATE bible_entries SET ${setClause.join(', ')} WHERE id = $${setClause.length} RETURNING *`,
+    [...values, id]
+  );
+
+  return mapRowToBibleEntry(rows[0]);
+}
+
+export async function deleteBibleEntry(id: string): Promise<void> {
+  await sql`DELETE FROM bible_entries WHERE id = ${id};`;
+}
+
+// Volumes operations
+export async function createVolume(
+  title: string,
+  description: string = '',
+  chapters: Array<{ id: string; title: string; content: string; order: number }> = [],
+  userId: string
+): Promise<Volume> {
+  const volumeId = nanoid();
+
+  const { rows } = await sql`
+    INSERT INTO volumes (id, title, description, chapters, user_id)
+    VALUES (${volumeId}, ${title}, ${description}, ${JSON.stringify(chapters)}, ${userId})
+    RETURNING *;
+  `;
+
+  return mapRowToVolume(rows[0]);
+}
+
+export async function getVolumesByUser(userId: string): Promise<Volume[]> {
+  const { rows } = await sql`
+    SELECT * FROM volumes
+    WHERE user_id = ${userId}
+    ORDER BY title;
+  `;
+
+  return rows.map(mapRowToVolume);
+}
+
+export async function updateVolume(
+  id: string,
+  updates: Partial<Pick<Volume, 'title' | 'description' | 'chapters'>>
+): Promise<Volume> {
+  const setClause = [];
+  const values = [];
+
+  if (updates.title !== undefined) {
+    setClause.push(`title = $${setClause.length + 1}`);
+    values.push(updates.title);
+  }
+  if (updates.description !== undefined) {
+    setClause.push(`description = $${setClause.length + 1}`);
+    values.push(updates.description);
+  }
+  if (updates.chapters !== undefined) {
+    setClause.push(`chapters = $${setClause.length + 1}`);
+    values.push(JSON.stringify(updates.chapters));
+  }
+
+  setClause.push(`updated_at = NOW()`);
+
+  const { rows } = await sql.query(
+    `UPDATE volumes SET ${setClause.join(', ')} WHERE id = $${setClause.length} RETURNING *`,
+    [...values, id]
+  );
+
+  return mapRowToVolume(rows[0]);
+}
+
+export async function deleteVolume(id: string): Promise<void> {
+  await sql`DELETE FROM volumes WHERE id = ${id};`;
+}
+
+// Drafts operations
+export async function createDraft(title: string, content: string = '', userId: string): Promise<Draft> {
+  const draftId = nanoid();
+
+  const { rows } = await sql`
+    INSERT INTO drafts (id, title, content, user_id)
+    VALUES (${draftId}, ${title}, ${content}, ${userId})
+    RETURNING *;
+  `;
+
+  return mapRowToDraft(rows[0]);
+}
+
+export async function getDraftsByUser(userId: string): Promise<Draft[]> {
+  const { rows } = await sql`
+    SELECT * FROM drafts
+    WHERE user_id = ${userId}
+    ORDER BY updated_at DESC;
+  `;
+
+  return rows.map(mapRowToDraft);
+}
+
+export async function updateDraft(
+  id: string,
+  updates: Partial<Pick<Draft, 'title' | 'content'>>
+): Promise<Draft> {
+  const setClause = [];
+  const values = [];
+
+  if (updates.title !== undefined) {
+    setClause.push(`title = $${setClause.length + 1}`);
+    values.push(updates.title);
+  }
+  if (updates.content !== undefined) {
+    setClause.push(`content = $${setClause.length + 1}`);
+    values.push(updates.content);
+  }
+
+  setClause.push(`updated_at = NOW()`);
+
+  const { rows } = await sql.query(
+    `UPDATE drafts SET ${setClause.join(', ')} WHERE id = $${setClause.length} RETURNING *`,
+    [...values, id]
+  );
+
+  return mapRowToDraft(rows[0]);
+}
+
+export async function deleteDraft(id: string): Promise<void> {
+  await sql`DELETE FROM drafts WHERE id = ${id};`;
+}
+
+// Notes operations
+export async function createNote(title: string, content: string = '', userId: string): Promise<Note> {
+  const noteId = nanoid();
+
+  const { rows } = await sql`
+    INSERT INTO notes (id, title, content, user_id)
+    VALUES (${noteId}, ${title}, ${content}, ${userId})
+    RETURNING *;
+  `;
+
+  return mapRowToNote(rows[0]);
+}
+
+export async function getNotesByUser(userId: string): Promise<Note[]> {
+  const { rows } = await sql`
+    SELECT * FROM notes
+    WHERE user_id = ${userId}
+    ORDER BY updated_at DESC;
+  `;
+
+  return rows.map(mapRowToNote);
+}
+
+export async function updateNote(
+  id: string,
+  updates: Partial<Pick<Note, 'title' | 'content'>>
+): Promise<Note> {
+  const setClause = [];
+  const values = [];
+
+  if (updates.title !== undefined) {
+    setClause.push(`title = $${setClause.length + 1}`);
+    values.push(updates.title);
+  }
+  if (updates.content !== undefined) {
+    setClause.push(`content = $${setClause.length + 1}`);
+    values.push(updates.content);
+  }
+
+  setClause.push(`updated_at = NOW()`);
+
+  const { rows } = await sql.query(
+    `UPDATE notes SET ${setClause.join(', ')} WHERE id = $${setClause.length} RETURNING *`,
+    [...values, id]
+  );
+
+  return mapRowToNote(rows[0]);
+}
+
+export async function deleteNote(id: string): Promise<void> {
+  await sql`DELETE FROM notes WHERE id = ${id};`;
+}
+
+// Helper functions to map database rows to our types
+function mapRowToBibleEntry(row: any): BibleEntry {
+  return {
+    id: row.id,
+    category: row.category,
+    title: row.title,
+    fixedFields: row.fixed_fields || {},
+    fields: row.fields || [],
+    relationships: row.relationships || [],
+    pages: row.pages || [],
+    userId: row.user_id,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+  };
+}
+
+function mapRowToVolume(row: any): Volume {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description || '',
+    chapters: row.chapters || [],
+    userId: row.user_id,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+  };
+}
+
+function mapRowToDraft(row: any): Draft {
+  return {
+    id: row.id,
+    title: row.title,
+    content: row.content || '',
+    userId: row.user_id,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+  };
+}
+
+function mapRowToNote(row: any): Note {
+  return {
+    id: row.id,
+    title: row.title,
+    content: row.content || '',
+    userId: row.user_id,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
   };
 }
