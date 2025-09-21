@@ -43,7 +43,8 @@ import {
   MessageSquare,
   Book,
   Terminal,
-  Trash2
+  Trash2,
+  BookOpen
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -95,8 +96,11 @@ const menuItems = [
   { href: '/messages', label: 'Messages', icon: MessageSquare },
   { href: '/sources', label: 'Sources', icon: Book },
   { href: '/about', label: 'About', icon: Info },
+];
+
+const bottomMenuItems = [
+  { href: '/codex', label: 'Codex', icon: BookOpen },
   { href: '/settings', label: 'Settings', icon: Settings },
-  // Always show Dev Console
   { href: DEV_CONSOLE_PATH, label: 'Dev Console', icon: Terminal },
 ];
 
@@ -334,6 +338,23 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   onClick={() => router.push(item.href.startsWith('/editor') ? '/editor/new' : item.href)}
+                  isActive={pathname.startsWith(item.href)}
+                  tooltip={{ children: item.label, side: "right", align: "center" }}
+                >
+                  <item.icon />
+                  <span>{item.label}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+
+            {/* Separator */}
+            <div className="my-2 border-t border-sidebar-border" />
+
+            {/* Bottom Menu Items */}
+            {bottomMenuItems.map((item) => (
+              <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                  onClick={() => router.push(item.href)}
                   isActive={pathname.startsWith(item.href)}
                   tooltip={{ children: item.label, side: "right", align: "center" }}
                 >
