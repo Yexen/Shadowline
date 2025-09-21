@@ -118,6 +118,7 @@ export const gotham3DMapHtml = `
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
+    console.log('🚀 MAP SCRIPT STARTED - JavaScript is executing!');
     let scene, camera, renderer, buildings=[], labels=[];
     let moveForward=false, moveBackward=false, moveLeft=false, moveRight=false;
     let mouseX=0, mouseY=0, isMouseDown=false, showLabels=true;
@@ -671,6 +672,130 @@ export const gotham3DMapHtml = `
       updateUI();
       renderer.render(scene,camera);
     }
+
+    // PostMessage listener for parent communication
+    console.log('🔧 PostMessage listener setup complete');
+    window.addEventListener('message', (event) => {
+      console.log('🗺️ Map received ANY message:', event);
+      console.log('🗺️ Message data:', event.data);
+      console.log('🗺️ Message origin:', event.origin);
+      
+      if (event.data && event.data.type === 'TEST_MESSAGE') {
+        console.log('🧪 Received test message from parent:', event.data.message);
+      } else if (event.data && event.data.type === 'HIGHLIGHT_LOCATION') {
+        console.log('🎯 Processing HIGHLIGHT_LOCATION for:', event.data.location);
+        // Wait for map to be fully initialized
+        if (camera && scene && renderer) {
+          highlightLocationOnMap(event.data.location);
+        } else {
+          console.log('⏳ Map not ready yet, waiting...');
+          setTimeout(() => {
+            if (camera && scene && renderer) {
+              highlightLocationOnMap(event.data.location);
+            } else {
+              console.error('❌ Map components still not ready after delay');
+            }
+          }, 1000);
+        }
+      } else {
+        console.log('🤷 Message was not HIGHLIGHT_LOCATION type:', event.data?.type);
+      }
+    });
+    
+    // Test postMessage reception
+    console.log('🧪 Map initialization complete, ready for messages!');
+
+    function highlightLocationOnMap(locationName) {
+      console.log('🔍 Searching for location:', locationName);
+      console.log('📍 Available locations count:', locations.length);
+      
+      // Find location in the locations array
+      const location = locations.find(loc => {
+        const cleanName = loc.name.replace(/[🏰🦇🏥🏛️🌉🎭🏢⚖️🔬🏦🎪🌆🏪🏭]/g, '').trim();
+        const cleanSearchName = locationName.replace(/[🏰🦇🏥🏛️🌉🎭🏢⚖️🔬🏦🎪🌆🏪🏭]/g, '').trim();
+        
+        // Remove common prefixes like "The" for better matching
+        const simpleName = cleanName.replace(/^(The\s+)/i, '').toLowerCase();
+        const simpleSearchName = cleanSearchName.replace(/^(The\s+)/i, '').toLowerCase();
+        
+        console.log('  🔍 Comparing:', simpleName, 'vs', simpleSearchName);
+        
+        return simpleName.includes(simpleSearchName) || 
+               simpleSearchName.includes(simpleName) ||
+               simpleName === simpleSearchName;
+      });
+      
+      if (location) {
+        console.log('✅ Found location:', location.name, 'at position:', location.pos);
+        console.log('📷 Current camera position:', camera.position);
+        
+        // Get target position
+        const [x, y, z] = location.pos;
+        
+        // Animate camera to location
+        animateCameraToLocation(x, y, z, location);
+      } else {
+        console.error('❌ Location not found. Available locations:');
+        locations.forEach(loc => console.log('  📍', loc.name));
+      }
+    }
+
+    function animateCameraToLocation(x, y, z, locationData) {
+      console.log('🎬 Starting camera animation to:', x, y, z);
+      console.log('📷 Current camera position:', camera.position.x, camera.position.y, camera.position.z);
+      
+      // Store initial camera position
+      const startPos = camera.position.clone();
+      const targetPos = new THREE.Vector3(x + 50, y + 40, z + 50); // Closer positioning
+      
+      console.log('🎯 Target position:', targetPos.x, targetPos.y, targetPos.z);
+      
+      let progress = 0;
+      const duration = 2.0; // 2 seconds
+      const frameRate = 60;
+      const increment = 1 / (duration * frameRate);
+      
+      function animateFrame() {
+        progress += increment;
+        
+        if (progress <= 1) {
+          // Smooth interpolation
+          const t = 1 - Math.pow(1 - progress, 3); // Ease-out cubic
+          camera.position.lerpVectors(startPos, targetPos, t);
+          
+          // Look at the location
+          const lookTarget = new THREE.Vector3(x, y, z);
+          camera.lookAt(lookTarget);
+          
+          if (progress > 0.1 && progress < 0.2) {
+            console.log('🎬 Animation progress:', Math.round(progress * 100) + '%');
+          }
+          
+          requestAnimationFrame(animateFrame);
+        } else {
+          // Final position
+          camera.position.copy(targetPos);
+          camera.lookAt(x, y, z);
+          
+          console.log('✅ Animation complete! Camera at:', camera.position.x, camera.position.y, camera.position.z);
+          
+          // Show location card after animation
+          setTimeout(() => {
+            if (locationData) {
+              console.log('📋 Showing location card for:', locationData.name);
+              showLocationCard(locationData, window.innerWidth / 2, window.innerHeight / 2);
+            }
+          }, 500);
+        }
+      }
+      
+      animateFrame();
+    }
+
+    // Make functions available globally for debugging
+    window.camera = camera;
+    window.THREE = THREE;
+    window.highlightLocationOnMap = highlightLocationOnMap;
 
     init();
   </script>

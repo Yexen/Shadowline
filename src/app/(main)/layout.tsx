@@ -148,10 +148,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   };
 
   const handleViewOnMap = (locationName: string) => {
-    // Store the location to highlight in localStorage for the map to read
-    localStorage.setItem('map-highlight-location', locationName);
-    // Navigate to the 3D Gotham map
-    router.push('/maps?map=map-gotham-3d');
+    console.log('handleViewOnMap called with:', locationName);
+    // Navigate to the 3D Gotham map with location parameter
+    const encodedLocation = encodeURIComponent(locationName);
+    router.push(`/maps?map=map-gotham-3d&location=${encodedLocation}`);
     // Close the Bible editor
     setEditingEntry(null);
     closeModal();

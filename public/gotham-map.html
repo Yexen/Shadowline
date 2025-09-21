@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ultimate Gotham City - Complete 3D Map</title>
+  <style>
+    body{margin:0;padding:0;background:#0a0a0a;overflow:hidden;font-family:'Arial',sans-serif;}
+    #container{width:100vw;height:100vh;position:relative;}
+    canvas{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:auto;}
+
+    #ui{position:absolute;top:20px;left:20px;color:#fff;z-index:1000;max-width:280px;pointer-events:auto;}
+    #info{background:rgba(0,0,0,.9);padding:15px;border-radius:8px;border:2px solid #ffd700;margin-bottom:10px;}
+    #minimap{width:180px;height:180px;background:rgba(0,0,0,.8);border:2px solid #ffd700;border-radius:8px;position:relative;margin-bottom:10px;}
+    .district-dot,.villain-dot{position:absolute;border-radius:50%;transform:translate(-50%,-50%);}
+    .district-dot{width:8px;height:8px;}
+    .villain-dot{width:6px;height:6px;border:1px solid #f00;}
+    .player-dot{position:absolute;width:6px;height:6px;background:#f00;border-radius:50%;transform:translate(-50%,-50%);z-index:10;}
+
+    #locations{background:rgba(0,0,0,.9);padding:10px;border-radius:8px;border:1px solid #333;font-size:10px;margin-bottom:10px;max-height:200px;overflow-y:auto;}
+    .location{margin:3px 0;padding:4px;border-radius:3px;cursor:pointer;transition:.3s;}
+    .hero-location{background:rgba(0,100,255,.1);border-left:3px solid #0064ff;}
+    .villain-location{background:rgba(255,0,0,.1);border-left:3px solid #f00;}
+    .neutral-location{background:rgba(255,215,0,.1);border-left:3px solid #ffd700;}
+    .location:hover{transform:scale(1.02);opacity:.8;}
+
+    #controls{position:absolute;bottom:20px;left:20px;color:#fff;font-size:10px;z-index:1000;background:rgba(0,0,0,.8);padding:10px;border-radius:5px;pointer-events:auto;}
+    #coordinates{position:absolute;bottom:20px;right:20px;color:#ffd700;font-size:11px;background:rgba(0,0,0,.8);padding:10px;border-radius:5px;font-family:monospace;z-index:1000;pointer-events:auto;}
+
+    /* floating 3D labels */
+    .label-3d{position:absolute;color:#fff;font-size:12px;background:rgba(0,0,0,.8);padding:4px 8px;border-radius:4px;border:1px solid #ffd700;cursor:pointer;transform:translate(-50%,-100%);white-space:nowrap;z-index:1000;transition:.2s;}
+    .label-3d:hover{background:rgba(255,215,0,.2);transform:translate(-50%,-100%) scale(1.1);}
+    .villain-label{border-color:#f00!important;color:#f66!important;}
+    .villain-label:hover{background:rgba(255,0,0,.2)!important;}
+    .hero-label{border-color:#0064ff!important;color:#66aaff!important;}
+    .hero-label:hover{background:rgba(0,100,255,.2)!important;}
+
+    /* info card */
+    .location-card{position:absolute;background:rgba(0,0,0,.95);border:2px solid #ffd700;border-radius:8px;padding:15px;max-width:300px;color:#fff;font-size:12px;z-index:1100;display:none;box-shadow:0 4px 20px rgba(0,0,0,.8);pointer-events:auto;animation:fadeIn .3s;}
+    @keyframes fadeIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+    .location-card.villain{border-color:#f00;background:rgba(40,0,0,.95);}
+    .location-card.hero{border-color:#0064ff;background:rgba(0,0,40,.95);}
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div id="ui">
+      <div id="info">
+        <h3 style="margin:0 0 10px 0">🦇 ULTIMATE GOTHAM</h3>
+        <div id="current-location">Location: Downtown</div>
+        <div id="threat-level" style="font-size:10px;margin-top:5px;">Threat Level: LOW</div>
+      </div>
+
+      <div id="minimap"><div class="player-dot" id="player-dot"></div></div>
+
+      <div id="locations">
+        <div style="font-weight:bold;margin-bottom:5px;">🦸 HERO LOCATIONS</div>
+        <div class="location hero-location" data-pos="-180,25,-120">🏰 Wayne Manor</div>
+        <div class="location hero-location" data-pos="-190,6,-140">🦇 Batcave</div>
+        <div class="location hero-location" data-pos="-40,10,40">👮 GCPD Headquarters</div>
+        
+        <div style="font-weight:bold;margin:10px 0 5px 0;">🦹 VILLAIN TERRITORIES</div>
+        <div class="location villain-location" data-pos="60,15,60">🏥 Arkham Asylum</div>
+        <div class="location villain-location" data-pos="120,8,-40">🃏 ACE Chemicals</div>
+      </div>
+    </div>
+
+    <div id="controls">
+      <b>BATMAN CONTROLS:</b><br/>
+      WASD: Fly Around | Mouse: Look | Scroll: Zoom<br/>
+    </div>
+
+    <div id="coordinates">
+      <div>X: <span id="coord-x">0</span></div>
+      <div>Y: <span id="coord-y">50</span></div>
+      <div>Z: <span id="coord-z">100</span></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    console.log('🚀 STANDALONE MAP SCRIPT STARTED');
+    
+    let scene, camera, renderer;
+    
+    const locations = [
+      { name:'Wayne Manor', pos:[-180,25,-120], color:0x8b4513, type:'hero' },
+      { name:'Batcave', pos:[-190,6,-140], color:0x222222, type:'hero' },
+      { name:'GCPD Headquarters', pos:[-40,10,40], color:0x0064ff, type:'hero' },
+      { name:'Arkham Asylum', pos:[60,15,60], color:0xff4444, type:'villain' },
+      { name:'ACE Chemicals', pos:[120,8,-40], color:0x00ff00, type:'villain' }
+    ];
+
+    function init(){
+      console.log('🔧 Initializing 3D scene...');
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
+      camera.position.set(0,50,100);
+
+      renderer = new THREE.WebGLRenderer({ antialias:true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setClearColor(0x05050b);
+      document.getElementById('container').appendChild(renderer.domElement);
+
+      // Simple ground
+      const ground = new THREE.Mesh(
+        new THREE.PlaneGeometry(600,600), 
+        new THREE.MeshBasicMaterial({ color:0x141428 })
+      );
+      ground.rotation.x = -Math.PI/2;
+      scene.add(ground);
+
+      // Create locations
+      locations.forEach(createLocation);
+
+      animate();
+      console.log('✅ Map initialized successfully');
+    }
+
+    function createLocation(location) {
+      const [x,y,z] = location.pos;
+      const building = new THREE.Mesh(
+        new THREE.BoxGeometry(20,30,20), 
+        new THREE.MeshBasicMaterial({ color:location.color })
+      );
+      building.position.set(x, 15, z);
+      scene.add(building);
+    }
+
+    function animate(){
+      requestAnimationFrame(animate);
+      renderer.render(scene,camera);
+    }
+
+    // PostMessage listener
+    console.log('🔧 Setting up postMessage listener...');
+    window.addEventListener('message', (event) => {
+      console.log('🗺️ STANDALONE MAP received message:', event.data);
+      
+      if (event.data && event.data.type === 'HIGHLIGHT_LOCATION') {
+        console.log('🎯 Flying to location:', event.data.location);
+        flyToLocation(event.data.location);
+      }
+    });
+
+    function flyToLocation(locationName) {
+      console.log('🔍 Looking for:', locationName);
+      
+      const location = locations.find(loc => {
+        const simpleName = loc.name.replace(/^(The\s+)/i, '').toLowerCase();
+        const simpleSearchName = locationName.replace(/^(The\s+)/i, '').toLowerCase();
+        console.log('  Comparing:', simpleName, 'vs', simpleSearchName);
+        return simpleName.includes(simpleSearchName) || simpleSearchName.includes(simpleName);
+      });
+      
+      if (location) {
+        console.log('✅ Found location:', location.name);
+        const [x,y,z] = location.pos;
+        
+        // Simple camera movement
+        camera.position.set(x + 50, y + 40, z + 50);
+        camera.lookAt(x, y, z);
+        console.log('🎬 Camera moved to:', camera.position.x, camera.position.y, camera.position.z);
+      } else {
+        console.error('❌ Location not found:', locationName);
+        console.log('Available:', locations.map(l => l.name));
+      }
+    }
+
+    console.log('🧪 Starting map initialization...');
+    init();
+    console.log('🎉 Map setup complete!');
+  </script>
+</body>
+</html>

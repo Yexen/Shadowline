@@ -29,7 +29,7 @@ import {
   RESOURCE_STATUS_OPTIONS,
   FACTION_ALIGNMENT_OPTIONS
 } from '@/hooks/use-bible';
-import { PlusCircle, Trash2, Sparkles, BookUser, List, Loader2, Upload, Download, Eye, Edit, Camera, Users, FileText, Plus, FileUp, MapPin } from 'lucide-react';
+import { PlusCircle, Trash2, Sparkles, BookUser, List, Loader2, Upload, Download, Eye, Edit, Camera, Users, FileText, Plus, FileUp, MapPin, Bot } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from './ui/textarea';
@@ -91,6 +91,8 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
+  const [hoveredField, setHoveredField] = useState<number | null>(null);
+  const [aiGeneratingField, setAiGeneratingField] = useState<number | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -200,16 +202,17 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
     if (!currentEntry || !currentEntry.title) return;
     setIsGenerating(true);
     try {
-      const suggestedFields = await suggestBibleFields({
-        entryTitle: currentEntry.title,
-        entryCategory: category
-      });
-      const newFields: BibleField[] = suggestedFields.map(field => ({ label: field, value: '' }));
-      setCurrentEntry({ ...currentEntry, fields: [...(currentEntry.fields || []), ...newFields] });
-      toast({
-        title: 'Fields Suggested',
-        description: 'AI has added new fields to your entry.',
-      });
+      const prompt = `Suggest relevant fields for the ${category.toLowerCase().slice(0, -1)} named "${currentEntry.title}". Create field labels and empty values.`;
+      const response = await suggestBibleFields(prompt);
+      
+      if (response.fields && response.fields.length > 0) {
+        const newFields: BibleField[] = response.fields.map(field => ({ label: field.label, value: '' }));
+        setCurrentEntry({ ...currentEntry, fields: [...(currentEntry.fields || []), ...newFields] });
+        toast({
+          title: 'Fields Suggested',
+          description: 'AI has added new fields to your entry.',
+        });
+      }
     } catch (error) {
       console.error("Failed to suggest fields:", error);
       toast({
@@ -219,6 +222,40 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleAiFieldSuggestion = async (fieldIndex: number) => {
+    if (!currentEntry || !currentEntry.title) return;
+    setAiGeneratingField(fieldIndex);
+    try {
+      const field = currentEntry.fields?.[fieldIndex];
+      if (!field) return;
+      
+      // Create a prompt for the AI to generate field content
+      const prompt = `Generate content for the field "${field.label}" for the ${category.toLowerCase().slice(0, -1)} named "${currentEntry.title}". Provide detailed, relevant content.`;
+      
+      const response = await suggestBibleFields(prompt);
+      
+      if (response.fields && response.fields.length > 0) {
+        const newFields = [...(currentEntry.fields || [])];
+        newFields[fieldIndex] = { ...field, value: response.fields[0].value };
+        setCurrentEntry({ ...currentEntry, fields: newFields });
+        
+        toast({
+          title: 'AI Suggestion Applied',
+          description: `Content generated for "${field.label}"`,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to generate field content:", error);
+      toast({
+        variant: 'destructive',
+        title: 'AI Error',
+        description: 'Could not generate content for this field.',
+      });
+    } finally {
+      setAiGeneratingField(null);
     }
   };
 
@@ -581,7 +618,12 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
 
               <div className="space-y-3">
                 {(currentEntry.fields || []).map((field, index) => (
-                  <div key={index} className="p-4 border rounded-lg">
+                  <div 
+                    key={index} 
+                    className="p-4 border rounded-lg relative group"
+                    onMouseEnter={() => setHoveredField(index)}
+                    onMouseLeave={() => setHoveredField(null)}
+                  >
                     {editMode === 'edit' ? (
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
@@ -591,6 +633,23 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
                             placeholder="Trait name"
                             className="flex-1"
                           />
+                          {/* AI Suggestion Button */}
+                          {hoveredField === index && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleAiFieldSuggestion(index)}
+                              disabled={aiGeneratingField === index}
+                              className="opacity-80 hover:opacity-100 transition-opacity"
+                              title="Generate AI content for this field"
+                            >
+                              {aiGeneratingField === index ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Bot className="h-4 w-4" />
+                              )}
+                            </Button>
+                          )}
                           <Button 
                             variant="outline" 
                             size="sm" 
@@ -599,12 +658,31 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
-                        <Textarea
-                          value={field.value}
-                          onChange={(e) => handleFieldChange(index, 'value', e.target.value)}
-                          placeholder="Trait description"
-                          className="min-h-[80px]"
-                        />
+                        <div className="relative">
+                          <Textarea
+                            value={field.value}
+                            onChange={(e) => handleFieldChange(index, 'value', e.target.value)}
+                            placeholder="Trait description"
+                            className="min-h-[80px]"
+                          />
+                          {/* AI Suggestion Button for Textarea */}
+                          {hoveredField === index && !field.value && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleAiFieldSuggestion(index)}
+                              disabled={aiGeneratingField === index}
+                              className="absolute top-2 right-2 opacity-60 hover:opacity-100 transition-opacity"
+                              title="Generate AI content"
+                            >
+                              {aiGeneratingField === index ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Bot className="h-3 w-3" />
+                              )}
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     ) : (
                       <div>

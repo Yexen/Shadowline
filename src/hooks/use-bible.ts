@@ -311,20 +311,317 @@ const defaultBibleEntries: BibleCategory[] = [
     { 
         category: "Locations", 
         items: [
+            // Financial District
+            { 
+                title: "Financial District",
+                fixedFields: {
+                    district: "Central Gotham",
+                    threatLevel: "Low",
+                    control: "Corporate",
+                    function: "Business"
+                },
+                fields: [
+                    { label: "Description", value: "The economic heart of Gotham City, home to Wayne Enterprises and major banks. Gleaming skyscrapers house corporate headquarters." },
+                    { label: "Known For", value: "Corporate offices, Stock exchange, Banking sector" },
+                    { label: "Controlled By", value: "Legitimate businesses" },
+                    { label: "Active Hours", value: "9 AM - 6 PM" },
+                    { label: "Security Level", value: "High corporate security" }
+                ] 
+            },
+            // Wayne Tower
+            { 
+                title: "Wayne Tower",
+                fixedFields: {
+                    district: "Financial District",
+                    threatLevel: "Low",
+                    control: "Wayne Enterprises",
+                    function: "Headquarters"
+                },
+                fields: [
+                    { label: "Description", value: "The towering headquarters of Wayne Enterprises. Also serves as a secret Batman operations base." },
+                    { label: "CEO", value: "Bruce Wayne" },
+                    { label: "Height", value: "150 floors" },
+                    { label: "Secret", value: "Advanced R&D labs" },
+                    { label: "Security", value: "Wayne Tech systems" },
+                    { label: "Fun Fact", value: "Penthouse connects to Batcave" }
+                ] 
+            },
+            // GCPD Headquarters
+            { 
+                title: "GCPD Headquarters",
+                fixedFields: {
+                    district: "Central Gotham",
+                    threatLevel: "Low",
+                    control: "Government",
+                    function: "Police Station"
+                },
+                fields: [
+                    { label: "Description", value: "Gotham City Police Department headquarters with the iconic Bat-Signal on the rooftop." },
+                    { label: "Commissioner", value: "James Gordon" },
+                    { label: "Officers", value: "1200+ active duty" },
+                    { label: "Units", value: "MCU, SWAT, Detectives" },
+                    { label: "Allied With", value: "Batman (unofficial)" },
+                    { label: "Famous For", value: "The Bat-Signal" }
+                ] 
+            },
+            // City Hall
+            { 
+                title: "City Hall",
+                fixedFields: {
+                    district: "Central Gotham",
+                    threatLevel: "Low",
+                    control: "Government",
+                    function: "Government"
+                },
+                fields: [
+                    { label: "Description", value: "The seat of Gotham's government and political power." },
+                    { label: "Mayor", value: "Often varies due to corruption" },
+                    { label: "Services", value: "City planning, Public works" },
+                    { label: "Architecture", value: "Classical with golden dome" },
+                    { label: "Security", value: "Municipal police protection" }
+                ] 
+            },
+            // Park Row
+            { 
+                title: "Park Row",
+                fixedFields: {
+                    district: "West Gotham",
+                    threatLevel: "Medium",
+                    control: "Mixed",
+                    function: "Residential"
+                },
+                fields: [
+                    { label: "Description", value: "A residential district in decline. Crime Alley is located nearby." },
+                    { label: "Notable", value: "Crime Alley (Wayne family murder site)" },
+                    { label: "Population", value: "Mixed income families" },
+                    { label: "Crime Rate", value: "Moderate to high" },
+                    { label: "History", value: "Former upper-class area" }
+                ] 
+            },
+            // Industrial Zone
+            { 
+                title: "Industrial Zone",
+                fixedFields: {
+                    district: "East Gotham",
+                    threatLevel: "Medium",
+                    control: "Mixed",
+                    function: "Industrial"
+                },
+                fields: [
+                    { label: "Description", value: "Factories, warehouses, and docks. Often used by criminals as hideouts." },
+                    { label: "Industries", value: "Manufacturing, Shipping" },
+                    { label: "Employment", value: "Blue-collar workers" },
+                    { label: "Crime", value: "Smuggling, gang activity" },
+                    { label: "Notable", value: "Abandoned facilities" }
+                ] 
+            },
+            // Arkham Asylum
             { 
                 title: "Arkham Asylum",
                 fixedFields: {
                     district: "Arkham Island",
-                    threatLevel: "Extreme",
+                    threatLevel: "High",
                     control: "Government",
                     function: "Prison"
                 },
                 fields: [
-                    { label: "Full Name", value: "The Elizabeth Arkham Asylum for the Criminally Insane" },
-                    { label: "Purpose", value: "A psychiatric hospital that houses many of Batman's most dangerous foes." },
-                    { label: "Security Features", value: "Maximum security cells, electroshock therapy rooms, specialized containment units" }
+                    { label: "Description", value: "Psychiatric hospital for Gotham's criminally insane." },
+                    { label: "Current Inmates", value: "Joker, Riddler, Scarecrow, Mad Hatter" },
+                    { label: "Security", value: "Maximum with specialized containment" },
+                    { label: "Breakout Frequency", value: "Disturbingly high" },
+                    { label: "Founded", value: "1921 by Dr. Amadeus Arkham" }
                 ] 
-            }, 
+            },
+            // ACE Chemicals
+            { 
+                title: "ACE Chemicals",
+                fixedFields: {
+                    district: "Industrial Zone",
+                    threatLevel: "Extreme",
+                    control: "Abandoned",
+                    function: "Abandoned Factory"
+                },
+                fields: [
+                    { label: "Description", value: "Chemical plant where Red Hood fell, creating the Joker." },
+                    { label: "History", value: "Birthplace of the Joker" },
+                    { label: "Status", value: "Abandoned toxic site" },
+                    { label: "Dangers", value: "Chemical burns, toxic exposure" },
+                    { label: "Contamination", value: "Extremely hazardous - requires protective gear" }
+                ] 
+            },
+            // Iceberg Lounge
+            { 
+                title: "Iceberg Lounge",
+                fixedFields: {
+                    district: "Central Gotham",
+                    threatLevel: "High",
+                    control: "Penguin",
+                    function: "Nightclub"
+                },
+                fields: [
+                    { label: "Description", value: "Penguin's upscale nightclub fronting a criminal empire." },
+                    { label: "Owner", value: "Oswald 'Penguin' Cobblepot" },
+                    { label: "Cover", value: "High-end nightclub and casino" },
+                    { label: "Real Business", value: "Money laundering, arms dealing" },
+                    { label: "Security", value: "Armed thugs as 'bouncers'" }
+                ] 
+            },
+            // Poison Ivy's Lair
+            { 
+                title: "Poison Ivy's Lair",
+                fixedFields: {
+                    district: "South Gotham",
+                    threatLevel: "High",
+                    control: "Poison Ivy",
+                    function: "Villain Lair"
+                },
+                fields: [
+                    { label: "Description", value: "Botanical hideout with mutated plants and toxic air." },
+                    { label: "Inhabitant", value: "Dr. Pamela Isley" },
+                    { label: "Environment", value: "Overgrown greenhouse complex" },
+                    { label: "Dangers", value: "Toxic spores, carnivorous plants" },
+                    { label: "Required", value: "Full hazmat protection and antidotes" }
+                ] 
+            },
+            // Two-Face Territory
+            { 
+                title: "Two-Face Territory",
+                fixedFields: {
+                    district: "Old Gotham",
+                    threatLevel: "High",
+                    control: "Two-Face",
+                    function: "Gang Territory"
+                },
+                fields: [
+                    { label: "Description", value: "Old courthouse district ruled by coin flips." },
+                    { label: "Ruler", value: "Harvey 'Two-Face' Dent (former DA)" },
+                    { label: "Theme", value: "Duality and chance" },
+                    { label: "Territory", value: "Old courthouse district" },
+                    { label: "Gang", value: "The 'Doubles'" },
+                    { label: "Danger", value: "Unpredictable coin-flip decisions" }
+                ] 
+            },
+            // North Docks
+            { 
+                title: "North Docks",
+                fixedFields: {
+                    district: "North Gotham",
+                    threatLevel: "Low",
+                    control: "Municipal",
+                    function: "Docks"
+                },
+                fields: [
+                    { label: "Description", value: "Cargo piers and warehouses along the northern riverbank." },
+                    { label: "Traffic", value: "Moderate freight" },
+                    { label: "Use", value: "Freight and fishing boats" },
+                    { label: "Security", value: "Night patrols" },
+                    { label: "Access", value: "Loading cranes operational" }
+                ] 
+            },
+            // Central Docks
+            { 
+                title: "Central Docks",
+                fixedFields: {
+                    district: "Central Gotham",
+                    threatLevel: "Low",
+                    control: "Municipal",
+                    function: "Docks"
+                },
+                fields: [
+                    { label: "Description", value: "Busy midtown dock with ferries and barges." },
+                    { label: "Ferry Lines", value: "3 active routes" },
+                    { label: "Smuggling Risk", value: "Medium" },
+                    { label: "Shore Cranes", value: "Operational" },
+                    { label: "Security", value: "Regular GCPD patrols" }
+                ] 
+            },
+            // South Docks
+            { 
+                title: "South Docks",
+                fixedFields: {
+                    district: "South Gotham",
+                    threatLevel: "Medium",
+                    control: "Municipal",
+                    function: "Docks"
+                },
+                fields: [
+                    { label: "Description", value: "Quieter docks near ACE Chemicals with potential contamination." },
+                    { label: "Hazards", value: "Chemical runoff from ACE" },
+                    { label: "Traffic", value: "Low at night" },
+                    { label: "Condition", value: "Some contamination" },
+                    { label: "Warning", value: "Avoid swimming" }
+                ] 
+            },
+            // Wayne Bridge
+            { 
+                title: "Wayne Bridge",
+                fixedFields: {
+                    district: "West Gotham",
+                    threatLevel: "Low",
+                    control: "Municipal",
+                    function: "Bridge"
+                },
+                fields: [
+                    { label: "Description", value: "Elegant suspension bridge linking west and central districts." },
+                    { label: "Design", value: "Suspension bridge" },
+                    { label: "Patrols", value: "GCPD nightly" },
+                    { label: "Visibility", value: "High security lighting" },
+                    { label: "Status", value: "Well-maintained" }
+                ] 
+            },
+            // Midtown Bridge
+            { 
+                title: "Midtown Bridge",
+                fixedFields: {
+                    district: "Central Gotham",
+                    threatLevel: "Low",
+                    control: "Municipal",
+                    function: "Bridge"
+                },
+                fields: [
+                    { label: "Description", value: "Main commuter bridge across the central channel." },
+                    { label: "Lanes", value: "6 traffic lanes" },
+                    { label: "Traffic", value: "Heavy during rush hour" },
+                    { label: "Maintenance", value: "Regular inspections" },
+                    { label: "Safety", value: "Standard guardrails" }
+                ] 
+            },
+            // ACE Overpass
+            { 
+                title: "ACE Overpass",
+                fixedFields: {
+                    district: "Industrial Zone",
+                    threatLevel: "Medium",
+                    control: "Municipal",
+                    function: "Bridge"
+                },
+                fields: [
+                    { label: "Description", value: "Industrial overpass near ACE Chemicals in poor condition." },
+                    { label: "Condition", value: "Rusting infrastructure" },
+                    { label: "Watch", value: "Joker gang activity rumored" },
+                    { label: "Hazards", value: "Structural concerns" },
+                    { label: "Patrol", value: "Irregular coverage" }
+                ] 
+            },
+            // Wayne Manor
+            { 
+                title: "Wayne Manor",
+                fixedFields: {
+                    district: "Bristol",
+                    threatLevel: "Low",
+                    control: "Wayne Family",
+                    function: "Residence"
+                },
+                fields: [
+                    { label: "Description", value: "The ancestral home of the Wayne family, outside Gotham proper. Secret entrance to the Batcave." },
+                    { label: "Owner", value: "Bruce Wayne" },
+                    { label: "Built", value: "1855 by the Wayne family" },
+                    { label: "Staff", value: "Alfred Pennyworth (butler)" },
+                    { label: "Secret", value: "Hidden Batcave entrance" },
+                    { label: "Security", value: "Advanced Wayne Tech systems" }
+                ] 
+            },
+            // The Batcave
             { 
                 title: "The Batcave",
                 fixedFields: {
@@ -334,9 +631,11 @@ const defaultBibleEntries: BibleCategory[] = [
                     function: "Headquarters"
                 },
                 fields: [
-                    { label: "Purpose", value: "Batman's secret headquarters and command center." },
-                    { label: "Key Features", value: "Batcomputer, crime lab, armory, vehicle storage (Batmobile), and memorabilia from past cases." },
-                    { label: "Access Points", value: "Hidden entrance through Wayne Manor study, vehicle tunnel, emergency exits" }
+                    { label: "Description", value: "Hidden cavern base accessible via a concealed entrance near Wayne Manor." },
+                    { label: "Access", value: "Secret cliffside entrance" },
+                    { label: "Vehicles", value: "Batmobile dock & turntable" },
+                    { label: "Facilities", value: "Batcomputer, Armory, Lab" },
+                    { label: "Security", value: "Biometric locks & failsafes" }
                 ] 
             }
         ] 
@@ -473,7 +772,35 @@ export function useBible() {
     try {
       const storedData = localStorage.getItem(BIBLE_STORAGE_KEY);
       if (storedData) {
-        setBibleData(JSON.parse(storedData));
+        const existingData = JSON.parse(storedData);
+        
+        // Migration: Merge new default locations with existing data
+        const migratedData = existingData.map((category: BibleCategory) => {
+          if (category.category === 'Locations') {
+            // Find the default locations category
+            const defaultLocations = defaultBibleEntries.find(cat => cat.category === 'Locations');
+            if (defaultLocations) {
+              // Get existing location titles to avoid duplicates
+              const existingTitles = category.items.map(item => item.title);
+              // Add new locations that don't exist yet
+              const newLocations = defaultLocations.items.filter(
+                item => !existingTitles.includes(item.title)
+              );
+              
+              console.log(`🗺️ Adding ${newLocations.length} new locations to Bible`);
+              
+              return {
+                ...category,
+                items: [...category.items, ...newLocations]
+              };
+            }
+          }
+          return category;
+        });
+        
+        setBibleData(migratedData);
+        // Save the migrated data
+        localStorage.setItem(BIBLE_STORAGE_KEY, JSON.stringify(migratedData));
       } else {
         setBibleData(defaultBibleEntries);
         localStorage.setItem(BIBLE_STORAGE_KEY, JSON.stringify(defaultBibleEntries));
