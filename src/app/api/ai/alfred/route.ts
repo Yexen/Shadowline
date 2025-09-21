@@ -8,7 +8,7 @@ export const runtime = 'edge';
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, history = [], provider = 'openai', apiKey, attachments = [] } = await req.json();
+    const { message, history = [], provider = 'openai', apiKey, attachments = [], clientMemories = [] } = await req.json();
 
     if (!message) {
       return NextResponse.json({ error: 'Missing message parameter' }, { status: 400 });
@@ -58,6 +58,11 @@ export async function POST(req: NextRequest) {
     const knowledgeContext = relevantKnowledge.length > 0
       ? `\n\nRelevant context from Miss Yekta's universe:\n${relevantKnowledge.join('\n')}`
       : '';
+
+    // Load client memories into server memory service for this request
+    if (clientMemories.length > 0) {
+      alfredMemoryService.loadMemories(clientMemories);
+    }
 
     // Get relevant memories from previous sessions
     const relevantMemories = alfredMemoryService.getRelevantMemories(message, 3);
@@ -137,7 +142,8 @@ Respond as Alfred would: professionally caring, intellectually stimulating, with
       model: result.model,
       provider: provider.toUpperCase(),
       emotion: detectEmotion(result.content),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      updatedMemories: alfredMemoryService.getAllMemories()
     });
 
   } catch (error: any) {

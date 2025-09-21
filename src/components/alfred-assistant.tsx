@@ -311,7 +311,8 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
             message: currentMessage,
             history: messages.slice(-10), // Send last 10 messages for context
             provider: 'openai',
-            attachments: attachments.length > 0 ? attachments : undefined
+            attachments: attachments.length > 0 ? attachments : undefined,
+            clientMemories: memoryManager.current.getAllMemories()
           }),
         });
 
@@ -332,14 +333,10 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
         setMessages(prev => [...prev, alfredResponse]);
         setAlfredEmotion(data.emotion === 'thoughtful' ? 'thinking' : data.emotion === 'excited' ? 'happy' : data.emotion);
 
-        // Store conversation in client memory for future sessions
-        memoryManager.current.addMemory({
-          type: 'conversation',
-          content: `User: ${currentMessage} | Alfred: ${data.response}`,
-          context: [conversationContext.currentTopic, data.emotion],
-          importance: attachments.length > 0 ? 'high' : 'medium',
-          tags: ['conversation', conversationContext.currentTopic, data.emotion]
-        });
+        // Sync updated memories from server back to client
+        if (data.updatedMemories) {
+          memoryManager.current.syncMemoriesFromServer(data.updatedMemories);
+        }
 
         // Trigger contextual notifications based on conversation
         triggerContextualNotifications(currentMessage, data.response);

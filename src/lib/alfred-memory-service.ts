@@ -142,6 +142,10 @@ export class ClientMemoryManager {
     return this.memoryService.getMemoryStats();
   }
 
+  getAllMemories(): MemoryEntry[] {
+    return this.memoryService.getAllMemories();
+  }
+
   private loadFromStorage(): void {
     if (typeof window === 'undefined') return;
 
