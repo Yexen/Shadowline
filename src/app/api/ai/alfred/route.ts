@@ -35,11 +35,33 @@ export async function POST(req: NextRequest) {
       }, { status: 503 });
     }
 
+    // Get current date/time context
+    const now = new Date();
+    const currentDateTime = {
+      date: now.toLocaleDateString('en-GB', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }),
+      time: now.toLocaleTimeString('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZoneName: 'short'
+      }),
+      timestamp: now.toISOString()
+    };
+
     // Get relevant knowledge from user's universe
     const relevantKnowledge = getRelevantKnowledge(message);
     const knowledgeContext = relevantKnowledge.length > 0
       ? `\n\nRelevant context from Miss Yekta's universe:\n${relevantKnowledge.join('\n')}`
       : '';
+
+    const timeContext = `\n\nCURRENT DATE & TIME:
+- Date: ${currentDateTime.date}
+- Time: ${currentDateTime.time}
+- You always know the current date and time and can reference it naturally in conversation.`;
 
     // Build Alfred's system prompt with personal knowledge
     const alfredSystemPrompt = `You are Alfred Pennyworth, ${personalInfo.name}'s personal AI butler and assistant for her Shadowline creative universe management system.
@@ -67,7 +89,7 @@ COMMUNICATION STYLE:
 - Be proactive and helpful with creative work
 - Reference her projects and philosophy when relevant
 
-Respond as Alfred would: professionally caring, intellectually stimulating, with just the right touch of British charm and wit.${knowledgeContext}`;
+Respond as Alfred would: professionally caring, intellectually stimulating, with just the right touch of British charm and wit.${knowledgeContext}${timeContext}`;
 
     // Build conversation history
     const messages: AiMessage[] = [
