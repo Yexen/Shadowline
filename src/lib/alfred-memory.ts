@@ -265,25 +265,35 @@ class AlfredMemory {
 
   // Storage Management
   private saveMemoriesToStorage(): void {
+    // In edge runtime, we'll use a simple in-memory store
+    // In client-side, we'll use localStorage
     if (typeof window !== 'undefined') {
-      localStorage.setItem('alfred_memories', JSON.stringify(this.memories));
-      localStorage.setItem('alfred_preferences', JSON.stringify(Array.from(this.userPreferences.entries())));
+      try {
+        localStorage.setItem('alfred_memories', JSON.stringify(this.memories));
+        localStorage.setItem('alfred_preferences', JSON.stringify(Array.from(this.userPreferences.entries())));
+      } catch (e) {
+        console.warn('Alfred memory: localStorage not available');
+      }
     }
   }
 
   private loadMemoriesFromStorage(): void {
     if (typeof window !== 'undefined') {
-      const memoriesData = localStorage.getItem('alfred_memories');
-      if (memoriesData) {
-        this.memories = JSON.parse(memoriesData).map((m: any) => ({
-          ...m,
-          timestamp: new Date(m.timestamp)
-        }));
-      }
+      try {
+        const memoriesData = localStorage.getItem('alfred_memories');
+        if (memoriesData) {
+          this.memories = JSON.parse(memoriesData).map((m: any) => ({
+            ...m,
+            timestamp: new Date(m.timestamp)
+          }));
+        }
 
-      const preferencesData = localStorage.getItem('alfred_preferences');
-      if (preferencesData) {
-        this.userPreferences = new Map(JSON.parse(preferencesData));
+        const preferencesData = localStorage.getItem('alfred_preferences');
+        if (preferencesData) {
+          this.userPreferences = new Map(JSON.parse(preferencesData));
+        }
+      } catch (e) {
+        console.warn('Alfred memory: localStorage not available, using in-memory storage');
       }
     }
   }

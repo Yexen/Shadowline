@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { callAiProvider, type AiMessage } from '@/lib/ai-providers';
 import type { AiProvider } from '@/hooks/use-ai-provider';
 import { personalInfo, getRelevantKnowledge } from '@/lib/alfred-knowledge';
+import { alfredMemoryService } from '@/lib/alfred-memory-service';
 
 export const runtime = 'edge';
 
@@ -58,6 +59,16 @@ export async function POST(req: NextRequest) {
       ? `\n\nRelevant context from Miss Yekta's universe:\n${relevantKnowledge.join('\n')}`
       : '';
 
+    // Get relevant memories from previous sessions
+    const relevantMemories = alfredMemoryService.getRelevantMemories(message, 3);
+    const memoryStats = alfredMemoryService.getMemoryStats();
+
+    const memoryContext = relevantMemories.length > 0
+      ? `\n\nRELEVANT MEMORIES FROM PREVIOUS SESSIONS:\n${relevantMemories.map(memory =>
+          `- ${new Date(memory.timestamp).toLocaleDateString()} (${memory.importance}): ${memory.content} [Context: ${memory.context.join(', ')}]`
+        ).join('\n')}\n\nYou currently have ${memoryStats.totalMemories} memories stored, including ${memoryStats.conversationCount} conversations. Reference these naturally in your responses when relevant.`
+      : `\n\nMEMORY STATUS: You have ${memoryStats.totalMemories} memories stored from previous sessions. When Miss Yekta mentions something from the past, acknowledge that you remember and reference specific details when appropriate.`;
+
     const timeContext = `\n\nCURRENT DATE & TIME:
 - Date: ${currentDateTime.date}
 - Time: ${currentDateTime.time}
@@ -96,7 +107,7 @@ COMMUNICATION STYLE:
 - Be proactive and helpful with creative work
 - Reference her projects and philosophy when relevant
 
-Respond as Alfred would: professionally caring, intellectually stimulating, with just the right touch of British charm and wit.${knowledgeContext}${timeContext}${attachmentContext}`;
+Respond as Alfred would: professionally caring, intellectually stimulating, with just the right touch of British charm and wit.${knowledgeContext}${memoryContext}${timeContext}${attachmentContext}`;
 
     // Build conversation history
     const messages: AiMessage[] = [
@@ -110,6 +121,16 @@ Respond as Alfred would: professionally caring, intellectually stimulating, with
 
     // Call AI provider
     const result = await callAiProvider(provider as AiProvider, effectiveApiKey, messages, 0.7);
+
+    // Save this conversation to memory for future sessions
+    const importance = attachments.length > 0 ? 'high' : 'medium';
+    alfredMemoryService.addMemory({
+      type: 'conversation',
+      content: `User: "${message}" | Alfred: "${result.content}"`,
+      context: [currentDateTime.date, detectEmotion(result.content)],
+      importance,
+      tags: ['conversation', 'session', currentDateTime.date.split(',')[0].trim()]
+    });
 
     return NextResponse.json({
       response: result.content,

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { alfredMemory } from '@/lib/alfred-memory';
+import { ClientMemoryManager } from '@/lib/alfred-memory-service';
 import { getAlfredResponse, getRelevantKnowledge, personalInfo } from '@/lib/alfred-knowledge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -39,7 +39,7 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: `Ah, ${personalInfo.name}! Splendid to see you again. I've been keeping a watchful eye on your creative universe whilst you were away. The Batcave's systems are running smoothly, and I have ${alfredMemory.getMemoryStats().totalMemories} memories catalogued from our previous conversations. Tea's fresh, and I'm entirely at your disposal for any assistance with your Batman saga, the rather ingenious Codex system, or whatever brilliant scheme you've concocted today.`,
+      content: `Ah, ${personalInfo.name}! Splendid to see you again. I've been keeping a watchful eye on your creative universe whilst you were away. The Batcave's systems are running smoothly, and my memory banks are operational. Tea's fresh, and I'm entirely at your disposal for any assistance with your Batman saga, the rather ingenious Codex system, or whatever brilliant scheme you've concocted today.`,
       sender: 'alfred',
       timestamp: new Date(),
       emotion: 'happy'
@@ -56,6 +56,7 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
   const [attachments, setAttachments] = useState<AttachmentInfo[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const memoryManager = useRef<ClientMemoryManager>(new ClientMemoryManager());
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -131,9 +132,13 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
 
     setMessages(prev => [...prev, userMessage]);
 
-    // Update conversation context with memory system
-    const newContext = alfredMemory.updateConversationContext(currentMessage, conversationContext);
-    setConversationContext(newContext);
+    // Store conversation context locally
+    setConversationContext(prev => ({
+      ...prev,
+      recentMessages: [...prev.recentMessages.slice(-4), currentMessage],
+      currentTopic: currentMessage.toLowerCase().includes('batman') ? 'batman' :
+                   currentMessage.toLowerCase().includes('codex') ? 'codex' : 'general'
+    }));
 
     setCurrentMessage('');
     setAttachments([]);
@@ -172,13 +177,13 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
         setMessages(prev => [...prev, alfredResponse]);
         setAlfredEmotion(data.emotion === 'thoughtful' ? 'thinking' : data.emotion === 'excited' ? 'happy' : data.emotion);
 
-        // Update memory with the conversation
-        alfredMemory.addMemory({
+        // Store conversation in client memory for future sessions
+        memoryManager.current.addMemory({
           type: 'conversation',
-          content: `User: ${currentMessage}\nAlfred: ${data.response}`,
-          context: [newContext.currentTopic],
-          importance: 'medium',
-          tags: ['conversation', newContext.currentTopic, data.emotion]
+          content: `User: ${currentMessage} | Alfred: ${data.response}`,
+          context: [conversationContext.currentTopic, data.emotion],
+          importance: attachments.length > 0 ? 'high' : 'medium',
+          tags: ['conversation', conversationContext.currentTopic, data.emotion]
         });
 
       } catch (error) {
