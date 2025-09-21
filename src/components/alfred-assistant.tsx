@@ -73,43 +73,65 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
     setCurrentMessage('');
     setAlfredEmotion('thinking');
 
-    // Generate intelligent response using memory and knowledge systems
-    setTimeout(() => {
-      const { response, emotion, suggestions } = alfredMemory.generatePersonalizedResponse(currentMessage, newContext);
+    // Generate intelligent response using OpenAI API
+    const generateAlfredResponse = async () => {
+      try {
+        const response = await fetch('/api/ai/alfred', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: currentMessage,
+            history: messages.slice(-10), // Send last 10 messages for context
+            provider: 'openai'
+          }),
+        });
 
-      // Get relevant knowledge from your universe
-      const relevantKnowledge = getRelevantKnowledge(currentMessage);
-      let enhancedResponse = response;
+        const data = await response.json();
 
-      if (relevantKnowledge.length > 0) {
-        enhancedResponse += ` Based on your ${relevantKnowledge[0].split(':')[0].toLowerCase()}, ${relevantKnowledge[0].split(':')[1]}`;
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to get response from Alfred');
+        }
+
+        const alfredResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          content: data.response,
+          sender: 'alfred',
+          timestamp: new Date(),
+          emotion: data.emotion || 'neutral'
+        };
+
+        setMessages(prev => [...prev, alfredResponse]);
+        setAlfredEmotion(data.emotion === 'thoughtful' ? 'thinking' : data.emotion === 'excited' ? 'happy' : data.emotion);
+
+        // Update memory with the conversation
+        alfredMemory.addMemory({
+          type: 'conversation',
+          content: `User: ${currentMessage}\nAlfred: ${data.response}`,
+          context: [newContext.currentTopic],
+          importance: 'medium',
+          tags: ['conversation', newContext.currentTopic, data.emotion]
+        });
+
+      } catch (error) {
+        console.error('Alfred API error:', error);
+
+        // Fallback to local response if API fails
+        const fallbackResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          content: "I do apologize, Miss. It seems I'm having a spot of technical trouble at the moment. Perhaps we could try again shortly?",
+          sender: 'alfred',
+          timestamp: new Date(),
+          emotion: 'concerned'
+        };
+
+        setMessages(prev => [...prev, fallbackResponse]);
+        setAlfredEmotion('concerned');
       }
+    };
 
-      const alfredResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        content: enhancedResponse,
-        sender: 'alfred',
-        timestamp: new Date(),
-        emotion: emotion
-      };
-
-      setMessages(prev => [...prev, alfredResponse]);
-      setAlfredEmotion(emotion === 'thoughtful' ? 'thinking' : emotion === 'excited' ? 'happy' : emotion);
-
-      // Add suggestions if available
-      if (suggestions.length > 0) {
-        setTimeout(() => {
-          const suggestionMessage: Message = {
-            id: (Date.now() + 2).toString(),
-            content: `If I may suggest: ${suggestions.join(', ')}. Would any of these be helpful, ${personalInfo.name}?`,
-            sender: 'alfred',
-            timestamp: new Date(),
-            emotion: 'thoughtful'
-          };
-          setMessages(prev => [...prev, suggestionMessage]);
-        }, 800);
-      }
-    }, 1500);
+    generateAlfredResponse();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
