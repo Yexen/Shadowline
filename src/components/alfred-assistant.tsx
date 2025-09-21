@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, X, Minimize2, Maximize2, Coffee, Bell, Brain, Heart } from 'lucide-react';
+import { MessageSquare, X, Minimize2, Maximize2, Coffee, Bell, Brain, Heart, Paperclip, FileText, Image as ImageIcon, Video, Music } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 
@@ -18,6 +18,15 @@ interface Message {
   sender: 'user' | 'alfred';
   timestamp: Date;
   emotion?: 'neutral' | 'happy' | 'concerned' | 'excited' | 'thoughtful';
+  attachments?: AttachmentInfo[];
+}
+
+interface AttachmentInfo {
+  id: string;
+  name: string;
+  type: 'image' | 'video' | 'audio' | 'document';
+  url: string;
+  size: number;
 }
 
 interface AlfredAssistantProps {
@@ -44,7 +53,9 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
   });
   const [currentMessage, setCurrentMessage] = useState('');
   const [alfredEmotion, setAlfredEmotion] = useState<'neutral' | 'happy' | 'thinking' | 'concerned'>('happy');
+  const [attachments, setAttachments] = useState<AttachmentInfo[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -54,14 +65,68 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
     scrollToBottom();
   }, [messages]);
 
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const url = e.target?.result as string;
+          const attachment: AttachmentInfo = {
+            id: `${Date.now()}-${Math.random()}`,
+            name: file.name,
+            type: getFileType(file.type),
+            url,
+            size: file.size
+          };
+          setAttachments(prev => [...prev, attachment]);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    // Reset input value
+    if (event.target) {
+      event.target.value = '';
+    }
+  };
+
+  const getFileType = (mimeType: string): 'image' | 'video' | 'audio' | 'document' => {
+    if (mimeType.startsWith('image/')) return 'image';
+    if (mimeType.startsWith('video/')) return 'video';
+    if (mimeType.startsWith('audio/')) return 'audio';
+    return 'document';
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments(prev => prev.filter(att => att.id !== id));
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const getFileIcon = (type: AttachmentInfo['type']) => {
+    switch (type) {
+      case 'image': return <ImageIcon className="h-4 w-4" />;
+      case 'video': return <Video className="h-4 w-4" />;
+      case 'audio': return <Music className="h-4 w-4" />;
+      default: return <FileText className="h-4 w-4" />;
+    }
+  };
+
   const handleSendMessage = async () => {
-    if (!currentMessage.trim()) return;
+    if (!currentMessage.trim() && attachments.length === 0) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       content: currentMessage,
       sender: 'user',
-      timestamp: new Date()
+      timestamp: new Date(),
+      attachments: attachments.length > 0 ? [...attachments] : undefined
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -71,6 +136,7 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
     setConversationContext(newContext);
 
     setCurrentMessage('');
+    setAttachments([]);
     setAlfredEmotion('thinking');
 
     // Generate intelligent response using OpenAI API
@@ -84,7 +150,8 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
           body: JSON.stringify({
             message: currentMessage,
             history: messages.slice(-10), // Send last 10 messages for context
-            provider: 'openai'
+            provider: 'openai',
+            attachments: attachments.length > 0 ? attachments : undefined
           }),
         });
 
@@ -270,6 +337,27 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
                           )}
                         </div>
                       )}
+
+                      {/* Attachment Display */}
+                      {message.attachments && message.attachments.length > 0 && (
+                        <div className="mb-2 space-y-2">
+                          {message.attachments.map((attachment) => (
+                            <div key={attachment.id} className="flex items-center space-x-2 bg-background/50 rounded p-2 text-xs border border-border/50">
+                              {getFileIcon(attachment.type)}
+                              <div className="flex-1 min-w-0">
+                                <p className="truncate font-medium">{attachment.name}</p>
+                                <p className="text-muted-foreground">{formatFileSize(attachment.size)}</p>
+                              </div>
+                              {attachment.type === 'image' && (
+                                <div className="w-12 h-12 rounded overflow-hidden">
+                                  <img src={attachment.url} alt={attachment.name} className="w-full h-full object-cover" />
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       <p className="leading-relaxed">{message.content}</p>
                       <p className="text-xs opacity-70 mt-1">
                         {message.timestamp.toLocaleTimeString()}
@@ -283,6 +371,28 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
 
             {/* Input Area */}
             <div className="p-4 border-t border-border bg-gradient-to-r from-accent/5 to-accent/10">
+              {/* Attachment Preview */}
+              {attachments.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {attachments.map((attachment) => (
+                    <div key={attachment.id} className="flex items-center space-x-2 bg-secondary/50 rounded-lg p-2 text-xs">
+                      {getFileIcon(attachment.type)}
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate font-medium">{attachment.name}</p>
+                        <p className="text-muted-foreground">{formatFileSize(attachment.size)}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeAttachment(attachment.id)}
+                        className="h-6 w-6 p-0 hover:bg-destructive/20"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="flex space-x-2">
                 <Input
                   placeholder="Ask Alfred anything about your Batman universe..."
@@ -291,9 +401,25 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
                   onKeyPress={handleKeyPress}
                   className="flex-1 bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-ring"
                 />
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  multiple
+                  accept="image/*,video/*,audio/*,.pdf,.txt,.doc,.docx"
+                  className="hidden"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-3"
+                >
+                  <Paperclip className="h-4 w-4" />
+                </Button>
                 <Button
                   onClick={handleSendMessage}
-                  disabled={!currentMessage.trim()}
+                  disabled={!currentMessage.trim() && attachments.length === 0}
                   className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   <MessageSquare className="h-4 w-4" />

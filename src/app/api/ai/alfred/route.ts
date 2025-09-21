@@ -7,7 +7,7 @@ export const runtime = 'edge';
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, history = [], provider = 'openai', apiKey } = await req.json();
+    const { message, history = [], provider = 'openai', apiKey, attachments = [] } = await req.json();
 
     if (!message) {
       return NextResponse.json({ error: 'Missing message parameter' }, { status: 400 });
@@ -63,6 +63,13 @@ export async function POST(req: NextRequest) {
 - Time: ${currentDateTime.time}
 - You always know the current date and time and can reference it naturally in conversation.`;
 
+    // Analyze attachments if provided
+    const attachmentContext = attachments.length > 0
+      ? `\n\nATTACHMENTS PROVIDED:\n${attachments.map((att: any) =>
+          `- ${att.name} (${att.type}, ${att.size} bytes): Miss Yekta has shared this ${att.type} file for your analysis and discussion.`
+        ).join('\n')}\nPlease acknowledge these attachments and offer to analyze or discuss them as appropriate.`
+      : '';
+
     // Build Alfred's system prompt with personal knowledge
     const alfredSystemPrompt = `You are Alfred Pennyworth, ${personalInfo.name}'s personal AI butler and assistant for her Shadowline creative universe management system.
 
@@ -89,7 +96,7 @@ COMMUNICATION STYLE:
 - Be proactive and helpful with creative work
 - Reference her projects and philosophy when relevant
 
-Respond as Alfred would: professionally caring, intellectually stimulating, with just the right touch of British charm and wit.${knowledgeContext}${timeContext}`;
+Respond as Alfred would: professionally caring, intellectually stimulating, with just the right touch of British charm and wit.${knowledgeContext}${timeContext}${attachmentContext}`;
 
     // Build conversation history
     const messages: AiMessage[] = [
