@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { ClientMemoryManager } from '@/lib/alfred-memory-service';
 import { alfredNotifications } from '@/lib/alfred-notifications';
-import { AlfredBadge } from '@/components/alfred-notifications';
 import { alfredSearch } from '@/lib/alfred-search';
 import { alfredReminders } from '@/lib/alfred-reminders';
 import { nativeNotifications } from '@/lib/native-notifications';
@@ -85,7 +84,6 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
   const [currentMessage, setCurrentMessage] = useState('');
   const [alfredEmotion, setAlfredEmotion] = useState<'neutral' | 'happy' | 'thinking' | 'concerned'>('happy');
   const [attachments, setAttachments] = useState<AttachmentInfo[]>([]);
-  const [badgeCount, setBadgeCount] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [showReminders, setShowReminders] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -101,10 +99,6 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
   }, [messages]);
 
   useEffect(() => {
-    // Subscribe to notification updates for badge count
-    const unsubscribe = alfredNotifications.subscribe((notifications) => {
-      setBadgeCount(alfredNotifications.getBadgeCount());
-    });
 
     // Demo: Send a welcome notification after 3 seconds
     const welcomeTimer = setTimeout(() => {
@@ -147,7 +141,6 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
     }, 15000);
 
     return () => {
-      unsubscribe();
       clearTimeout(welcomeTimer);
       clearTimeout(suggestionTimer);
     };
@@ -533,7 +526,6 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
               borderRadius: '0'
             }}
           />
-          <AlfredBadge count={badgeCount} />
         </div>
       </div>
     );
