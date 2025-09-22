@@ -156,7 +156,20 @@ class AlfredReminderService {
     this.saveReminders();
     this.notifySubscribers();
 
+    // Schedule in service worker for background notifications
+    this.scheduleInServiceWorker(reminder);
+
     return reminder;
+  }
+
+  // Schedule reminder in service worker for background notifications
+  private async scheduleInServiceWorker(reminder: Reminder) {
+    try {
+      const { serviceWorkerManager } = await import('./service-worker');
+      await serviceWorkerManager.scheduleReminder(reminder);
+    } catch (error) {
+      console.error('Failed to schedule reminder in service worker:', error);
+    }
   }
 
   // Schedule a reminder to fire

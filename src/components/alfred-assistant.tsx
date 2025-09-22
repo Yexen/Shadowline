@@ -10,6 +10,7 @@ import { nativeNotifications } from '@/lib/native-notifications';
 import { AlfredSettings } from '@/components/alfred-settings';
 import { AlfredReminders } from '@/components/alfred-reminders';
 import { NotificationBadge, NotificationPermissionRequest } from '@/components/notification-badge';
+import { ServiceWorkerStatus } from '@/components/service-worker-status';
 import { getAlfredResponse, getRelevantKnowledge, personalInfo } from '@/lib/alfred-knowledge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -591,6 +592,7 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
             </div>
           </div>
           <div className="flex items-center space-x-2">
+            <ServiceWorkerStatus />
             <NotificationBadge
               onClick={() => {
                 // Clear unread count when clicked
