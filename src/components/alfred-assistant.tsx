@@ -10,9 +10,10 @@ import { getAlfredResponse, getRelevantKnowledge, personalInfo } from '@/lib/alf
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, X, Minimize2, Maximize2, Coffee, Bell, Brain, Heart, Paperclip, FileText, Image as ImageIcon, Video, Music, Settings } from 'lucide-react';
+import { MessageSquare, X, Minimize2, Maximize2, Coffee, Bell, Brain, Heart, Paperclip, FileText, Image as ImageIcon, Video, Music, Settings, Expand, Shrink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 
@@ -40,6 +41,7 @@ interface AlfredAssistantProps {
 export function AlfredAssistant({ className }: AlfredAssistantProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<Message[]>(() => {
     const now = new Date();
     const hour = now.getHours();
@@ -462,10 +464,19 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
   }
 
   return (
-    <div className={cn("fixed bottom-6 right-6 z-50", className)}>
+    <div className={cn(
+      "fixed z-50 transition-all duration-300",
+      isExpanded
+        ? "inset-4 md:inset-8"
+        : "bottom-6 right-6",
+      className
+    )}>
       <Card className={cn(
-        "w-96 bg-gradient-to-br from-background via-card to-background border-border shadow-2xl transition-all duration-300",
-        isMinimized ? "h-16" : "h-[500px]"
+        "bg-gradient-to-br from-background via-card to-background border-border shadow-2xl transition-all duration-300",
+        isExpanded
+          ? "w-full h-full max-w-none"
+          : "w-96",
+        isMinimized ? "h-16" : isExpanded ? "h-full" : "h-[500px]"
       )}>
         {/* Alfred's Header */}
         <div className="flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-primary/10 to-primary/5">
@@ -517,6 +528,15 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
             <Button
               variant="ghost"
               size="sm"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
+              title={isExpanded ? "Shrink Alfred" : "Expand Alfred"}
+            >
+              {isExpanded ? <Shrink className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setIsMinimized(!isMinimized)}
               className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
             >
@@ -534,10 +554,18 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
         </div>
 
         {!isMinimized && (
-          <CardContent className="p-0 flex flex-col h-[436px]">
+          <CardContent className={cn(
+            "p-0 flex flex-col",
+            isExpanded ? "h-[calc(100vh-8rem)] md:h-[calc(100vh-12rem)]" : "h-[436px]"
+          )}>
             {/* Messages Area */}
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4">
+            <ScrollArea className={cn(
+              "flex-1",
+              isExpanded ? "p-6 md:p-8" : "p-4"
+            )}>
+              <div className={cn(
+                isExpanded ? "space-y-6 max-w-4xl mx-auto" : "space-y-4"
+              )}>
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -548,7 +576,10 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
                   >
                     <div
                       className={cn(
-                        "max-w-[80%] p-3 rounded-lg text-sm",
+                        "p-4 rounded-lg transition-all duration-200",
+                        isExpanded
+                          ? "max-w-[75%] text-base leading-relaxed"
+                          : "max-w-[80%] text-sm p-3",
                         message.sender === 'user'
                           ? "bg-primary text-primary-foreground ml-4"
                           : "bg-card text-card-foreground border border-border mr-4"
@@ -596,7 +627,12 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
                         </div>
                       )}
 
-                      <p className="leading-relaxed">{message.content}</p>
+                      <p className={cn(
+                        "whitespace-pre-line",
+                        isExpanded
+                          ? "leading-relaxed text-base"
+                          : "leading-relaxed"
+                      )}>{message.content}</p>
                       <p className="text-xs opacity-70 mt-1">
                         {message.timestamp.toLocaleTimeString()}
                       </p>
@@ -608,7 +644,10 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
             </ScrollArea>
 
             {/* Input Area */}
-            <div className="p-4 border-t border-border bg-gradient-to-r from-accent/5 to-accent/10">
+            <div className={cn(
+              "border-t border-border bg-gradient-to-r from-accent/5 to-accent/10",
+              isExpanded ? "p-6 md:p-8" : "p-4"
+            )}>
               {/* Attachment Preview */}
               {attachments.length > 0 && (
                 <div className="mb-3 flex flex-wrap gap-2">
@@ -631,14 +670,33 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
                   ))}
                 </div>
               )}
-              <div className="flex space-x-2">
-                <Input
-                  placeholder="Ask Alfred anything about your Batman universe..."
-                  value={currentMessage}
-                  onChange={(e) => setCurrentMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  className="flex-1 bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-ring"
-                />
+              <div className={cn(
+                "max-w-4xl mx-auto",
+                isExpanded ? "space-y-4" : "flex space-x-2"
+              )}>
+                {isExpanded ? (
+                  <Textarea
+                    placeholder="Ask Alfred anything about your Batman universe... (Press Ctrl+Enter to send)"
+                    value={currentMessage}
+                    onChange={(e) => setCurrentMessage(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                    className="min-h-[120px] bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-ring resize-none text-base leading-relaxed"
+                    rows={4}
+                  />
+                ) : (
+                  <Input
+                    placeholder="Ask Alfred anything about your Batman universe..."
+                    value={currentMessage}
+                    onChange={(e) => setCurrentMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    className="flex-1 bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-ring"
+                  />
+                )}
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -647,24 +705,52 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
                   accept="image/*,video/*,audio/*,.pdf,.txt,.doc,.docx"
                   className="hidden"
                 />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="px-3"
-                >
-                  <Paperclip className="h-4 w-4" />
-                </Button>
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={!currentMessage.trim() && attachments.length === 0}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                >
-                  <MessageSquare className="h-4 w-4" />
-                </Button>
+                {isExpanded ? (
+                  <div className="flex justify-between items-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-4 py-2"
+                    >
+                      <Paperclip className="h-4 w-4 mr-2" />
+                      Attach Files
+                    </Button>
+                    <Button
+                      onClick={handleSendMessage}
+                      disabled={!currentMessage.trim() && attachments.length === 0}
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2"
+                      size="lg"
+                    >
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Send Message
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-3"
+                    >
+                      <Paperclip className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      onClick={handleSendMessage}
+                      disabled={!currentMessage.trim() && attachments.length === 0}
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
               </div>
-              <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-                <span>Press Enter to send</span>
+              <div className={cn(
+                "flex items-center justify-between mt-3 text-xs text-muted-foreground",
+                isExpanded ? "max-w-4xl mx-auto" : "mt-2"
+              )}>
+                <span>{isExpanded ? "Press Ctrl+Enter to send" : "Press Enter to send"}</span>
                 <span className="flex items-center space-x-1">
                   <Coffee className="h-3 w-3" />
                   <span>Powered by your personal LLM</span>
