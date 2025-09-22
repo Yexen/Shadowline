@@ -181,7 +181,16 @@ class AlfredReminderService {
 
   // Fire a reminder (show notification)
   private fireReminder(reminder: Reminder) {
-    // Import the notification service dynamically to avoid circular dependencies
+    // Show native OS notification with popup
+    import('./native-notifications').then(({ nativeNotifications }) => {
+      nativeNotifications.showReminderNotification(
+        'Alfred Reminder',
+        reminder.message,
+        () => this.snoozeReminder(reminder.id, 10)
+      );
+    });
+
+    // Also show in-app notification
     import('./alfred-notifications').then(({ alfredNotifications }) => {
       alfredNotifications.addNotification({
         type: 'toast',
@@ -207,20 +216,6 @@ class AlfredReminderService {
         tags: ['reminder', 'alfred']
       });
     });
-
-    // Play notification sound if available
-    if (typeof Audio !== 'undefined') {
-      try {
-        const audio = new Audio('/notification-sound.mp3');
-        audio.volume = 0.3;
-        audio.play().catch(() => {
-          // Fallback to system notification if audio fails
-          console.log('🔔 Alfred Reminder:', reminder.message);
-        });
-      } catch {
-        console.log('🔔 Alfred Reminder:', reminder.message);
-      }
-    }
 
     // Mark as completed if not recurring
     if (!reminder.isRecurring) {

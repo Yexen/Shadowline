@@ -1,12 +1,22 @@
 {
-  "name": "Shadows of Gotham Writer's Protocol",
-  "short_name": "Gotham Writer",
-  "description": "Your sanctuary for crafting tales in the dark city.",
+  "name": "Shadowline - Batman Universe Creator",
+  "short_name": "Shadowline",
+  "description": "Your sanctuary for crafting tales in the dark city with Alfred's assistance.",
   "start_url": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#101014",
   "theme_color": "#101014",
+  "categories": ["productivity", "writing", "entertainment"],
+  "lang": "en-US",
+  "scope": "/",
   "icons": [
+    {
+      "src": "/alfred-avatar.png",
+      "sizes": "64x64",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/icons/icon-192x192.png",
       "sizes": "192x192",
@@ -18,6 +28,59 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshots/mobile.png",
+      "sizes": "375x812",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Chat with Alfred",
+      "short_name": "Alfred",
+      "description": "Open Alfred AI assistant",
+      "url": "/?alfred=open",
+      "icons": [
+        {
+          "src": "/alfred-avatar.png",
+          "sizes": "64x64",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "View Reminders",
+      "short_name": "Reminders",
+      "description": "View your active reminders",
+      "url": "/?reminders=open",
+      "icons": [
+        {
+          "src": "/icons/clock-icon.png",
+          "sizes": "64x64",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false,
+  "display_override": ["window-controls-overlay", "standalone"],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+shadowline",
+      "url": "/?protocol=%s"
     }
   ]
 }

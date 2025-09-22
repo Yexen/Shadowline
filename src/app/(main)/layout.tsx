@@ -48,6 +48,7 @@ import {
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { FloatingNotificationBadge } from '@/components/notification-badge';
 
 import { useBible, type BibleEntry } from '@/hooks/use-bible';
 import { useVolumes } from '@/hooks/use-volumes';
@@ -439,7 +440,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       )}
-      
+
+      {/* Floating Notification Badge */}
+      <FloatingNotificationBadge />
+
     </SidebarProvider>
   );
 }

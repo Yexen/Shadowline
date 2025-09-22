@@ -6,8 +6,10 @@ import { alfredNotifications } from '@/lib/alfred-notifications';
 import { AlfredBadge } from '@/components/alfred-notifications';
 import { alfredSearch } from '@/lib/alfred-search';
 import { alfredReminders } from '@/lib/alfred-reminders';
+import { nativeNotifications } from '@/lib/native-notifications';
 import { AlfredSettings } from '@/components/alfred-settings';
 import { AlfredReminders } from '@/components/alfred-reminders';
+import { NotificationBadge, NotificationPermissionRequest } from '@/components/notification-badge';
 import { getAlfredResponse, getRelevantKnowledge, personalInfo } from '@/lib/alfred-knowledge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -589,6 +591,12 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
             </div>
           </div>
           <div className="flex items-center space-x-2">
+            <NotificationBadge
+              onClick={() => {
+                // Clear unread count when clicked
+                nativeNotifications.clearAll();
+              }}
+            />
             <Button
               variant="ghost"
               size="sm"
@@ -858,6 +866,9 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
           onClose={() => setShowReminders(false)}
         />
       )}
+
+      {/* Notification Permission Request */}
+      <NotificationPermissionRequest />
     </div>
   );
 }
