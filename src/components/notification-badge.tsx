@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { nativeNotifications } from '@/lib/native-notifications';
-import { Bell } from 'lucide-react';
+import { serviceWorkerManager } from '@/lib/service-worker';
+import { Bell, TestTube } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
