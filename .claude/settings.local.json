@@ -3,7 +3,8 @@
     "allow": [
       "Read(//c/Users/Yekta/Pictures/Screenshots/**)",
       "Bash(npm run build:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npm run typecheck:*)"
     ],
     "deny": [],
     "ask": []

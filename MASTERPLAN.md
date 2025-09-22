@@ -178,5 +178,233 @@
 - Keep invitation system for guest accounts
 - Hardware security key support (future)
 
+## 24) Codex - Universal Truth Source
+
+### Core Architecture
+- **Central Codex page** containing:
+  - Bible + Volumes (two tabs)
+  - Plain text + code structure
+  - Connected to entire app (if possible)
+  - **Bidirectional sync** → push & pull between Codex and UI
+  - Connected to all AI tools
+
+### UX Design
+- **Notion-like plain text pages** + subpages
+- Edit / delete / add endlessly, including headers
+- Click on text → edit mode
+- Click back → view mode
+- Minimal line icons for status
+- **Exportable** → all or specific paths
+
+### Path System
+- **Paths can be reused** across pages
+- Use **@ to connect directly** to a path
+- **No duplicate names** for paths
+- Pages don't need to be interconnected → all connect back to Codex for simplicity
+
+### Media Integration
+- Pictures, audio, videos don't need to "exist" in Codex (to avoid clutter)
+- But image/video/audio generators **must have access** to them by path
+
+## 25) Bible System Redesign
+
+### Dossier
+- **Notion-like layout**, not two tabs
+- **Add page button** on every page
+- **Scrolling down** instead of fixed boxes
+
+### Identity
+- **Two columns** of info in view mode
+- Better spacing
+- **One-sentence description/quote** under picture
+- Edit mode **scrolls down** instead of popup overflow
+
+### Arcs
+- **Card-based info**
+- Cards show snippet → **open full page inside popup**
+- **Dedicated interactive arc viewer**
+
+### Backstory
+- Add **backstory tab** in main entry (after arcs, before dossier)
+- Comprehensive backstory info
+
+### Relationships
+- **Interactive relationship mind map**
+- **Filter by type** of relationship or affiliation
+
+### Popups
+- **Floating and moveable**
+- **Persist across navigation**
+- **Multiple popups** can be open at once, close only when user closes them
+- **Titles of entries editable** in popup edit mode
+
+### AI Fill
+- **Floating robot button**
+- Available in **all sections** of Bible
+
+## 26) Meta AI Features
+
+### Automatic AI Updates
+- AI updates fields + interactive features (identity, traits, relationships, arcs, backstory) **based on edits/deletes/adds to Codex**
+
+### Interactive Tools (HTML Exportable)
+- **Interactive mind maps**
+- **Interactive timelines** (editable)
+- **Interactive backstories**
+- **Relationship maps**
+
+## 27) Enhanced Content Types
+
+### Characters
+- **Fields**: General overview, physical appearance, fighting style, arsenal, intellect, morality, quirks, personality, relationships, arcs, themes, quotes
+- **Custom fields** allowed
+- **Relationships**: visualized in mind map
+- **Arcs**: shown in interactive timeline
+
+### Locations
+- **Link to map** + exact location
+
+### Vehicles
+- With **"owned by"** field
+
+### Resources
+- **Couples**
+- **Ages** → table
+- **Groups**: allies, Justice League, etc.
+
+### Animals
+- Section like resources
+
+### Themes + Morality
+- **Organized section**, can be linked to arcs
+
+## 28) Volumes Redesign
+
+### Structure
+- **Separate tab**
+- **Outlines** → button at top (popup with edit mode)
+- **Resources** → card view
+- **Volumes I–VI**
+- Each volume **lists its chapters**
+- Each chapter **editable via popup**
+- **Clicking title opens reading popup**
+
+## 29) Notebook Redesign
+
+### Core Changes
+- **Path-based, not document-based**
+
+### Functions
+- **Delete document** (path-based)
+- **Q&A based on path**
+- **Generate overview** based on path
+- **Chapter cards** (minimal info first → expandable popup)
+- **Relationship visualizations**: mind maps, tables, auto-generation
+- **Generated content** must be searchable by path + tags
+
+## 30) Maps Integration
+- **AI assistant answers questions** about 3D map + knowledge
+
+## 31) Discussion Enhancements
+- **Layout fixes**
+- **Add session history** (with names)
+- **Search by keyword**
+
+## 32) Organization Features
+- **Interactive calendar**
+- **Simple clock + timer**
+- **Pomodoro**
+- **Task lists** (long-term, short-term)
+- **Auto-carry forward** unchecked tasks
+
+## 33) Messages System
+- **Guests can message author only**
+- **Author can message all guests**
+
+## 34) Sources
+- **As-is**
+- **Saved to archive** (videos + articles)
+
+## 35) About Page
+- **Intro to app**
+- **Intro to writer**
+- **Intro to story**
+
+## 36) Settings
+- **User management**
+- **TBD** (flexible section)
+
+## 37) Dev Console
+- **As-is**
+- **Delete Firebase** if irrelevant
+- **Option to load cloud code** inside app
+
+## 38) Profile
+- **Edit profile**
+- **Watchlist**
+- **Readlist**
+- **Change password**
+- **Suggestions**
+- **Delete account**
+
+## 39) Alfred - Shadowline AI Assistant
+
+### Core Identity
+- **Persona**: Discreet, witty, omniscient assistant
+- **Style**: British dry humor, sharp wit, gentle roasts
+- **Address**: Always "Miss", never "Master"
+- **Aware** of Yekta's mental health (but not overprotective)
+- **Feels like Alfred**, not a robot
+
+### Mission
+- A **discreet, witty, omniscient assistant** for Shadowline
+- **Proactively surfaces** relevant research, preserves context across sessions
+- **Helps write, link, and organize** the Codex
+- **Ensures author-only privacy** with gentle judgment
+
+### Memory System
+- **Persistent memory** across chats
+- **Configurable memory policy**:
+  - Off
+  - Session-only
+  - Persistent (X days)
+  - Persistent forever
+- **Author can edit, delete, or add** to Alfred's memory via settings
+- **Export + delete memory** for specific paths
+- **Alfred always remembers**:
+  - Yekta's name + gender
+  - Context of past conversations and saved outputs
+  - Date and time in real time
+
+### Proactivity System
+- **Can send unprompted messages** and notifications
+- **Notification types**:
+  - **Info Toast**: Small, non-modal
+    - e.g. "Alfred: Found 3 new articles about 'Tirzad' — add to Readlist?"
+  - **Banner**: For conflicts / approvals
+    - e.g. "Alfred: Conflict on 'Noor' backstory — resolve?"
+  - **Modal/Popup**: Requires immediate decision
+    - e.g. "Alfred: Drafted a new chapter. Save to Volume 2?"
+  - **Quiet Badge**: Low-priority updates in sidebar
+- **Configurable proactivity levels**:
+  - Off
+  - Low (daily digest)
+  - Medium (real-time suggestions)
+  - High (pushes & alerts)
+- **Do-Not-Disturb**: Schedule quiet hours
+
+### Functions
+- **Generative Actions**:
+  - Drafts, chapters, relationships, backstory
+  - Can save directly to Codex
+  - Push/pull control for two-way edits
+- **Search & Summarise**:
+  - Searches Codex and external sources
+  - Summarises and produces citations
+- **Organisation Support**:
+  - Access to Shadowline calendar
+  - Nudges if Yekta works too much
+  - Health and productivity checks
+
 ---
-*Last updated: September 20, 2025*
+*Last updated: September 21, 2025*
