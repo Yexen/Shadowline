@@ -46,6 +46,9 @@ function MapsPageContent() {
     }
   }, [isLoaded, maps, searchParams, activeMap]);
 
+  // Get location parameter for camera navigation
+  const locationParam = searchParams.get('location');
+
   const t = translations[lang];
 
   const handleOpenMap = (map: MapData) => {
@@ -93,6 +96,7 @@ function MapsPageContent() {
           onClose={handleCloseMap} 
           mapHtml={activeMap.mapHtml} 
           title={`${t.interactiveMap} ${activeMap.title} Map`}
+          highlightLocation={locationParam}
         />
       )}
     </>

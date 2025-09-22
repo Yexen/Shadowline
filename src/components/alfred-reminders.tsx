@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Clock, Trash2, CheckCircle, Bell, Plus, Calendar, AlertCircle, Timer } from 'lucide-react';
+import { Clock, Trash2, CheckCircle, Bell, Plus, Calendar, AlertCircle, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface AlfredRemindersProps {
@@ -227,7 +227,7 @@ export function AlfredReminders({ isOpen, onClose }: AlfredRemindersProps) {
                                 className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                 title="Snooze for 10 minutes"
                               >
-                                <Timer className="h-4 w-4" />
+                                <Pause className="h-4 w-4" />
                               </Button>
                             </>
                           )}

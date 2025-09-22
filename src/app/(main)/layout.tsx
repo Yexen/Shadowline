@@ -56,6 +56,7 @@ import { useModalStore } from '@/hooks/use-modal-store';
 import { useWriters } from '@/hooks/use-writers';
 import { useTimer } from '@/hooks/use-timer';
 import { useAuth } from '@/hooks/use-auth';
+import { useWindowManager } from '@/lib/window-manager';
 
 import { BibleEditor } from '@/components/bible-editor';
 import { WriterProfile } from '@/components/writer-profile';
@@ -114,6 +115,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const { modalType, modalData, closeModal, openModal } = useModalStore();
   const { volumes, updateChapter, getChapter } = useVolumes();
   const { logout } = useAuth();
+  const { openWindow, closeWindow } = useWindowManager();
 
   const [editingEntry, setEditingEntry] = useState<{ category: string; entry: BibleEntry } | null>(null);
   const [newCategory, setNewCategory] = useState('');
@@ -153,14 +155,37 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   };
 
   const handleViewOnMap = (locationName: string) => {
-    // Store the location to highlight in localStorage for the map to read
-    localStorage.setItem('map-highlight-location', locationName);
-    // Navigate to the 3D Gotham map
-    router.push('/maps?map=map-gotham-3d');
+    console.log('handleViewOnMap called with:', locationName);
+    // Navigate to the 3D Gotham map with location parameter
+    const encodedLocation = encodeURIComponent(locationName);
+    router.push(`/maps?map=map-gotham-3d&location=${encodedLocation}`);
     // Close the Bible editor
     setEditingEntry(null);
     closeModal();
   };
+
+  // Window management for Bible Editor
+  useEffect(() => {
+    if (editingEntry) {
+      const windowId = openWindow({
+        title: `${editingEntry.entry.title} - ${editingEntry.category}`,
+        component: 'bible-editor',
+        data: {
+          ...editingEntry,
+          onSave: handleSaveEntry,
+          onDelete: handleDeleteEntry,
+          onViewOnMap: handleViewOnMap
+        },
+        x: 100,
+        y: 100,
+        width: 900,
+        height: 700,
+      });
+      return () => {
+        closeWindow(windowId);
+      };
+    }
+  }, [editingEntry, openWindow, closeWindow, handleSaveEntry, handleDeleteEntry, handleViewOnMap]);
 
   const handleAddNewEntry = (category: string) => {
     setEditingEntry({ category, entry: { title: 'New Entry', fields: [{label: "Description", value: ""}] } });
@@ -394,15 +419,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </div>
       </SidebarInset>
 
-      {/* Bible Editor */}
-      <BibleEditor 
-        entry={editingEntry?.entry ?? null}
-        category={editingEntry?.category ?? ''}
-        onClose={handleCloseEditor}
-        onSave={handleSaveEntry}
-        onDelete={handleDeleteEntry}
-        onViewOnMap={handleViewOnMap}
-      />
       
       {/* Writer Profile */}
       <WriterProfile 

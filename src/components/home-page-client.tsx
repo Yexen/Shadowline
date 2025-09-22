@@ -111,6 +111,7 @@ export function HomePageClient({ initialVideos, initialNews, videoError, newsErr
         <RefreshButton onRefresh={handleRefreshFeeds} />
       </div>
 
+
       <section>
         <h2 className="font-headline text-2xl font-bold uppercase flex items-center gap-3 mb-4">
             <Youtube className="text-primary" />

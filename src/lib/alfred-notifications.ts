@@ -22,9 +22,10 @@ export interface AlfredNotification {
 export interface NotificationAction {
   id: string;
   label: string;
-  action: 'dismiss' | 'accept' | 'defer' | 'custom';
+  action: 'dismiss' | 'accept' | 'defer' | 'custom' | 'remind_later';
   handler?: () => void;
   style?: 'primary' | 'secondary' | 'destructive';
+  customData?: any;
 }
 
 class AlfredNotificationService {
@@ -34,12 +35,20 @@ class AlfredNotificationService {
 
   // Add notification
   addNotification(notification: Omit<AlfredNotification, 'id' | 'timestamp'>): string {
-    const id = `notification_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = `notification_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
     const newNotification: AlfredNotification = {
       id,
       timestamp: new Date().toISOString(),
       ...notification
     };
+
+    // Set up default handlers for action buttons if not provided
+    if (newNotification.actions) {
+      newNotification.actions = newNotification.actions.map(action => ({
+        ...action,
+        handler: action.handler || this.createDefaultHandler(action, id)
+      }));
+    }
 
     this.notifications.push(newNotification);
     this.notifyListeners();
@@ -258,6 +267,75 @@ class AlfredNotificationService {
     this.listeners.forEach(listener => listener([...this.notifications]));
   }
 
+  // Create default handlers for action buttons
+  private createDefaultHandler(action: NotificationAction, notificationId: string): () => void {
+    return () => {
+      switch (action.action) {
+        case 'dismiss':
+          this.removeNotification(notificationId);
+          break;
+        case 'accept':
+          // Handle accept action - could trigger specific functionality
+          this.handleAcceptAction(action, notificationId);
+          this.removeNotification(notificationId);
+          break;
+        case 'defer':
+          // Handle defer action - could move to later
+          this.handleDeferAction(action, notificationId);
+          this.removeNotification(notificationId);
+          break;
+        case 'remind_later':
+          // Handle remind later - will implement time picker
+          this.handleRemindLaterAction(action, notificationId);
+          break;
+        case 'custom':
+          // Handle custom actions
+          this.handleCustomAction(action, notificationId);
+          break;
+        default:
+          this.removeNotification(notificationId);
+      }
+    };
+  }
+
+  private handleAcceptAction(action: NotificationAction, _notificationId: string): void {
+    // Log or handle the accept action
+    console.log(`User accepted: ${action.id}`);
+    // Could trigger specific functionality based on action.id
+  }
+
+  private handleDeferAction(action: NotificationAction, _notificationId: string): void {
+    // Log or handle the defer action
+    console.log(`User deferred: ${action.id}`);
+    // Could reschedule or save for later
+  }
+
+  private handleRemindLaterAction(_action: NotificationAction, notificationId: string): void {
+    // Get the notification details
+    const notification = this.notifications.find(n => n.id === notificationId);
+    if (!notification) return;
+
+    // Trigger the remind me later modal by dispatching a custom event
+    const remindLaterEvent = new CustomEvent('alfred:remind-later', {
+      detail: {
+        notificationId,
+        title: notification.title,
+        message: notification.message
+      }
+    });
+    
+    window.dispatchEvent(remindLaterEvent);
+    
+    // Remove the current notification
+    this.removeNotification(notificationId);
+  }
+
+  private handleCustomAction(action: NotificationAction, notificationId: string): void {
+    // Handle custom actions based on action.id
+    console.log(`Custom action: ${action.id}`);
+    this.removeNotification(notificationId);
+  }
+
   // Proactive notification generators
   generateProactiveNotifications(): void {
     const now = Date.now();
@@ -342,7 +420,7 @@ class AlfredNotificationService {
 
     if (hasIncompleteWork) {
       this.addNotification({
-        type: 'banner',
+        type: 'toast',
         priority: 'medium',
         title: 'Alfred notices',
         message: 'I see some unfinished character development from our last session. Shall we continue where we left off?',
@@ -435,7 +513,7 @@ class AlfredNotificationService {
 
   showConflictDetected(item: string, description: string): void {
     this.addNotification({
-      type: 'banner',
+      type: 'toast',
       priority: 'high',
       title: 'Conflict detected',
       message: `I've noticed an inconsistency with "${item}": ${description}`,

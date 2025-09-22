@@ -4,6 +4,7 @@ import './globals.css';
 import { ClientProviders } from '@/components/providers/client-providers';
 import { AlfredAssistant } from '@/components/alfred-assistant';
 import { AlfredNotificationContainer } from '@/components/alfred-notifications';
+import { WindowContainer } from '@/components/window-container';
 
 export const metadata: Metadata = {
   title: 'Shadowline',
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </footer>
           <AlfredAssistant />
           <AlfredNotificationContainer />
+          <WindowContainer />
         </ClientProviders>
       </body>
     </html>

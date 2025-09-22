@@ -118,6 +118,7 @@ export const gotham3DMapHtml = `
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
+    console.log('🚀 MAP SCRIPT STARTED - JavaScript is executing!');
     let scene, camera, renderer, buildings=[], labels=[];
     let moveForward=false, moveBackward=false, moveLeft=false, moveRight=false;
     let mouseX=0, mouseY=0, isMouseDown=false, showLabels=true;
@@ -151,9 +152,9 @@ export const gotham3DMapHtml = `
         description:'Chemical plant where Red Hood fell, creating the Joker.',
         details:'History: Birthplace of the Joker<br>Status: Abandoned toxic site<br>Dangers: Chemical burns, toxic exposure<br>Contamination: Extremely hazardous - requires protective gear' },
       { name:'Iceberg Lounge', pos:[-120,12,80], color:0x00ffff, type:'villain', threat:'high', icon:'🧊',
-        description:"Penguin's upscale nightclub fronting a criminal empire.",
+        description:'Penguin upscale nightclub fronting a criminal empire.',
         details:'Owner: Oswald "Penguin" Cobblepot<br>Cover: High-end nightclub and casino<br>Real business: Money laundering, arms dealing<br>Security: Armed thugs as "bouncers"' },
-      { name:"Poison Ivy's Lair", pos:[40,10,-120], color:0x228b22, type:'villain', threat:'high', icon:'🌿',
+      { name:'Poison Ivy Lair', pos:[40,10,-120], color:0x228b22, type:'villain', threat:'high', icon:'🌿',
         description:'Botanical hideout with mutated plants and toxic air.',
         details:'Inhabitant: Dr. Pamela Isley<br>Environment: Overgrown greenhouse complex<br>Dangers: Toxic spores, carnivorous plants<br>Required: Full hazmat protection and antidotes' },
       { name:'Two-Face Territory', pos:[-80,15,120], color:0x800080, type:'villain', threat:'high', icon:'😈',
@@ -182,7 +183,44 @@ export const gotham3DMapHtml = `
         details:'Owner: Bruce Wayne<br>Built: 1855 by the Wayne family<br>Staff: Alfred Pennyworth (butler)<br>Secret: Hidden Batcave entrance<br>Security: Advanced Wayne Tech systems' },
       { name:'Batcave', pos:[-190,6,-140], color:0x222222, type:'hero', threat:'low', icon:'🦇',
         description:'Hidden cavern base accessible via a concealed entrance near Wayne Manor.',
-        details:'Access: Secret cliffside entrance<br>Vehicles: Batmobile dock & turntable<br>Facilities: Batcomputer, Armory, Lab<br>Security: Biometric locks & failsafes' }
+        details:'Access: Secret cliffside entrance<br>Vehicles: Batmobile dock & turntable<br>Facilities: Batcomputer, Armory, Lab<br>Security: Biometric locks & failsafes' },
+      
+      // Additional Canonical Gotham Locations
+      { name:'Crime Alley', pos:[-70,1,-85], color:0x800000, type:'villain', threat:'high', icon:'⚰️',
+        description:'The narrow alley where Thomas and Martha Wayne were murdered.',
+        details:'Historic significance: Wayne family murder site<br>Current state: Memorial plaque installed<br>Crime rate: Still dangerously high' },
+      
+      { name:'Blackgate Penitentiary', pos:[180,5,60], color:0x333333, type:'neutral', threat:'high', icon:'🏢',
+        description:'Maximum security prison for non-insane criminals on its own island.',
+        details:'Security level: Maximum<br>Capacity: 2,500 inmates<br>Notable inmates: Mob bosses, gang leaders' },
+        
+      { name:'Gotham University', pos:[40,15,-60], color:0x4169e1, type:'neutral', threat:'low', icon:'🎓',
+        description:'Prestigious university known for research programs and frequent villain targets.',
+        details:'Students: 15,000+ enrolled<br>Notable alumni: Many Wayne family members<br>Research: Advanced sciences, criminology' },
+        
+      { name:'Livs Apartment', pos:[25,12,-25], color:0xff69b4, type:'neutral', threat:'low', icon:'🏠',
+        description:'Cozy apartment in Midtown district. Safe neighborhood with good security.',
+        details:'Location: Midtown residential district<br>Building: Modern high-rise with doorman<br>Security: 24/7 concierge, security cameras' },
+        
+      { name:'The Narrows', pos:[100,5,80], color:0x2f4f4f, type:'villain', threat:'extreme', icon:'🏚️',
+        description:'Most dangerous slum, a maze of decrepit buildings and criminal hideouts.',
+        details:'Population: Mostly impoverished families<br>Crime rate: Extremely high<br>Gang presence: Multiple competing factions' },
+        
+      { name:'Amusement Mile', pos:[150,5,-50], color:0xff1493, type:'villain', threat:'extreme', icon:'🎪',
+        description:'Abandoned amusement park, now the Jokers primary base of operations.',
+        details:'Status: Closed since 1985, now Joker territory<br>Hazards: Booby traps, laughing gas, unstable structures' },
+        
+      { name:'Diamond District', pos:[35,18,-45], color:0xe6e6fa, type:'neutral', threat:'low', icon:'💎',
+        description:'Upscale shopping and business district with luxury stores.',
+        details:'Establishments: Luxury boutiques, fine dining, art galleries<br>Clientele: Elite<br>Security: High-end private security' },
+        
+      { name:'The East End', pos:[120,8,40], color:0x696969, type:'villain', threat:'high', icon:'🌃',
+        description:'Working-class district known for organized crime and Catwomans territory.',
+        details:'Population: Working families, some criminal elements<br>Notable: Catwoman operating area<br>Crime: Organized theft' },
+        
+      { name:'Robbinsville', pos:[60,15,-100], color:0x9370db, type:'neutral', threat:'low', icon:'🏡',
+        description:'Upscale residential area where many wealthy families live.',
+        details:'Demographics: Upper class families<br>Housing: Mansions, luxury condos<br>Security: Private security firms' }
     ];
 
     const streets = [
@@ -671,6 +709,130 @@ export const gotham3DMapHtml = `
       updateUI();
       renderer.render(scene,camera);
     }
+
+    // PostMessage listener for parent communication
+    console.log('🔧 PostMessage listener setup complete');
+    window.addEventListener('message', (event) => {
+      console.log('🗺️ Map received ANY message:', event);
+      console.log('🗺️ Message data:', event.data);
+      console.log('🗺️ Message origin:', event.origin);
+      
+      if (event.data && event.data.type === 'TEST_MESSAGE') {
+        console.log('🧪 Received test message from parent:', event.data.message);
+      } else if (event.data && event.data.type === 'HIGHLIGHT_LOCATION') {
+        console.log('🎯 Processing HIGHLIGHT_LOCATION for:', event.data.location);
+        // Wait for map to be fully initialized
+        if (camera && scene && renderer) {
+          highlightLocationOnMap(event.data.location);
+        } else {
+          console.log('⏳ Map not ready yet, waiting...');
+          setTimeout(() => {
+            if (camera && scene && renderer) {
+              highlightLocationOnMap(event.data.location);
+            } else {
+              console.error('❌ Map components still not ready after delay');
+            }
+          }, 1000);
+        }
+      } else {
+        console.log('🤷 Message was not HIGHLIGHT_LOCATION type:', event.data?.type);
+      }
+    });
+    
+    // Test postMessage reception
+    console.log('🧪 Map initialization complete, ready for messages!');
+
+    function highlightLocationOnMap(locationName) {
+      console.log('🔍 Searching for location:', locationName);
+      console.log('📍 Available locations count:', locations.length);
+      
+      // Find location in the locations array
+      const location = locations.find(loc => {
+        const cleanName = loc.name.replace(/[🏰🦇🏥🏛️🌉🎭🏢⚖️🔬🏦🎪🌆🏪🏭]/g, '').trim();
+        const cleanSearchName = locationName.replace(/[🏰🦇🏥🏛️🌉🎭🏢⚖️🔬🏦🎪🌆🏪🏭]/g, '').trim();
+        
+        // Remove common prefixes like "The" for better matching
+        const simpleName = cleanName.replace(/^(The\s+)/i, '').toLowerCase();
+        const simpleSearchName = cleanSearchName.replace(/^(The\s+)/i, '').toLowerCase();
+        
+        console.log('  🔍 Comparing:', simpleName, 'vs', simpleSearchName);
+        
+        return simpleName.includes(simpleSearchName) || 
+               simpleSearchName.includes(simpleName) ||
+               simpleName === simpleSearchName;
+      });
+      
+      if (location) {
+        console.log('✅ Found location:', location.name, 'at position:', location.pos);
+        console.log('📷 Current camera position:', camera.position);
+        
+        // Get target position
+        const [x, y, z] = location.pos;
+        
+        // Animate camera to location
+        animateCameraToLocation(x, y, z, location);
+      } else {
+        console.error('❌ Location not found. Available locations:');
+        locations.forEach(loc => console.log('  📍', loc.name));
+      }
+    }
+
+    function animateCameraToLocation(x, y, z, locationData) {
+      console.log('🎬 Starting camera animation to:', x, y, z);
+      console.log('📷 Current camera position:', camera.position.x, camera.position.y, camera.position.z);
+      
+      // Store initial camera position
+      const startPos = camera.position.clone();
+      const targetPos = new THREE.Vector3(x + 50, y + 40, z + 50); // Closer positioning
+      
+      console.log('🎯 Target position:', targetPos.x, targetPos.y, targetPos.z);
+      
+      let progress = 0;
+      const duration = 2.0; // 2 seconds
+      const frameRate = 60;
+      const increment = 1 / (duration * frameRate);
+      
+      function animateFrame() {
+        progress += increment;
+        
+        if (progress <= 1) {
+          // Smooth interpolation
+          const t = 1 - Math.pow(1 - progress, 3); // Ease-out cubic
+          camera.position.lerpVectors(startPos, targetPos, t);
+          
+          // Look at the location
+          const lookTarget = new THREE.Vector3(x, y, z);
+          camera.lookAt(lookTarget);
+          
+          if (progress > 0.1 && progress < 0.2) {
+            console.log('🎬 Animation progress:', Math.round(progress * 100) + '%');
+          }
+          
+          requestAnimationFrame(animateFrame);
+        } else {
+          // Final position
+          camera.position.copy(targetPos);
+          camera.lookAt(x, y, z);
+          
+          console.log('✅ Animation complete! Camera at:', camera.position.x, camera.position.y, camera.position.z);
+          
+          // Show location card after animation
+          setTimeout(() => {
+            if (locationData) {
+              console.log('📋 Showing location card for:', locationData.name);
+              showLocationCard(locationData, window.innerWidth / 2, window.innerHeight / 2);
+            }
+          }, 500);
+        }
+      }
+      
+      animateFrame();
+    }
+
+    // Make functions available globally for debugging
+    window.camera = camera;
+    window.THREE = THREE;
+    window.highlightLocationOnMap = highlightLocationOnMap;
 
     init();
   </script>
