@@ -5,7 +5,9 @@ import { ClientMemoryManager } from '@/lib/alfred-memory-service';
 import { alfredNotifications } from '@/lib/alfred-notifications';
 import { AlfredBadge } from '@/components/alfred-notifications';
 import { alfredSearch } from '@/lib/alfred-search';
+import { alfredReminders } from '@/lib/alfred-reminders';
 import { AlfredSettings } from '@/components/alfred-settings';
+import { AlfredReminders } from '@/components/alfred-reminders';
 import { getAlfredResponse, getRelevantKnowledge, personalInfo } from '@/lib/alfred-knowledge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, X, Minimize2, Maximize2, Coffee, Bell, Brain, Heart, Paperclip, FileText, Image as ImageIcon, Video, Music, Settings, Expand, Shrink } from 'lucide-react';
+import { MessageSquare, X, Minimize2, Maximize2, Coffee, Bell, Brain, Heart, Paperclip, FileText, Image as ImageIcon, Video, Music, Settings, Expand, Shrink, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 
@@ -82,6 +84,7 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
   const [attachments, setAttachments] = useState<AttachmentInfo[]>([]);
   const [badgeCount, setBadgeCount] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
+  const [showReminders, setShowReminders] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const memoryManager = useRef<ClientMemoryManager>(new ClientMemoryManager());
@@ -197,6 +200,70 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
       case 'video': return <Video className="h-4 w-4" />;
       case 'audio': return <Music className="h-4 w-4" />;
       default: return <FileText className="h-4 w-4" />;
+    }
+  };
+
+  const handleReminderCommand = async (input: string) => {
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      content: input,
+      sender: 'user',
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setCurrentMessage('');
+    setAlfredEmotion('thinking');
+
+    try {
+      const reminder = alfredReminders.createReminder(input);
+
+      if (reminder) {
+        const alfredResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          content: `Certainly, Miss! I've set a reminder for you: "${reminder.message}" at ${alfredReminders.formatReminderTime(reminder.scheduledTime)}. I'll notify you promptly when the time comes.`,
+          sender: 'alfred',
+          timestamp: new Date(),
+          emotion: 'happy'
+        };
+
+        setMessages(prev => [...prev, alfredResponse]);
+        setAlfredEmotion('happy');
+
+        // Store reminder in memory
+        memoryManager.current.addMemory({
+          type: 'task',
+          content: `Reminder set: "${reminder.message}" at ${alfredReminders.formatReminderTime(reminder.scheduledTime)}`,
+          context: ['reminder', 'scheduling'],
+          importance: 'high',
+          tags: ['reminder', 'time-management']
+        });
+
+      } else {
+        const alfredResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          content: `I do apologize, Miss, but I couldn't quite understand the timing in your request. Could you please try again with a format like "remind me to call mom at 2pm" or "remind me to check email in 30 minutes"?`,
+          sender: 'alfred',
+          timestamp: new Date(),
+          emotion: 'concerned'
+        };
+
+        setMessages(prev => [...prev, alfredResponse]);
+        setAlfredEmotion('concerned');
+      }
+
+    } catch (error) {
+      console.error('Reminder error:', error);
+      const errorResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        content: `I do apologize, Miss. I encountered some difficulty setting that reminder. Perhaps we could try a different approach?`,
+        sender: 'alfred',
+        timestamp: new Date(),
+        emotion: 'concerned'
+      };
+
+      setMessages(prev => [...prev, errorResponse]);
+      setAlfredEmotion('concerned');
     }
   };
 
@@ -344,6 +411,12 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
     // Check for search commands
     if (currentMessage.toLowerCase().startsWith('/search ')) {
       await handleSearchCommand(currentMessage.substring(8));
+      return;
+    }
+
+    // Check for reminder commands
+    if (currentMessage.toLowerCase().includes('remind me')) {
+      await handleReminderCommand(currentMessage);
       return;
     }
 
@@ -516,6 +589,15 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
             </div>
           </div>
           <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowReminders(true)}
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
+              title="Reminders"
+            >
+              <Clock className="h-4 w-4" />
+            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -766,6 +848,14 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
         <AlfredSettings
           isOpen={showSettings}
           onClose={() => setShowSettings(false)}
+        />
+      )}
+
+      {/* Alfred Reminders Modal */}
+      {showReminders && (
+        <AlfredReminders
+          isOpen={showReminders}
+          onClose={() => setShowReminders(false)}
         />
       )}
     </div>
