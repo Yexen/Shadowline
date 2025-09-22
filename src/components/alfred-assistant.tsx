@@ -3,14 +3,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { ClientMemoryManager } from '@/lib/alfred-memory-service';
 import { alfredNotifications } from '@/lib/alfred-notifications';
-import { AlfredBadge } from '@/components/alfred-notifications';
 import { alfredSearch } from '@/lib/alfred-search';
 import { alfredReminders } from '@/lib/alfred-reminders';
 import { nativeNotifications } from '@/lib/native-notifications';
 import { AlfredSettings } from '@/components/alfred-settings';
 import { AlfredReminders } from '@/components/alfred-reminders';
-import { NotificationBadge, NotificationPermissionRequest } from '@/components/notification-badge';
-import { ServiceWorkerStatus } from '@/components/service-worker-status';
 import { RemindMeLaterModal } from '@/components/remind-me-later-modal';
 import { getAlfredResponse, getRelevantKnowledge, personalInfo } from '@/lib/alfred-knowledge';
 import { Button } from '@/components/ui/button';
@@ -19,7 +16,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, X, Minimize2, Maximize2, Coffee, Bell, Brain, Heart, Paperclip, FileText, Image as ImageIcon, Video, Music, Settings, Expand, Shrink, Clock, Plus, History } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { MessageSquare, X, Maximize2, Bell, Brain, Heart, Paperclip, FileText, Image as ImageIcon, Video, Music, Settings, Clock, Plus, History, Send, Trash2, Edit3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 
@@ -46,23 +44,20 @@ interface AlfredAssistantProps {
 
 export function AlfredAssistant({ className }: AlfredAssistantProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [currentChatId, setCurrentChatId] = useState<string>(() => {
-    // Load current chat ID from localStorage or default
     if (typeof window !== 'undefined') {
       return localStorage.getItem('alfred-current-chat') || 'default';
     }
     return 'default';
   });
+  
   const [messages, setMessages] = useState<Message[]>(() => {
-    // Try to load chat history from localStorage
     if (typeof window !== 'undefined') {
       try {
         const savedMessages = localStorage.getItem(`alfred-chat-${currentChatId}`);
         if (savedMessages) {
           const parsed = JSON.parse(savedMessages);
-          // Convert timestamp strings back to Date objects
           return parsed.map((msg: any) => ({
             ...msg,
             timestamp: new Date(msg.timestamp)
@@ -73,18 +68,14 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
       }
     }
 
-    // Default greeting if no saved history
     const now = new Date();
     const hour = now.getHours();
     const greetings = [
-      // Time-based greetings
       hour < 6 ? `Good heavens, ${personalInfo.name}! Up rather early today, aren't we? Or perhaps late from last night's creative endeavours? Either way, I'm at your service.` :
       hour < 12 ? `Good morning, ${personalInfo.name}! The dawn brings fresh possibilities for your Batman universe. What shall we craft today?` :
       hour < 17 ? `Good afternoon, ${personalInfo.name}! I trust the day has been productive. Shall we dive into some creative work together?` :
       hour < 21 ? `Good evening, ${personalInfo.name}! Perfect time for some atmospheric Batman storytelling, wouldn't you say?` :
       `Working late again, ${personalInfo.name}? Admirable dedication. The night is when the best Batman stories come alive.`,
-
-      // Varied general greetings
       `Ah, ${personalInfo.name}! How delightful to see you return. I've been organizing the digital Batcave in your absence.`,
       `Welcome back, ${personalInfo.name}! I do hope you're prepared for another session of brilliant creativity.`,
       `${personalInfo.name}, splendid timing! I was just pondering some intriguing possibilities for your projects.`,
@@ -102,6 +93,7 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
       emotion: 'happy'
     }];
   });
+
   const [conversationContext, setConversationContext] = useState({
     currentTopic: 'general',
     recentMessages: [],
@@ -114,15 +106,29 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
   const [badgeCount, setBadgeCount] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [showReminders, setShowReminders] = useState(false);
+  const [showChatHistory, setShowChatHistory] = useState(false);
+  const [chatList, setChatList] = useState<string[]>([]);
+  const [showNotificationPopup, setShowNotificationPopup] = useState(false);
+  const [unseenNotifications, setUnseenNotifications] = useState<any[]>([]);
   const [showRemindLater, setShowRemindLater] = useState(false);
   const [remindLaterData, setRemindLaterData] = useState<{
     title: string;
     message: string;
   } | null>(null);
-  const [showChatHistory, setShowChatHistory] = useState(false);
-  const [chatList, setChatList] = useState<string[]>([]);
-  const [showNotificationPopup, setShowNotificationPopup] = useState(false);
-  const [unseenNotifications, setUnseenNotifications] = useState<any[]>([]);
+  const [editingChatId, setEditingChatId] = useState<string | null>(null);
+  const [editingChatName, setEditingChatName] = useState('');
+  const [chatNames, setChatNames] = useState<Record<string, string>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('alfred-chat-names');
+        return saved ? JSON.parse(saved) : {};
+      } catch {
+        return {};
+      }
+    }
+    return {};
+  });
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const memoryManager = useRef<ClientMemoryManager>(new ClientMemoryManager());
@@ -130,6 +136,10 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   // Load chat list on mount
   useEffect(() => {
@@ -144,7 +154,7 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
           }
         }
       }
-      chats.unshift(currentChatId); // Current chat first
+      chats.unshift(currentChatId);
       setChatList(chats);
     }
   }, [currentChatId]);
@@ -162,17 +172,11 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
   }, [messages, currentChatId]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  useEffect(() => {
-    // Subscribe to notification updates for badge count
     const unsubscribe = alfredNotifications.subscribe((notifications) => {
       setBadgeCount(alfredNotifications.getBadgeCount());
       setUnseenNotifications(notifications.filter(n => n.type !== 'badge'));
     });
 
-    // Listen for remind me later events
     const handleRemindLater = (event: CustomEvent) => {
       setRemindLaterData({
         title: event.detail.title,
@@ -183,56 +187,8 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
 
     window.addEventListener('alfred:remind-later', handleRemindLater as EventListener);
 
-    // Demo: Send a welcome notification after 3 seconds
-    const welcomeTimer = setTimeout(() => {
-      alfredNotifications.addNotification({
-        type: 'toast',
-        priority: 'low',
-        title: 'Alfred here',
-        message: 'I\'ll occasionally send helpful notifications. You can manage these in settings.',
-        autoHide: true,
-        hideAfter: 8000,
-        tags: ['welcome', 'demo']
-      });
-    }, 3000);
-
-    // Demo: Send a proactive suggestion after 15 seconds
-    const suggestionTimer = setTimeout(() => {
-      alfredNotifications.addNotification({
-        type: 'toast',
-        priority: 'medium',
-        title: 'Alfred suggests',
-        message: 'Would you like to explore some Batman character relationships today? I have some fascinating insights.',
-        actions: [
-          {
-            id: 'explore',
-            label: 'Tell me more',
-            action: 'accept',
-            style: 'primary'
-          },
-          {
-            id: 'remind_later',
-            label: 'Remind me later',
-            action: 'remind_later',
-            style: 'secondary'
-          },
-          {
-            id: 'dismiss',
-            label: 'Dismiss',
-            action: 'dismiss',
-            style: 'secondary'
-          }
-        ],
-        autoHide: true,
-        hideAfter: 12000,
-        tags: ['suggestion', 'batman']
-      });
-    }, 15000);
-
     return () => {
       unsubscribe();
-      clearTimeout(welcomeTimer);
-      clearTimeout(suggestionTimer);
       window.removeEventListener('alfred:remind-later', handleRemindLater as EventListener);
     };
   }, []);
@@ -256,7 +212,6 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
         reader.readAsDataURL(file);
       });
     }
-    // Reset input value
     if (event.target) {
       event.target.value = '';
     }
@@ -290,324 +245,10 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
     }
   };
 
-  const handleReminderCommand = async (input: string) => {
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content: input,
-      sender: 'user',
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setCurrentMessage('');
-    setAlfredEmotion('thinking');
-
-    try {
-      const reminder = alfredReminders.createReminder(input);
-
-      if (reminder) {
-        const alfredResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          content: `Certainly, Miss! I've set a reminder for you: "${reminder.message}" at ${alfredReminders.formatReminderTime(reminder.scheduledTime)}. I'll notify you promptly when the time comes.`,
-          sender: 'alfred',
-          timestamp: new Date(),
-          emotion: 'happy'
-        };
-
-        setMessages(prev => [...prev, alfredResponse]);
-        setAlfredEmotion('happy');
-
-        // Store reminder in memory
-        memoryManager.current.addMemory({
-          type: 'task',
-          content: `Reminder set: "${reminder.message}" at ${alfredReminders.formatReminderTime(reminder.scheduledTime)}`,
-          context: ['reminder', 'scheduling'],
-          importance: 'high',
-          tags: ['reminder', 'time-management']
-        });
-
-      } else {
-        const alfredResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          content: `I do apologize, Miss, but I couldn't quite understand the timing in your request. Could you please try again with a format like "remind me to call mom at 2pm" or "remind me to check email in 30 minutes"?`,
-          sender: 'alfred',
-          timestamp: new Date(),
-          emotion: 'concerned'
-        };
-
-        setMessages(prev => [...prev, alfredResponse]);
-        setAlfredEmotion('concerned');
-      }
-
-    } catch (error) {
-      console.error('Reminder error:', error);
-      const errorResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        content: `I do apologize, Miss. I encountered some difficulty setting that reminder. Perhaps we could try a different approach?`,
-        sender: 'alfred',
-        timestamp: new Date(),
-        emotion: 'concerned'
-      };
-
-      setMessages(prev => [...prev, errorResponse]);
-      setAlfredEmotion('concerned');
-    }
-  };
-
-  const handleSearchCommand = async (query: string) => {
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content: `/search ${query}`,
-      sender: 'user',
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setCurrentMessage('');
-    setAlfredEmotion('thinking');
-
-    try {
-      // Perform search
-      const searchResults = await alfredSearch.searchExternalSources(query);
-      const summary = alfredSearch.generateResearchSummary(query, searchResults);
-
-      const alfredResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        content: `Splendid! I've searched external sources for "${query}". Here's what I found:\n\n${summary}`,
-        sender: 'alfred',
-        timestamp: new Date(),
-        emotion: 'excited'
-      };
-
-      setMessages(prev => [...prev, alfredResponse]);
-      setAlfredEmotion('excited');
-
-      // Show research findings notification
-      if (searchResults.length > 0) {
-        setTimeout(() => {
-          alfredNotifications.showResearchFindings(query, searchResults.map(r => r.title));
-        }, 1000);
-      }
-
-      // Store search in memory
-      memoryManager.current.addMemory({
-        type: 'insight',
-        content: `Research conducted: "${query}" - Found ${searchResults.length} relevant sources`,
-        context: ['research', 'external-search'],
-        importance: 'high',
-        tags: ['research', 'search', query.split(' ')[0]]
-      });
-
-    } catch (error) {
-      console.error('Search error:', error);
-      const errorResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        content: `I do apologize, Miss. I encountered some difficulty with that search. Perhaps we could try a different approach?`,
-        sender: 'alfred',
-        timestamp: new Date(),
-        emotion: 'concerned'
-      };
-
-      setMessages(prev => [...prev, errorResponse]);
-      setAlfredEmotion('concerned');
-    }
-  };
-
-  const triggerContextualNotifications = (userMessage: string, alfredResponse: string) => {
-    const messageLower = userMessage.toLowerCase();
-    const responseLower = alfredResponse.toLowerCase();
-
-    // Check for work completion mentions
-    if (messageLower.includes('done') || messageLower.includes('finished') || messageLower.includes('completed')) {
-      setTimeout(() => {
-        alfredNotifications.addNotification({
-          type: 'toast',
-          priority: 'medium',
-          title: 'Alfred commends',
-          message: 'Excellent work, Miss! Shall I help you document this progress or move on to the next task?',
-          actions: [
-            {
-              id: 'document',
-              label: 'Document progress',
-              action: 'accept',
-              style: 'primary'
-            },
-            {
-              id: 'next',
-              label: 'Next task',
-              action: 'accept',
-              style: 'secondary'
-            },
-            {
-              id: 'remind_later',
-              label: 'Remind me later',
-              action: 'remind_later',
-              style: 'secondary'
-            }
-          ],
-          autoHide: true,
-          hideAfter: 10000,
-          tags: ['completion', 'progress']
-        });
-      }, 2000);
-    }
-
-    // Check for creative blocks or struggles
-    if (messageLower.includes('stuck') || messageLower.includes('blocked') || messageLower.includes('help')) {
-      setTimeout(() => {
-        alfredNotifications.addNotification({
-          type: 'banner',
-          priority: 'medium',
-          title: 'Alfred offers assistance',
-          message: 'I sense you might benefit from a different perspective. Would you like me to suggest some approaches?',
-          actions: [
-            {
-              id: 'suggest',
-              label: 'Yes, please',
-              action: 'accept',
-              style: 'primary'
-            },
-            {
-              id: 'remind_later',
-              label: 'Remind me later',
-              action: 'remind_later',
-              style: 'secondary'
-            },
-            {
-              id: 'dismiss',
-              label: 'I\'ll figure it out',
-              action: 'dismiss',
-              style: 'secondary'
-            }
-          ],
-          tags: ['support', 'creativity']
-        });
-      }, 3000);
-    }
-
-    // Check for Batman/Codex work patterns
-    if (messageLower.includes('batman') || messageLower.includes('codex') || messageLower.includes('character')) {
-      // Random chance to suggest related work
-      if (Math.random() < 0.3) {
-        setTimeout(() => {
-          alfredNotifications.addNotification({
-            type: 'toast',
-            priority: 'low',
-            title: 'Alfred observes',
-            message: 'Your creative energy seems focused today. Perhaps it\'s a good time to explore some character backstories?',
-            autoHide: true,
-            hideAfter: 8000,
-            tags: ['observation', 'creative-flow']
-          });
-        }, 5000);
-      }
-    }
-  };
-
-  const handleSendMessage = async () => {
-    if (!currentMessage.trim() && attachments.length === 0) return;
-
-    // Check for search commands
-    if (currentMessage.toLowerCase().startsWith('/search ')) {
-      await handleSearchCommand(currentMessage.substring(8));
-      return;
-    }
-
-    // Check for reminder commands
-    if (currentMessage.toLowerCase().includes('remind me')) {
-      await handleReminderCommand(currentMessage);
-      return;
-    }
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content: currentMessage,
-      sender: 'user',
-      timestamp: new Date(),
-      attachments: attachments.length > 0 ? [...attachments] : undefined
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-
-    // Store conversation context locally
-    setConversationContext(prev => ({
-      ...prev,
-      recentMessages: [...prev.recentMessages.slice(-4), currentMessage],
-      currentTopic: currentMessage.toLowerCase().includes('batman') ? 'batman' :
-                   currentMessage.toLowerCase().includes('codex') ? 'codex' : 'general'
-    }));
-
-    setCurrentMessage('');
-    setAttachments([]);
-    setAlfredEmotion('thinking');
-
-    // Generate intelligent response using OpenAI API
-    const generateAlfredResponse = async () => {
-      try {
-        const response = await fetch('/api/ai/alfred', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            message: currentMessage,
-            history: messages.slice(-10), // Send last 10 messages for context
-            provider: 'openai',
-            attachments: attachments.length > 0 ? attachments : undefined,
-            clientMemories: memoryManager.current.getAllMemories()
-          }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to get response from Alfred');
-        }
-
-        const alfredResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          content: data.response,
-          sender: 'alfred',
-          timestamp: new Date(),
-          emotion: data.emotion || 'neutral'
-        };
-
-        setMessages(prev => [...prev, alfredResponse]);
-        setAlfredEmotion(data.emotion === 'thoughtful' ? 'thinking' : data.emotion === 'excited' ? 'happy' : data.emotion);
-
-        // Sync updated memories from server back to client
-        if (data.updatedMemories) {
-          memoryManager.current.syncMemoriesFromServer(data.updatedMemories);
-        }
-
-        // Trigger contextual notifications based on conversation
-        triggerContextualNotifications(currentMessage, data.response);
-
-      } catch (error) {
-        console.error('Alfred API error:', error);
-
-        // Fallback to local response if API fails
-        const fallbackResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          content: "I do apologize, Miss. It seems I'm having a spot of technical trouble at the moment. Perhaps we could try again shortly?",
-          sender: 'alfred',
-          timestamp: new Date(),
-          emotion: 'concerned'
-        };
-
-        setMessages(prev => [...prev, fallbackResponse]);
-        setAlfredEmotion('concerned');
-      }
-    };
-
-    generateAlfredResponse();
-  };
-
   const createNewChat = () => {
     const newChatId = `chat-${Date.now()}`;
     setCurrentChatId(newChatId);
     
-    // Create initial greeting for new chat
     const now = new Date();
     const hour = now.getHours();
     const greetings = [
@@ -628,6 +269,11 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
       timestamp: new Date(),
       emotion: 'happy'
     }]);
+    
+    // Set initial name as "New Chat" - will be updated when user sends first message
+    const updatedNames = { ...chatNames, [newChatId]: 'New Chat' };
+    setChatNames(updatedNames);
+    localStorage.setItem('alfred-chat-names', JSON.stringify(updatedNames));
   };
 
   const loadChat = (chatId: string) => {
@@ -635,7 +281,6 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
     
     setCurrentChatId(chatId);
     
-    // Load messages for this chat
     if (typeof window !== 'undefined') {
       try {
         const savedMessages = localStorage.getItem(`alfred-chat-${chatId}`);
@@ -671,347 +316,486 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
     return 'Chat ' + chatId;
   };
 
+  const deleteChat = (chatId: string) => {
+    if (chatId === 'default') return; // Prevent deleting default chat
+    
+    // Remove from localStorage
+    localStorage.removeItem(`alfred-chat-${chatId}`);
+    
+    // Remove from chat names
+    const updatedNames = { ...chatNames };
+    delete updatedNames[chatId];
+    setChatNames(updatedNames);
+    localStorage.setItem('alfred-chat-names', JSON.stringify(updatedNames));
+    
+    // Update chat list
+    setChatList(prev => prev.filter(id => id !== chatId));
+    
+    // If we're deleting the current chat, switch to default
+    if (chatId === currentChatId) {
+      setCurrentChatId('default');
+      loadChat('default');
+    }
+  };
+
+  const renameChat = (chatId: string, newName: string) => {
+    const updatedNames = { ...chatNames, [chatId]: newName };
+    setChatNames(updatedNames);
+    localStorage.setItem('alfred-chat-names', JSON.stringify(updatedNames));
+    setEditingChatId(null);
+    setEditingChatName('');
+  };
+
+  const startRename = (chatId: string) => {
+    setEditingChatId(chatId);
+    setEditingChatName(getChatName(chatId));
+  };
+
+  const getChatName = (chatId: string): string => {
+    if (chatNames[chatId]) return chatNames[chatId];
+    if (chatId === 'default') return 'Main Chat';
+    return `Chat ${chatId.replace('chat-', '')}`;
+  };
+
+  const generateChatNameFromMessage = (message: string): string => {
+    // Take first 30 characters and clean up
+    let name = message.trim().substring(0, 30);
+    if (message.length > 30) name += '...';
+    
+    // Remove line breaks and normalize
+    name = name.replace(/\n/g, ' ').replace(/\s+/g, ' ');
+    
+    return name || 'New Chat';
+  };
+
+  const handleSendMessage = async () => {
+    if (!currentMessage.trim() && attachments.length === 0) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      content: currentMessage,
+      sender: 'user',
+      timestamp: new Date(),
+      attachments: attachments.length > 0 ? [...attachments] : undefined
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setConversationContext(prev => ({
+      ...prev,
+      recentMessages: [...prev.recentMessages.slice(-4), currentMessage],
+      currentTopic: currentMessage.toLowerCase().includes('batman') ? 'batman' :
+                   currentMessage.toLowerCase().includes('codex') ? 'codex' : 'general'
+    }));
+
+    // Auto-generate chat name from first user message
+    if (messages.length === 1 && messages[0].sender === 'alfred') {
+      const newName = generateChatNameFromMessage(currentMessage);
+      const updatedNames = { ...chatNames, [currentChatId]: newName };
+      setChatNames(updatedNames);
+      localStorage.setItem('alfred-chat-names', JSON.stringify(updatedNames));
+    }
+
+    const messageToSend = currentMessage;
+    setCurrentMessage('');
+    setAttachments([]);
+    setAlfredEmotion('thinking');
+
+    try {
+      const response = await fetch('/api/ai/alfred', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: messageToSend,
+          history: messages.slice(-10),
+          provider: 'openai',
+          attachments: attachments.length > 0 ? attachments : undefined,
+          clientMemories: memoryManager.current.getAllMemories()
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to get response from Alfred');
+      }
+
+      const alfredResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        content: data.response,
+        sender: 'alfred',
+        timestamp: new Date(),
+        emotion: data.emotion || 'neutral'
+      };
+
+      setMessages(prev => [...prev, alfredResponse]);
+      setAlfredEmotion(data.emotion === 'thoughtful' ? 'thinking' : data.emotion === 'excited' ? 'happy' : data.emotion);
+
+      if (data.updatedMemories) {
+        memoryManager.current.syncMemoriesFromServer(data.updatedMemories);
+      }
+
+    } catch (error) {
+      console.error('Alfred API error:', error);
+
+      const fallbackResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "I do apologize, Miss. It seems I'm having a spot of technical trouble at the moment. Perhaps we could try again shortly?",
+        sender: 'alfred',
+        timestamp: new Date(),
+        emotion: 'concerned'
+      };
+
+      setMessages(prev => [...prev, fallbackResponse]);
+      setAlfredEmotion('concerned');
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
-    // Shift+Enter for new line - handled automatically by textarea
   };
 
+  // Minimized state - just avatar + notification badge
   if (!isOpen) {
     return (
       <div className={cn("fixed bottom-6 right-6 z-50", className)}>
         <div
           onClick={() => setIsOpen(true)}
           className="h-16 w-16 cursor-pointer transition-all duration-300 group relative"
-          style={{ boxShadow: '0 0 20px rgba(255, 255, 255, 0.15), 0 4px 20px rgba(0, 0, 0, 0.3)' }}
         >
           <Image
             src="/alfred-avatar.png"
             alt="Alfred Pennyworth"
             width={64}
             height={64}
-            className="h-16 w-16 object-cover group-hover:scale-110 transition-transform duration-300"
+            className="h-16 w-16 object-cover group-hover:scale-110 transition-transform duration-300 rounded-full"
             style={{
-              filter: 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.4)) drop-shadow(0 0 16px rgba(255, 255, 255, 0.2))',
-              borderRadius: '0'
+              filter: 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.4)) drop-shadow(0 0 16px rgba(255, 255, 255, 0.2))'
             }}
           />
-          <AlfredBadge count={badgeCount} />
+          {badgeCount > 0 && (
+            <div className="absolute -bottom-1 -right-1 h-6 w-6 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg">
+              {badgeCount > 9 ? '9+' : badgeCount}
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
   return (
-    <div className={cn(
-      "fixed z-50 transition-all duration-300",
-      isExpanded
-        ? "inset-4 md:inset-8"
-        : "bottom-6 right-6",
-      className
-    )}>
-      <Card className={cn(
-        "bg-gradient-to-br from-background via-card to-background border-border shadow-2xl transition-all duration-300",
-        isExpanded
-          ? "w-full h-full max-w-none"
-          : "w-96",
-        isMinimized ? "h-16" : isExpanded ? "h-full" : "h-[500px]"
+    <TooltipProvider>
+      <div className={cn(
+        "fixed z-50 transition-all duration-300",
+        isExpanded ? "inset-4" : "bottom-6 right-6",
+        className
       )}>
-        {/* Alfred's Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-primary/10 to-primary/5">
-          <div className="flex items-center space-x-3">
-            {/* Alfred's Avatar with Tea Tray */}
-            <div className="relative">
-              {alfredEmotion === 'thinking' ? (
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center animate-pulse">
-                  <Brain className="h-5 w-5 text-primary animate-pulse" />
-                </div>
-              ) : (
-                <Image
-                  src="/alfred-avatar.png"
-                  alt="Alfred Pennyworth"
-                  width={40}
-                  height={40}
-                  className="w-10 h-10 object-cover transition-all duration-300"
-                  style={{
-                    filter: 'drop-shadow(0 0 6px rgba(255, 255, 255, 0.3)) drop-shadow(0 0 12px rgba(255, 255, 255, 0.15))',
-                    borderRadius: '0'
-                  }}
-                />
-              )}
-            </div>
-            <div>
-              <h3 className="font-semibold text-foreground">Alfred Pennyworth</h3>
-              <p className="text-xs text-muted-foreground">Personal AI Butler</p>
-            </div>
-            {/* Status indicator */}
-            <div className="flex items-center space-x-1">
-              <Heart className={cn(
-                "h-3 w-3 transition-colors duration-300",
-                alfredEmotion === 'happy' ? "text-green-400 animate-pulse" :
-                alfredEmotion === 'thinking' ? "text-blue-400" :
-                alfredEmotion === 'concerned' ? "text-yellow-400" : "text-gray-400"
-              )} />
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <ServiceWorkerStatus />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setShowNotificationPopup(true);
-              }}
-              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent relative"
-              title="Notifications"
-            >
-              <Bell className="h-4 w-4" />
-              {badgeCount > 0 && (
-                <Badge variant="destructive" className="absolute -top-1 -right-1 h-4 w-4 rounded-full p-0 flex items-center justify-center text-xs">
-                  {badgeCount > 9 ? '9+' : badgeCount}
-                </Badge>
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowChatHistory(true)}
-              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
-              title="Chat History"
-            >
-              <History className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={createNewChat}
-              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
-              title="New Chat"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowReminders(true)}
-              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
-              title="Reminders"
-            >
-              <Clock className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowSettings(true)}
-              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
-              title="Alfred Settings"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
-              title={isExpanded ? "Shrink Alfred" : "Expand Alfred"}
-            >
-              {isExpanded ? <Shrink className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsMinimized(!isMinimized)}
-              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
-            >
-              {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsOpen(false)}
-              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        <Card className={cn(
+          "bg-card border-border shadow-2xl transition-all duration-300 flex backdrop-blur-sm",
+          isExpanded ? "w-full h-full max-w-none rounded-none" : "w-96 h-[500px] rounded-xl"
+        )}>
+          {/* Sidebar with quick actions */}
+          <div className="w-12 bg-muted/50 border-r border-border flex flex-col items-center py-4 space-y-3">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowChatHistory(true)}
+                  className="h-8 w-8 p-0"
+                >
+                  <History className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">Chat History</TooltipContent>
+            </Tooltip>
 
-        {!isMinimized && (
-          <CardContent className={cn(
-            "p-0 flex flex-col",
-            isExpanded ? "h-[calc(100vh-8rem)] md:h-[calc(100vh-12rem)]" : "h-[436px]"
-          )}>
-            {/* Messages Area */}
-            <ScrollArea className={cn(
-              "flex-1",
-              isExpanded ? "p-6 md:p-8" : "p-4"
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={createNewChat}
+                  className="h-8 w-8 p-0"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">New Chat</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowNotificationPopup(true)}
+                  className="h-8 w-8 p-0 relative"
+                >
+                  <Bell className="h-4 w-4" />
+                  {badgeCount > 0 && (
+                    <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></div>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">Notifications</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowReminders(true)}
+                  className="h-8 w-8 p-0"
+                >
+                  <Clock className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">Reminders</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="h-8 w-8 p-0"
+                >
+                  <Paperclip className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">Attach Files</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowSettings(true)}
+                  className="h-8 w-8 p-0"
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">Settings</TooltipContent>
+            </Tooltip>
+          </div>
+
+          {/* Main chat area */}
+          <div className="flex-1 flex flex-col min-h-0">
+            {/* Header with only escape and expand */}
+            <div className={cn(
+              "flex items-center justify-between border-b border-border bg-gradient-to-r from-primary/10 to-primary/5",
+              isExpanded ? "p-6" : "p-4"
             )}>
-              <div className={cn(
-                isExpanded ? "space-y-6 max-w-4xl mx-auto" : "space-y-4"
-              )}>
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={cn(
-                      "flex items-start space-x-3",
-                      message.sender === 'user' ? "justify-end" : "justify-start"
-                    )}
-                  >
-                    {/* User/Alfred Avatar */}
-                    {message.sender === 'alfred' && (
-                      <Image
-                        src="/alfred-avatar.png"
-                        alt="Alfred"
-                        width={32}
-                        height={32}
-                        className="w-8 h-8 object-cover flex-shrink-0 mt-1"
-                        style={{
-                          filter: 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.3))',
-                          borderRadius: '0'
-                        }}
-                      />
-                    )}
-                    {message.sender === 'user' && (
-                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 mt-1 text-primary-foreground font-medium text-sm">
-                        Y
-                      </div>
-                    )}
-                    
+              <div className="flex items-center space-x-3">
+                <div className="relative">
+                  {alfredEmotion === 'thinking' ? (
+                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center animate-pulse">
+                      <Brain className="h-5 w-5 text-primary animate-pulse" />
+                    </div>
+                  ) : (
+                    <Image
+                      src="/alfred-avatar.png"
+                      alt="Alfred Pennyworth"
+                      width={40}
+                      height={40}
+                      className="w-10 h-10 object-cover transition-all duration-300 rounded-full"
+                      style={{
+                        filter: 'drop-shadow(0 0 6px rgba(255, 255, 255, 0.3))'
+                      }}
+                    />
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">Alfred Pennyworth</h3>
+                  <p className="text-xs text-muted-foreground">Personal AI Butler</p>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Heart className={cn(
+                    "h-3 w-3 transition-colors duration-300",
+                    alfredEmotion === 'happy' ? "text-green-400 animate-pulse" :
+                    alfredEmotion === 'thinking' ? "text-blue-400" :
+                    alfredEmotion === 'concerned' ? "text-yellow-400" : "text-gray-400"
+                  )} />
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="h-8 w-8 p-0"
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsOpen(false)}
+                  className="h-8 w-8 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <CardContent className="p-0 flex flex-col flex-1 min-h-0">
+              {/* Messages Area */}
+              <ScrollArea className="flex-1 min-h-0">
+                <div className={cn(
+                  "space-y-4 min-w-0",
+                  isExpanded ? "p-8 max-w-4xl mx-auto" : "p-4"
+                )}>
+                  {messages.map((message) => (
                     <div
+                      key={message.id}
                       className={cn(
-                        "rounded-2xl transition-all duration-200 shadow-sm",
-                        isExpanded
-                          ? "max-w-[75%] text-base leading-relaxed p-4"
-                          : "max-w-[80%] text-sm p-3",
-                        message.sender === 'user'
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-background border border-border"
+                        "flex items-start space-x-3 min-w-0",
+                        message.sender === 'user' ? "justify-end" : "justify-start"
                       )}
                     >
-                      {/* Message Header with Name and Emotion */}
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          <span className={cn(
-                            "text-xs font-medium",
-                            message.sender === 'user' 
-                              ? "text-primary-foreground/90" 
-                              : "text-foreground"
-                          )}>
-                            {message.sender === 'user' ? 'Yekta' : 'Alfred'}
-                          </span>
-                          {message.emotion && (
-                            <Badge 
-                              variant="secondary" 
-                              className={cn(
-                                "text-xs h-4 px-1.5",
-                                message.sender === 'user'
-                                  ? "bg-primary-foreground/20 text-primary-foreground/80"
-                                  : "bg-secondary text-secondary-foreground"
-                              )}
-                            >
-                              {message.emotion}
-                            </Badge>
-                          )}
-                        </div>
-                        <span className={cn(
-                          "text-xs opacity-70",
-                          message.sender === 'user' 
-                            ? "text-primary-foreground/70" 
-                            : "text-muted-foreground"
-                        )}>
-                          {message.timestamp.toLocaleTimeString()}
-                        </span>
-                      </div>
-
-                      {/* Attachment Display */}
-                      {message.attachments && message.attachments.length > 0 && (
-                        <div className="mb-2 space-y-2">
-                          {message.attachments.map((attachment) => (
-                            <div key={attachment.id} className="flex items-center space-x-2 bg-background/50 rounded p-2 text-xs border border-border/50">
-                              {getFileIcon(attachment.type)}
-                              <div className="flex-1 min-w-0">
-                                <p className="truncate font-medium">{attachment.name}</p>
-                                <p className="text-muted-foreground">{formatFileSize(attachment.size)}</p>
-                              </div>
-                              {attachment.type === 'image' && (
-                                <div className="w-12 h-12 rounded overflow-hidden">
-                                  <img src={attachment.url} alt={attachment.name} className="w-full h-full object-cover" />
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                      {message.sender === 'alfred' && (
+                        <Image
+                          src="/alfred-avatar.png"
+                          alt="Alfred"
+                          width={32}
+                          height={32}
+                          className="w-8 h-8 object-cover flex-shrink-0 mt-1 rounded-full"
+                          style={{
+                            filter: 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.3))'
+                          }}
+                        />
+                      )}
+                      {message.sender === 'user' && (
+                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 mt-1 text-primary-foreground font-medium text-sm">
+                          Y
                         </div>
                       )}
-
-                      <p className={cn(
-                        "whitespace-pre-line",
-                        isExpanded
-                          ? "leading-relaxed text-base"
-                          : "leading-relaxed"
-                      )}>{message.content}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div ref={messagesEndRef} />
-            </ScrollArea>
-
-            {/* Input Area */}
-            <div className={cn(
-              "border-t border-border bg-gradient-to-r from-accent/5 to-accent/10",
-              isExpanded ? "p-6 md:p-8" : "p-4"
-            )}>
-              {/* Attachment Preview */}
-              {attachments.length > 0 && (
-                <div className="mb-3 flex flex-wrap gap-2">
-                  {attachments.map((attachment) => (
-                    <div key={attachment.id} className="flex items-center space-x-2 bg-secondary/50 rounded-lg p-2 text-xs">
-                      {getFileIcon(attachment.type)}
-                      <div className="flex-1 min-w-0">
-                        <p className="truncate font-medium">{attachment.name}</p>
-                        <p className="text-muted-foreground">{formatFileSize(attachment.size)}</p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeAttachment(attachment.id)}
-                        className="h-6 w-6 p-0 hover:bg-destructive/20"
+                      
+                      <div
+                        className={cn(
+                          "rounded-2xl transition-all duration-200 shadow-sm max-w-[75%] p-4 break-words overflow-wrap-anywhere",
+                          message.sender === 'user'
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted/80 border border-border text-foreground"
+                        )}
                       >
-                        <X className="h-3 w-3" />
-                      </Button>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-2">
+                            <span className={cn(
+                              "text-xs font-medium",
+                              message.sender === 'user' 
+                                ? "text-primary-foreground/90" 
+                                : "text-foreground"
+                            )}>
+                              {message.sender === 'user' ? 'Yekta' : 'Alfred'}
+                            </span>
+                            {message.emotion && (
+                              <Badge 
+                                variant="secondary" 
+                                className={cn(
+                                  "text-xs h-4 px-1.5",
+                                  message.sender === 'user'
+                                    ? "bg-primary-foreground/20 text-primary-foreground/80"
+                                    : "bg-secondary text-secondary-foreground"
+                                )}
+                              >
+                                {message.emotion}
+                              </Badge>
+                            )}
+                          </div>
+                          <span className={cn(
+                            "text-xs opacity-70",
+                            message.sender === 'user' 
+                              ? "text-primary-foreground/70" 
+                              : "text-muted-foreground"
+                          )}>
+                            {message.timestamp.toLocaleTimeString()}
+                          </span>
+                        </div>
+
+                        {/* Attachment Display */}
+                        {message.attachments && message.attachments.length > 0 && (
+                          <div className="mb-2 space-y-2">
+                            {message.attachments.map((attachment) => (
+                              <div key={attachment.id} className="flex items-center space-x-2 bg-background/50 rounded p-2 text-xs border border-border/50">
+                                {getFileIcon(attachment.type)}
+                                <div className="flex-1 min-w-0">
+                                  <p className="truncate font-medium">{attachment.name}</p>
+                                  <p className="text-muted-foreground">{formatFileSize(attachment.size)}</p>
+                                </div>
+                                {attachment.type === 'image' && (
+                                  <div className="w-12 h-12 rounded overflow-hidden">
+                                    <img src={attachment.url} alt={attachment.name} className="w-full h-full object-cover" />
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <p className="whitespace-pre-wrap leading-relaxed break-words overflow-wrap-anywhere">{message.content}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
-              )}
+                <div ref={messagesEndRef} />
+              </ScrollArea>
+
+              {/* Input Area */}
               <div className={cn(
-                "max-w-4xl mx-auto",
-                isExpanded ? "space-y-4" : "flex space-x-2"
+                "border-t border-border bg-gradient-to-r from-accent/5 to-accent/10",
+                isExpanded ? "p-6" : "p-4"
               )}>
-                {isExpanded ? (
+                {/* Attachment Preview */}
+                {attachments.length > 0 && (
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {attachments.map((attachment) => (
+                      <div key={attachment.id} className="flex items-center space-x-2 bg-secondary/50 rounded-lg p-2 text-xs">
+                        {getFileIcon(attachment.type)}
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate font-medium">{attachment.name}</p>
+                          <p className="text-muted-foreground">{formatFileSize(attachment.size)}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeAttachment(attachment.id)}
+                          className="h-6 w-6 p-0 hover:bg-destructive/20"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <div className="flex space-x-2">
                   <Textarea
-                    placeholder="Ask Alfred anything about your Batman universe... (Press Ctrl+Enter to send)"
-                    value={currentMessage}
-                    onChange={(e) => setCurrentMessage(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                    className="min-h-[120px] bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-ring resize-none text-base leading-relaxed"
-                    rows={4}
-                  />
-                ) : (
-                  <Input
-                    placeholder="Ask Alfred anything about your Batman universe..."
+                    placeholder="Ask Alfred anything... (Shift+Enter for new line)"
                     value={currentMessage}
                     onChange={(e) => setCurrentMessage(e.target.value)}
                     onKeyDown={handleKeyPress}
-                    className="flex-1 bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-ring"
+                    className="min-h-[50px] max-h-[120px] bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-ring resize-none"
+                    rows={2}
                   />
-                )}
+                  <Button
+                    onClick={handleSendMessage}
+                    disabled={!currentMessage.trim() && attachments.length === 0}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground self-end"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+                
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -1020,278 +804,278 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
                   accept="image/*,video/*,audio/*,.pdf,.txt,.doc,.docx"
                   className="hidden"
                 />
-                {isExpanded ? (
-                  <div className="flex justify-between items-center">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="px-4 py-2"
-                    >
-                      <Paperclip className="h-4 w-4 mr-2" />
-                      Attach Files
-                    </Button>
-                    <Button
-                      onClick={handleSendMessage}
-                      disabled={!currentMessage.trim() && attachments.length === 0}
-                      className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2"
-                      size="lg"
-                    >
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Send Message
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="px-3"
-                    >
-                      <Paperclip className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      onClick={handleSendMessage}
-                      disabled={!currentMessage.trim() && attachments.length === 0}
-                      className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                    >
-                      <MessageSquare className="h-4 w-4" />
-                    </Button>
-                  </>
-                )}
-              </div>
-              <div className={cn(
-                "flex items-center justify-between mt-3 text-xs text-muted-foreground",
-                isExpanded ? "max-w-4xl mx-auto" : "mt-2"
-              )}>
-                <span>{isExpanded ? "Press Ctrl+Enter to send" : "Press Enter to send"}</span>
-                <span className="flex items-center space-x-1">
-                  <Coffee className="h-3 w-3" />
-                  <span>Powered by your personal LLM</span>
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        )}
-      </Card>
-
-      {/* Alfred Settings Modal */}
-      {showSettings && (
-        <AlfredSettings
-          isOpen={showSettings}
-          onClose={() => setShowSettings(false)}
-        />
-      )}
-
-      {/* Alfred Reminders Modal */}
-      {showReminders && (
-        <AlfredReminders
-          isOpen={showReminders}
-          onClose={() => setShowReminders(false)}
-        />
-      )}
-
-      {/* Notification Permission Request */}
-      <NotificationPermissionRequest />
-
-      {/* Remind Me Later Modal */}
-      {showRemindLater && remindLaterData && (
-        <RemindMeLaterModal
-          isOpen={showRemindLater}
-          onClose={() => {
-            setShowRemindLater(false);
-            setRemindLaterData(null);
-          }}
-          notificationTitle={remindLaterData.title}
-          notificationMessage={remindLaterData.message}
-        />
-      )}
-
-      {/* Chat History Modal */}
-      {showChatHistory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="fixed inset-0 bg-black/50" onClick={() => setShowChatHistory(false)} />
-          <Card className="relative w-full max-w-md mx-4 bg-card border-border shadow-xl">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <Image
-                    src="/alfred-avatar.png"
-                    alt="Alfred"
-                    width={24}
-                    height={24}
-                    className="w-6 h-6 object-cover"
-                    style={{
-                      filter: 'drop-shadow(0 0 3px rgba(255, 255, 255, 0.3))',
-                      borderRadius: '0'
-                    }}
-                  />
-                  <h3 className="text-lg font-semibold">Chat History</h3>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowChatHistory(false)}
-                  className="h-8 w-8 p-0"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {chatList.map((chatId) => (
-                  <Button
-                    key={chatId}
-                    variant={chatId === currentChatId ? "default" : "ghost"}
-                    className="w-full justify-start text-left h-auto p-3"
-                    onClick={() => loadChat(chatId)}
-                  >
-                    <div className="flex flex-col items-start w-full">
-                      <span className="font-medium text-sm">
-                        {chatId === 'default' ? 'Main Chat' : 
-                         chatId === currentChatId ? 'Current Chat' :
-                         `Chat ${chatId.replace('chat-', '')}`}
-                      </span>
-                      <span className="text-xs text-muted-foreground mt-1 truncate w-full">
-                        {getChatPreview(chatId)}
-                      </span>
-                    </div>
-                  </Button>
-                ))}
-              </div>
-              
-              <div className="mt-4 pt-4 border-t">
-                <Button
-                  onClick={() => {
-                    createNewChat();
-                    setShowChatHistory(false);
-                  }}
-                  className="w-full"
-                  variant="outline"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create New Chat
-                </Button>
               </div>
             </CardContent>
-          </Card>
-        </div>
-      )}
+          </div>
+        </Card>
 
-      {/* Notification Popup */}
-      {showNotificationPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="fixed inset-0 bg-black/50" onClick={() => setShowNotificationPopup(false)} />
-          <Card className="relative w-full max-w-lg mx-4 bg-card border-border shadow-xl">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <Bell className="h-6 w-6 text-primary" />
-                  <h3 className="text-lg font-semibold">Notifications</h3>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowNotificationPopup(false)}
-                  className="h-8 w-8 p-0"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {unseenNotifications.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Bell className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p>No notifications</p>
-                    <p className="text-sm mt-1">Alfred will send you helpful updates here</p>
+        {/* Modals */}
+        {showSettings && (
+          <AlfredSettings
+            isOpen={showSettings}
+            onClose={() => setShowSettings(false)}
+          />
+        )}
+
+        {showReminders && (
+          <AlfredReminders
+            isOpen={showReminders}
+            onClose={() => setShowReminders(false)}
+          />
+        )}
+
+        {showRemindLater && remindLaterData && (
+          <RemindMeLaterModal
+            isOpen={showRemindLater}
+            onClose={() => {
+              setShowRemindLater(false);
+              setRemindLaterData(null);
+            }}
+            notificationTitle={remindLaterData.title}
+            notificationMessage={remindLaterData.message}
+          />
+        )}
+
+        {/* Chat History Modal */}
+        {showChatHistory && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm" onClick={() => setShowChatHistory(false)} />
+            <Card className="relative w-full max-w-md mx-4 bg-card border-border shadow-xl">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <Image
+                      src="/alfred-avatar.png"
+                      alt="Alfred"
+                      width={24}
+                      height={24}
+                      className="w-6 h-6 object-cover rounded-full"
+                    />
+                    <h3 className="text-lg font-semibold">Chat History</h3>
                   </div>
-                ) : (
-                  unseenNotifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className="p-3 border border-border rounded-lg bg-background/50"
-                    >
-                      <div className="flex items-start space-x-3">
-                        <Image
-                          src="/alfred-avatar.png"
-                          alt="Alfred"
-                          width={20}
-                          height={20}
-                          className="w-5 h-5 object-cover flex-shrink-0 mt-0.5"
-                          style={{
-                            filter: 'drop-shadow(0 0 2px rgba(255, 255, 255, 0.3))',
-                            borderRadius: '0'
-                          }}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-medium">{notification.title}</h4>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {notification.message}
-                          </p>
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(notification.timestamp).toLocaleTimeString()}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowChatHistory(false)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <ScrollArea className="h-96">
+                  <div className="space-y-2 pr-4">
+                    {chatList.map((chatId) => (
+                    <div key={chatId} className="group relative">
+                      {editingChatId === chatId ? (
+                        <div className="flex items-center space-x-2 p-3 border rounded-lg">
+                          <Input
+                            value={editingChatName}
+                            onChange={(e) => setEditingChatName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                renameChat(chatId, editingChatName);
+                              } else if (e.key === 'Escape') {
+                                setEditingChatId(null);
+                                setEditingChatName('');
+                              }
+                            }}
+                            className="flex-1 text-sm"
+                            autoFocus
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => renameChat(chatId, editingChatName)}
+                            className="h-6 w-6 p-0"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          variant={chatId === currentChatId ? "default" : "ghost"}
+                          className="w-full justify-start text-left h-auto p-3 pr-12"
+                          onClick={() => loadChat(chatId)}
+                        >
+                          <div className="flex flex-col items-start w-full">
+                            <span className="font-medium text-sm">
+                              {getChatName(chatId)}
                             </span>
-                            <Badge variant="secondary" className="text-xs">
-                              {notification.priority}
-                            </Badge>
+                            <span className="text-xs text-muted-foreground mt-1 truncate w-full">
+                              {getChatPreview(chatId)}
+                            </span>
                           </div>
-                          {notification.actions && notification.actions.length > 0 && (
-                            <div className="flex space-x-2 mt-2">
-                              {notification.actions.map((action: any) => (
-                                <Button
-                                  key={action.id}
-                                  variant={action.style === 'primary' ? 'default' : 'outline'}
-                                  size="sm"
-                                  className="text-xs h-6"
-                                  onClick={() => {
-                                    action.handler?.();
-                                    // Remove this notification from the list
-                                    setUnseenNotifications(prev => prev.filter(n => n.id !== notification.id));
-                                  }}
-                                >
-                                  {action.label}
-                                </Button>
-                              ))}
-                            </div>
+                        </Button>
+                      )}
+                      
+                      {/* Action buttons */}
+                      {editingChatId !== chatId && (
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startRename(chatId);
+                            }}
+                            className="h-6 w-6 p-0 hover:bg-blue-100 dark:hover:bg-blue-900"
+                            title="Rename chat"
+                          >
+                            <Edit3 className="h-3 w-3" />
+                          </Button>
+                          {chatId !== 'default' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm('Are you sure you want to delete this chat?')) {
+                                  deleteChat(chatId);
+                                }
+                              }}
+                              className="h-6 w-6 p-0 hover:bg-red-100 dark:hover:bg-red-900"
+                              title="Delete chat"
+                            >
+                              <Trash2 className="h-3 w-3 text-red-500" />
+                            </Button>
                           )}
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            alfredNotifications.removeNotification(notification.id);
-                          }}
-                          className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
+                      )}
                     </div>
-                  ))
-                )}
-              </div>
-              
-              {unseenNotifications.length > 0 && (
+                    ))}
+                  </div>
+                </ScrollArea>
+                
                 <div className="mt-4 pt-4 border-t">
                   <Button
                     onClick={() => {
-                      alfredNotifications.clearAll();
-                      setShowNotificationPopup(false);
+                      createNewChat();
+                      setShowChatHistory(false);
                     }}
-                    variant="outline"
                     className="w-full"
+                    variant="outline"
                   >
-                    Clear All Notifications
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create New Chat
                   </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Notification Popup */}
+        {showNotificationPopup && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm" onClick={() => setShowNotificationPopup(false)} />
+            <Card className="relative w-full max-w-lg mx-4 bg-card border-border shadow-xl">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <Bell className="h-6 w-6 text-primary" />
+                    <h3 className="text-lg font-semibold">Notifications</h3>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowNotificationPopup(false)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <ScrollArea className="h-96">
+                  <div className="space-y-3 pr-4">
+                    {unseenNotifications.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Bell className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>No notifications</p>
+                      <p className="text-sm mt-1">Alfred will send you helpful updates here</p>
+                    </div>
+                  ) : (
+                    unseenNotifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className="p-3 border border-border rounded-lg bg-background/50"
+                      >
+                        <div className="flex items-start space-x-3">
+                          <Image
+                            src="/alfred-avatar.png"
+                            alt="Alfred"
+                            width={20}
+                            height={20}
+                            className="w-5 h-5 object-cover flex-shrink-0 mt-0.5 rounded-full"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-medium">{notification.title}</h4>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {notification.message}
+                            </p>
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(notification.timestamp).toLocaleTimeString()}
+                              </span>
+                              <Badge variant="secondary" className="text-xs">
+                                {notification.priority}
+                              </Badge>
+                            </div>
+                            {notification.actions && notification.actions.length > 0 && (
+                              <div className="flex space-x-2 mt-2">
+                                {notification.actions.map((action: any) => (
+                                  <Button
+                                    key={action.id}
+                                    variant={action.style === 'primary' ? 'default' : 'outline'}
+                                    size="sm"
+                                    className="text-xs h-6"
+                                    onClick={() => {
+                                      action.handler?.();
+                                      setUnseenNotifications(prev => prev.filter(n => n.id !== notification.id));
+                                    }}
+                                  >
+                                    {action.label}
+                                  </Button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              alfredNotifications.removeNotification(notification.id);
+                            }}
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                    )}
+                  </div>
+                </ScrollArea>
+                
+                {unseenNotifications.length > 0 && (
+                  <div className="mt-4 pt-4 border-t">
+                    <Button
+                      onClick={() => {
+                        alfredNotifications.clearAll();
+                        setShowNotificationPopup(false);
+                      }}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      Clear All Notifications
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    </TooltipProvider>
   );
 }

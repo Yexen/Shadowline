@@ -225,8 +225,8 @@ export function AlfredNotificationContainer() {
     return unsubscribe;
   }, []);
 
-  const toasts = notifications.filter(n => n.type === 'toast');
-  const banners = notifications.filter(n => n.type === 'banner');
+  // Convert all banner notifications to toast notifications
+  const toasts = notifications.filter(n => n.type === 'toast' || n.type === 'banner');
   const modals = notifications.filter(n => n.type === 'modal');
 
   const handleDismiss = (id: string) => {
@@ -239,17 +239,6 @@ export function AlfredNotificationContainer() {
       <div className="fixed top-4 right-4 z-40 space-y-2">
         {toasts.map((notification) => (
           <AlfredToast
-            key={notification.id}
-            notification={notification}
-            onDismiss={() => handleDismiss(notification.id)}
-          />
-        ))}
-      </div>
-
-      {/* Banner Notifications - Fixed position, top center */}
-      <div className="fixed top-0 left-0 right-0 z-30 space-y-0">
-        {banners.map((notification) => (
-          <AlfredBanner
             key={notification.id}
             notification={notification}
             onDismiss={() => handleDismiss(notification.id)}

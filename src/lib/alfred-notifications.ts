@@ -264,7 +264,7 @@ class AlfredNotificationService {
 
     if (hasIncompleteWork) {
       this.addNotification({
-        type: 'banner',
+        type: 'toast',
         priority: 'medium',
         title: 'Alfred notices',
         message: 'I see some unfinished character development from our last session. Shall we continue where we left off?',
@@ -357,7 +357,7 @@ class AlfredNotificationService {
 
   showConflictDetected(item: string, description: string): void {
     this.addNotification({
-      type: 'banner',
+      type: 'toast',
       priority: 'high',
       title: 'Conflict detected',
       message: `I've noticed an inconsistency with "${item}": ${description}`,
