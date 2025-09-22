@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Volume, Chapter } from '@/hooks/use-volumes';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
+import { FloatingWindow } from '@/components/floating-window';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -121,14 +121,19 @@ export function VolumeEditor({ volume, onSave, onClose, onDeleteChapter, onAddCh
   if (!currentVolume) return null;
 
   return (
-    <Dialog open={!!volume} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-6xl h-[95vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="font-headline">Editing Volume: {volume?.title}</DialogTitle>
-          <DialogDescription>
+    <FloatingWindow 
+      isOpen={!!volume} 
+      onClose={onClose} 
+      title={`Editing Volume: ${volume?.title || 'Volume'}`}
+      className="max-w-6xl h-[95vh] flex flex-col"
+    >
+      <div className="p-6 flex flex-col flex-1 overflow-hidden">
+        <div className="mb-6">
+          <h2 className="font-headline text-xl font-bold">Editing Volume: {volume?.title}</h2>
+          <p className="text-muted-foreground text-sm">
             Manage the details, chapters, and cover art for this volume.
-          </DialogDescription>
-        </DialogHeader>
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 py-6 flex-grow overflow-hidden">
           {/* Left Column: Details & Cover */}
@@ -253,14 +258,14 @@ export function VolumeEditor({ volume, onSave, onClose, onDeleteChapter, onAddCh
           </div>
         </div>
 
-        <DialogFooter className="justify-between pt-6 border-t border-border/50">
+        <div className="flex justify-between pt-6 border-t border-border/50">
             <ExportPopover onExport={handleExportVolume} />
             <div className="flex gap-3">
               <Button variant="outline" onClick={onClose}>Cancel</Button>
               <Button onClick={handleSaveChanges} className="px-6">Save Changes</Button>
             </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </FloatingWindow>
   );
 }

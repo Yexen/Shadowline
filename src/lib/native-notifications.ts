@@ -24,7 +24,7 @@ class NativeNotificationService {
 
   private async initialize() {
     // Check if notifications are supported
-    this.isSupported = 'Notification' in window;
+    this.isSupported = typeof window !== 'undefined' && 'Notification' in window;
 
     if (this.isSupported) {
       this.permission = Notification.permission;
