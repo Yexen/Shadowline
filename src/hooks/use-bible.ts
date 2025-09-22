@@ -466,9 +466,9 @@ const defaultBibleEntries: BibleCategory[] = [
                     { label: "Security", value: "Armed thugs as 'bouncers'" }
                 ] 
             },
-            // Poison Ivy's Lair
+            // Poison Ivy Lair
             { 
-                title: "Poison Ivy's Lair",
+                title: "Poison Ivy Lair",
                 fixedFields: {
                     district: "South Gotham",
                     threatLevel: "High",
@@ -636,6 +636,199 @@ const defaultBibleEntries: BibleCategory[] = [
                     { label: "Vehicles", value: "Batmobile dock & turntable" },
                     { label: "Facilities", value: "Batcomputer, Armory, Lab" },
                     { label: "Security", value: "Biometric locks & failsafes" }
+                ] 
+            },
+            // Additional Canonical Gotham Locations
+            { 
+                title: "Crime Alley",
+                fixedFields: {
+                    district: "Park Row",
+                    threatLevel: "High",
+                    control: "Criminal",
+                    function: "Memorial Site"
+                },
+                fields: [
+                    { label: "Description", value: "The narrow alley where Thomas and Martha Wayne were murdered. A symbol of Gotham's darkness." },
+                    { label: "Historic Significance", value: "Wayne family murder site" },
+                    { label: "Current State", value: "Memorial plaque installed" },
+                    { label: "Crime Rate", value: "Still dangerously high" },
+                    { label: "Patrol Frequency", value: "Regular but insufficient" }
+                ] 
+            },
+            { 
+                title: "Blackgate Penitentiary",
+                fixedFields: {
+                    district: "Blackgate Island",
+                    threatLevel: "High",
+                    control: "Government",
+                    function: "Prison"
+                },
+                fields: [
+                    { label: "Description", value: "Maximum security prison for Gotham's non-insane criminals on its own island." },
+                    { label: "Security Level", value: "Maximum" },
+                    { label: "Capacity", value: "2,500 inmates" },
+                    { label: "Notable Inmates", value: "Mob bosses, gang leaders" },
+                    { label: "Escape Attempts", value: "Frequent but mostly unsuccessful" }
+                ] 
+            },
+            { 
+                title: "Gotham Cathedral",
+                fixedFields: {
+                    district: "Central Gotham",
+                    threatLevel: "Low",
+                    control: "Religious",
+                    function: "Cathedral"
+                },
+                fields: [
+                    { label: "Description", value: "Historic Gothic cathedral in the heart of Gotham, often used for major city events." },
+                    { label: "Architecture", value: "Gothic Revival" },
+                    { label: "Built", value: "1887" },
+                    { label: "Notable Events", value: "Wayne family memorial services" },
+                    { label: "Security", value: "Standard church security" }
+                ] 
+            },
+            { 
+                title: "Robinson Park",
+                fixedFields: {
+                    district: "Central Gotham",
+                    threatLevel: "Medium",
+                    control: "Municipal",
+                    function: "Park"
+                },
+                fields: [
+                    { label: "Description", value: "Large central park, beautiful by day but dangerous after dark." },
+                    { label: "Size", value: "840 acres" },
+                    { label: "Features", value: "Lake, walking trails, playgrounds" },
+                    { label: "Day Safety", value: "Generally safe" },
+                    { label: "Night Safety", value: "High crime rate after sunset" }
+                ] 
+            },
+            { 
+                title: "Gotham University",
+                fixedFields: {
+                    district: "University District",
+                    threatLevel: "Low",
+                    control: "Academic",
+                    function: "University"
+                },
+                fields: [
+                    { label: "Description", value: "Prestigious university known for its research programs and frequent target of villain schemes." },
+                    { label: "Students", value: "15,000+ enrolled" },
+                    { label: "Notable Alumni", value: "Many Wayne family members" },
+                    { label: "Research", value: "Advanced sciences, criminology" },
+                    { label: "Security", value: "Campus police + GCPD patrols" }
+                ] 
+            },
+            { 
+                title: "Liv's Apartment",
+                fixedFields: {
+                    district: "Midtown",
+                    threatLevel: "Low",
+                    control: "Civilian",
+                    function: "Residence"
+                },
+                fields: [
+                    { label: "Description", value: "Cozy apartment in Gotham's Midtown district. Safe neighborhood with good security." },
+                    { label: "Location", value: "Midtown residential district" },
+                    { label: "Building", value: "Modern high-rise with doorman" },
+                    { label: "Security", value: "24/7 concierge, security cameras" },
+                    { label: "Neighborhood", value: "Safe, well-lit streets" }
+                ] 
+            },
+            { 
+                title: "The Narrows",
+                fixedFields: {
+                    district: "East Gotham",
+                    threatLevel: "Extreme",
+                    control: "Criminal",
+                    function: "Slum"
+                },
+                fields: [
+                    { label: "Description", value: "Gotham's most dangerous slum, a maze of decrepit buildings and criminal hideouts." },
+                    { label: "Population", value: "Mostly impoverished families" },
+                    { label: "Crime Rate", value: "Extremely high" },
+                    { label: "Gang Presence", value: "Multiple competing factions" },
+                    { label: "GCPD Response", value: "Limited, dangerous for officers" }
+                ] 
+            },
+            { 
+                title: "Gotham General Hospital",
+                fixedFields: {
+                    district: "Central Gotham",
+                    threatLevel: "Medium",
+                    control: "Medical",
+                    function: "Hospital"
+                },
+                fields: [
+                    { label: "Description", value: "Main public hospital, frequently treating victims of supervillain attacks." },
+                    { label: "Capacity", value: "800 beds" },
+                    { label: "Specialties", value: "Trauma, toxicology, psychiatric care" },
+                    { label: "Security", value: "Enhanced due to frequent villain incidents" },
+                    { label: "Staff", value: "Overworked but dedicated" }
+                ] 
+            },
+            { 
+                title: "Amusement Mile",
+                fixedFields: {
+                    district: "East Gotham",
+                    threatLevel: "Extreme",
+                    control: "Joker",
+                    function: "Villain Lair"
+                },
+                fields: [
+                    { label: "Description", value: "Abandoned amusement park, now the Joker's primary base of operations." },
+                    { label: "Status", value: "Closed since 1985, now Joker's territory" },
+                    { label: "Hazards", value: "Booby traps, laughing gas, unstable structures" },
+                    { label: "Security", value: "Avoid at all costs" },
+                    { label: "GCPD", value: "No-go zone except for SWAT operations" }
+                ] 
+            },
+            { 
+                title: "Diamond District",
+                fixedFields: {
+                    district: "Uptown",
+                    threatLevel: "Low",
+                    control: "Corporate",
+                    function: "Shopping"
+                },
+                fields: [
+                    { label: "Description", value: "Upscale shopping and business district with luxury stores and high-end restaurants." },
+                    { label: "Establishments", value: "Luxury boutiques, fine dining, art galleries" },
+                    { label: "Clientele", value: "Gotham's elite" },
+                    { label: "Security", value: "High-end private security" },
+                    { label: "Crime", value: "Occasional high-end theft" }
+                ] 
+            },
+            { 
+                title: "The East End",
+                fixedFields: {
+                    district: "East Gotham",
+                    threatLevel: "High",
+                    control: "Catwoman",
+                    function: "District"
+                },
+                fields: [
+                    { label: "Description", value: "Working-class district known for organized crime and Catwoman's territory." },
+                    { label: "Population", value: "Working families, some criminal elements" },
+                    { label: "Notable", value: "Catwoman's primary operating area" },
+                    { label: "Crime", value: "Organized theft, protection rackets" },
+                    { label: "Character", value: "Gritty but has community spirit" }
+                ] 
+            },
+            { 
+                title: "Robbinsville",
+                fixedFields: {
+                    district: "North Gotham",
+                    threatLevel: "Low",
+                    control: "Wealthy",
+                    function: "Residential"
+                },
+                fields: [
+                    { label: "Description", value: "Upscale residential area where many of Gotham's wealthy live." },
+                    { label: "Demographics", value: "Upper class families" },
+                    { label: "Housing", value: "Mansions, luxury condos" },
+                    { label: "Security", value: "Private security firms" },
+                    { label: "Crime", value: "Very low, mostly white-collar" }
                 ] 
             }
         ] 

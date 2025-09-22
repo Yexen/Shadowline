@@ -152,9 +152,9 @@ export const gotham3DMapHtml = `
         description:'Chemical plant where Red Hood fell, creating the Joker.',
         details:'History: Birthplace of the Joker<br>Status: Abandoned toxic site<br>Dangers: Chemical burns, toxic exposure<br>Contamination: Extremely hazardous - requires protective gear' },
       { name:'Iceberg Lounge', pos:[-120,12,80], color:0x00ffff, type:'villain', threat:'high', icon:'🧊',
-        description:"Penguin's upscale nightclub fronting a criminal empire.",
+        description:'Penguin upscale nightclub fronting a criminal empire.',
         details:'Owner: Oswald "Penguin" Cobblepot<br>Cover: High-end nightclub and casino<br>Real business: Money laundering, arms dealing<br>Security: Armed thugs as "bouncers"' },
-      { name:"Poison Ivy's Lair", pos:[40,10,-120], color:0x228b22, type:'villain', threat:'high', icon:'🌿',
+      { name:'Poison Ivy Lair', pos:[40,10,-120], color:0x228b22, type:'villain', threat:'high', icon:'🌿',
         description:'Botanical hideout with mutated plants and toxic air.',
         details:'Inhabitant: Dr. Pamela Isley<br>Environment: Overgrown greenhouse complex<br>Dangers: Toxic spores, carnivorous plants<br>Required: Full hazmat protection and antidotes' },
       { name:'Two-Face Territory', pos:[-80,15,120], color:0x800080, type:'villain', threat:'high', icon:'😈',
@@ -183,7 +183,44 @@ export const gotham3DMapHtml = `
         details:'Owner: Bruce Wayne<br>Built: 1855 by the Wayne family<br>Staff: Alfred Pennyworth (butler)<br>Secret: Hidden Batcave entrance<br>Security: Advanced Wayne Tech systems' },
       { name:'Batcave', pos:[-190,6,-140], color:0x222222, type:'hero', threat:'low', icon:'🦇',
         description:'Hidden cavern base accessible via a concealed entrance near Wayne Manor.',
-        details:'Access: Secret cliffside entrance<br>Vehicles: Batmobile dock & turntable<br>Facilities: Batcomputer, Armory, Lab<br>Security: Biometric locks & failsafes' }
+        details:'Access: Secret cliffside entrance<br>Vehicles: Batmobile dock & turntable<br>Facilities: Batcomputer, Armory, Lab<br>Security: Biometric locks & failsafes' },
+      
+      // Additional Canonical Gotham Locations
+      { name:'Crime Alley', pos:[-70,1,-85], color:0x800000, type:'villain', threat:'high', icon:'⚰️',
+        description:'The narrow alley where Thomas and Martha Wayne were murdered.',
+        details:'Historic significance: Wayne family murder site<br>Current state: Memorial plaque installed<br>Crime rate: Still dangerously high' },
+      
+      { name:'Blackgate Penitentiary', pos:[180,5,60], color:0x333333, type:'neutral', threat:'high', icon:'🏢',
+        description:'Maximum security prison for non-insane criminals on its own island.',
+        details:'Security level: Maximum<br>Capacity: 2,500 inmates<br>Notable inmates: Mob bosses, gang leaders' },
+        
+      { name:'Gotham University', pos:[40,15,-60], color:0x4169e1, type:'neutral', threat:'low', icon:'🎓',
+        description:'Prestigious university known for research programs and frequent villain targets.',
+        details:'Students: 15,000+ enrolled<br>Notable alumni: Many Wayne family members<br>Research: Advanced sciences, criminology' },
+        
+      { name:'Livs Apartment', pos:[25,12,-25], color:0xff69b4, type:'neutral', threat:'low', icon:'🏠',
+        description:'Cozy apartment in Midtown district. Safe neighborhood with good security.',
+        details:'Location: Midtown residential district<br>Building: Modern high-rise with doorman<br>Security: 24/7 concierge, security cameras' },
+        
+      { name:'The Narrows', pos:[100,5,80], color:0x2f4f4f, type:'villain', threat:'extreme', icon:'🏚️',
+        description:'Most dangerous slum, a maze of decrepit buildings and criminal hideouts.',
+        details:'Population: Mostly impoverished families<br>Crime rate: Extremely high<br>Gang presence: Multiple competing factions' },
+        
+      { name:'Amusement Mile', pos:[150,5,-50], color:0xff1493, type:'villain', threat:'extreme', icon:'🎪',
+        description:'Abandoned amusement park, now the Jokers primary base of operations.',
+        details:'Status: Closed since 1985, now Joker territory<br>Hazards: Booby traps, laughing gas, unstable structures' },
+        
+      { name:'Diamond District', pos:[35,18,-45], color:0xe6e6fa, type:'neutral', threat:'low', icon:'💎',
+        description:'Upscale shopping and business district with luxury stores.',
+        details:'Establishments: Luxury boutiques, fine dining, art galleries<br>Clientele: Elite<br>Security: High-end private security' },
+        
+      { name:'The East End', pos:[120,8,40], color:0x696969, type:'villain', threat:'high', icon:'🌃',
+        description:'Working-class district known for organized crime and Catwomans territory.',
+        details:'Population: Working families, some criminal elements<br>Notable: Catwoman operating area<br>Crime: Organized theft' },
+        
+      { name:'Robbinsville', pos:[60,15,-100], color:0x9370db, type:'neutral', threat:'low', icon:'🏡',
+        description:'Upscale residential area where many wealthy families live.',
+        details:'Demographics: Upper class families<br>Housing: Mansions, luxury condos<br>Security: Private security firms' }
     ];
 
     const streets = [

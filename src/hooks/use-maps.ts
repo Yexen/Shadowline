@@ -64,19 +64,35 @@ export function useMaps() {
         const storedMaps = JSON.parse(storedData);
         
         const mapsToAdd = [];
-        if (!storedMaps.find((m: MapData) => m.id === 'map-gotham-3d')) {
-            const newMap = defaultMapsData.find(m => m.id === 'map-gotham-3d');
-            if (newMap) mapsToAdd.push(newMap);
+        
+        // Force update the 3D Gotham map with new locations
+        const existingGotham3D = storedMaps.find((m: MapData) => m.id === 'map-gotham-3d');
+        if (existingGotham3D) {
+          const updatedGotham3D = defaultMapsData.find(m => m.id === 'map-gotham-3d');
+          if (updatedGotham3D) {
+            // Replace the existing map with updated HTML
+            const mapIndex = storedMaps.findIndex((m: MapData) => m.id === 'map-gotham-3d');
+            storedMaps[mapIndex] = updatedGotham3D;
+            console.log('🗺️ Updated Gotham 3D map with new locations');
+          }
+        } else {
+          const newMap = defaultMapsData.find(m => m.id === 'map-gotham-3d');
+          if (newMap) mapsToAdd.push(newMap);
         }
+        
         if (!storedMaps.find((m: MapData) => m.id === 'map-wayne-manor-3d')) {
             const newMap = defaultMapsData.find(m => m.id === 'map-wayne-manor-3d');
             if (newMap) mapsToAdd.push(newMap);
         }
 
         if (mapsToAdd.length > 0) {
-            setMaps([...storedMaps, ...mapsToAdd]);
+            const updatedMaps = [...storedMaps, ...mapsToAdd];
+            setMaps(updatedMaps);
+            localStorage.setItem(MAPS_STORAGE_KEY, JSON.stringify(updatedMaps));
         } else {
             setMaps(storedMaps);
+            // Save the updated storedMaps (which now includes the updated Gotham 3D map)
+            localStorage.setItem(MAPS_STORAGE_KEY, JSON.stringify(storedMaps));
         }
 
       } else {

@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { useTimer } from '@/hooks/use-timer';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar } from "@/components/ui/calendar";
+import { EnhancedCalendar } from "@/components/enhanced-calendar";
 
 interface Task {
   id: number;
@@ -294,19 +295,7 @@ export default function OrganizationPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-card">
-                <CardHeader>
-                    <CardTitle className="font-headline flex items-center gap-2"><CalendarIcon /> {t.schedule}</CardTitle>
-                </CardHeader>
-                <CardContent className="flex justify-center">
-                    <Calendar
-                        mode="single"
-                        selected={date}
-                        onSelect={setDate}
-                        className="rounded-md border"
-                    />
-                </CardContent>
-            </Card>
+            <EnhancedCalendar />
 
             <FocusTimer t={t} />
             

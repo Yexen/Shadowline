@@ -11,6 +11,7 @@ import { AlfredSettings } from '@/components/alfred-settings';
 import { AlfredReminders } from '@/components/alfred-reminders';
 import { NotificationBadge, NotificationPermissionRequest } from '@/components/notification-badge';
 import { ServiceWorkerStatus } from '@/components/service-worker-status';
+import { RemindMeLaterModal } from '@/components/remind-me-later-modal';
 import { getAlfredResponse, getRelevantKnowledge, personalInfo } from '@/lib/alfred-knowledge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, X, Minimize2, Maximize2, Coffee, Bell, Brain, Heart, Paperclip, FileText, Image as ImageIcon, Video, Music, Settings, Expand, Shrink, Clock } from 'lucide-react';
+import { MessageSquare, X, Minimize2, Maximize2, Coffee, Bell, Brain, Heart, Paperclip, FileText, Image as ImageIcon, Video, Music, Settings, Expand, Shrink, Clock, Plus, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 
@@ -47,7 +48,32 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [currentChatId, setCurrentChatId] = useState<string>(() => {
+    // Load current chat ID from localStorage or default
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('alfred-current-chat') || 'default';
+    }
+    return 'default';
+  });
   const [messages, setMessages] = useState<Message[]>(() => {
+    // Try to load chat history from localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        const savedMessages = localStorage.getItem(`alfred-chat-${currentChatId}`);
+        if (savedMessages) {
+          const parsed = JSON.parse(savedMessages);
+          // Convert timestamp strings back to Date objects
+          return parsed.map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to load chat history:', error);
+      }
+    }
+
+    // Default greeting if no saved history
     const now = new Date();
     const hour = now.getHours();
     const greetings = [
@@ -88,6 +114,15 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
   const [badgeCount, setBadgeCount] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [showReminders, setShowReminders] = useState(false);
+  const [showRemindLater, setShowRemindLater] = useState(false);
+  const [remindLaterData, setRemindLaterData] = useState<{
+    title: string;
+    message: string;
+  } | null>(null);
+  const [showChatHistory, setShowChatHistory] = useState(false);
+  const [chatList, setChatList] = useState<string[]>([]);
+  const [showNotificationPopup, setShowNotificationPopup] = useState(false);
+  const [unseenNotifications, setUnseenNotifications] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const memoryManager = useRef<ClientMemoryManager>(new ClientMemoryManager());
@@ -95,6 +130,36 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // Load chat list on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const chats: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith('alfred-chat-')) {
+          const chatId = key.replace('alfred-chat-', '');
+          if (chatId !== currentChatId) {
+            chats.push(chatId);
+          }
+        }
+      }
+      chats.unshift(currentChatId); // Current chat first
+      setChatList(chats);
+    }
+  }, [currentChatId]);
+
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    if (typeof window !== 'undefined' && messages.length > 0) {
+      try {
+        localStorage.setItem(`alfred-chat-${currentChatId}`, JSON.stringify(messages));
+        localStorage.setItem('alfred-current-chat', currentChatId);
+      } catch (error) {
+        console.error('Failed to save chat history:', error);
+      }
+    }
+  }, [messages, currentChatId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -104,7 +169,19 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
     // Subscribe to notification updates for badge count
     const unsubscribe = alfredNotifications.subscribe((notifications) => {
       setBadgeCount(alfredNotifications.getBadgeCount());
+      setUnseenNotifications(notifications.filter(n => n.type !== 'badge'));
     });
+
+    // Listen for remind me later events
+    const handleRemindLater = (event: CustomEvent) => {
+      setRemindLaterData({
+        title: event.detail.title,
+        message: event.detail.message
+      });
+      setShowRemindLater(true);
+    };
+
+    window.addEventListener('alfred:remind-later', handleRemindLater as EventListener);
 
     // Demo: Send a welcome notification after 3 seconds
     const welcomeTimer = setTimeout(() => {
@@ -134,8 +211,14 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
             style: 'primary'
           },
           {
-            id: 'later',
-            label: 'Maybe later',
+            id: 'remind_later',
+            label: 'Remind me later',
+            action: 'remind_later',
+            style: 'secondary'
+          },
+          {
+            id: 'dismiss',
+            label: 'Dismiss',
             action: 'dismiss',
             style: 'secondary'
           }
@@ -150,6 +233,7 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
       unsubscribe();
       clearTimeout(welcomeTimer);
       clearTimeout(suggestionTimer);
+      window.removeEventListener('alfred:remind-later', handleRemindLater as EventListener);
     };
   }, []);
 
@@ -353,6 +437,12 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
               label: 'Next task',
               action: 'accept',
               style: 'secondary'
+            },
+            {
+              id: 'remind_later',
+              label: 'Remind me later',
+              action: 'remind_later',
+              style: 'secondary'
             }
           ],
           autoHide: true,
@@ -376,6 +466,12 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
               label: 'Yes, please',
               action: 'accept',
               style: 'primary'
+            },
+            {
+              id: 'remind_later',
+              label: 'Remind me later',
+              action: 'remind_later',
+              style: 'secondary'
             },
             {
               id: 'dismiss',
@@ -507,11 +603,80 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
     generateAlfredResponse();
   };
 
+  const createNewChat = () => {
+    const newChatId = `chat-${Date.now()}`;
+    setCurrentChatId(newChatId);
+    
+    // Create initial greeting for new chat
+    const now = new Date();
+    const hour = now.getHours();
+    const greetings = [
+      `Ah, a fresh conversation! How delightful, ${personalInfo.name}. What shall we explore today?`,
+      `New chat, new possibilities! I'm entirely at your service, Miss.`,
+      `Starting anew, are we? Excellent! I do so enjoy our conversations.`,
+      hour < 12 ? `A new morning chat! Perfect timing for creative endeavours.` :
+      hour < 17 ? `A fresh afternoon discussion! What brings you here today?` :
+      `Evening contemplations in a new chat! How atmospheric.`
+    ];
+    
+    const selectedGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+    
+    setMessages([{
+      id: '1',
+      content: selectedGreeting,
+      sender: 'alfred',
+      timestamp: new Date(),
+      emotion: 'happy'
+    }]);
+  };
+
+  const loadChat = (chatId: string) => {
+    if (chatId === currentChatId) return;
+    
+    setCurrentChatId(chatId);
+    
+    // Load messages for this chat
+    if (typeof window !== 'undefined') {
+      try {
+        const savedMessages = localStorage.getItem(`alfred-chat-${chatId}`);
+        if (savedMessages) {
+          const parsed = JSON.parse(savedMessages);
+          setMessages(parsed.map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          })));
+        }
+      } catch (error) {
+        console.error('Failed to load chat:', error);
+      }
+    }
+    
+    setShowChatHistory(false);
+  };
+
+  const getChatPreview = (chatId: string): string => {
+    if (typeof window === 'undefined') return '';
+    
+    try {
+      const savedMessages = localStorage.getItem(`alfred-chat-${chatId}`);
+      if (savedMessages) {
+        const parsed = JSON.parse(savedMessages);
+        const lastUserMessage = parsed.reverse().find((msg: any) => msg.sender === 'user');
+        return lastUserMessage?.content?.substring(0, 50) + '...' || 'New chat';
+      }
+    } catch (error) {
+      console.error('Failed to get chat preview:', error);
+    }
+    
+    return 'Chat ' + chatId;
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
+    // Shift+Enter for new line - handled automatically by textarea
   };
 
   if (!isOpen) {
@@ -593,12 +758,40 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
           </div>
           <div className="flex items-center space-x-2">
             <ServiceWorkerStatus />
-            <NotificationBadge
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => {
-                // Clear unread count when clicked
-                nativeNotifications.clearAll();
+                setShowNotificationPopup(true);
               }}
-            />
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent relative"
+              title="Notifications"
+            >
+              <Bell className="h-4 w-4" />
+              {badgeCount > 0 && (
+                <Badge variant="destructive" className="absolute -top-1 -right-1 h-4 w-4 rounded-full p-0 flex items-center justify-center text-xs">
+                  {badgeCount > 9 ? '9+' : badgeCount}
+                </Badge>
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowChatHistory(true)}
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
+              title="Chat History"
+            >
+              <History className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={createNewChat}
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
+              title="New Chat"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -662,42 +855,75 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
                   <div
                     key={message.id}
                     className={cn(
-                      "flex",
+                      "flex items-start space-x-3",
                       message.sender === 'user' ? "justify-end" : "justify-start"
                     )}
                   >
+                    {/* User/Alfred Avatar */}
+                    {message.sender === 'alfred' && (
+                      <Image
+                        src="/alfred-avatar.png"
+                        alt="Alfred"
+                        width={32}
+                        height={32}
+                        className="w-8 h-8 object-cover flex-shrink-0 mt-1"
+                        style={{
+                          filter: 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.3))',
+                          borderRadius: '0'
+                        }}
+                      />
+                    )}
+                    {message.sender === 'user' && (
+                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 mt-1 text-primary-foreground font-medium text-sm">
+                        Y
+                      </div>
+                    )}
+                    
                     <div
                       className={cn(
-                        "p-4 rounded-lg transition-all duration-200",
+                        "rounded-2xl transition-all duration-200 shadow-sm",
                         isExpanded
-                          ? "max-w-[75%] text-base leading-relaxed"
+                          ? "max-w-[75%] text-base leading-relaxed p-4"
                           : "max-w-[80%] text-sm p-3",
                         message.sender === 'user'
-                          ? "bg-primary text-primary-foreground ml-4"
-                          : "bg-card text-card-foreground border border-border mr-4"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-background border border-border"
                       )}
                     >
-                      {message.sender === 'alfred' && (
-                        <div className="flex items-center space-x-2 mb-2">
-                          <Image
-                            src="/alfred-avatar.png"
-                            alt="Alfred"
-                            width={12}
-                            height={12}
-                            className="h-3 w-3 object-cover"
-                            style={{
-                              filter: 'drop-shadow(0 0 2px rgba(255, 255, 255, 0.4))',
-                              borderRadius: '0'
-                            }}
-                          />
-                          <span className="text-xs text-primary font-medium">Alfred</span>
+                      {/* Message Header with Name and Emotion */}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <span className={cn(
+                            "text-xs font-medium",
+                            message.sender === 'user' 
+                              ? "text-primary-foreground/90" 
+                              : "text-foreground"
+                          )}>
+                            {message.sender === 'user' ? 'Yekta' : 'Alfred'}
+                          </span>
                           {message.emotion && (
-                            <Badge variant="secondary" className="text-xs bg-secondary text-secondary-foreground border-border">
+                            <Badge 
+                              variant="secondary" 
+                              className={cn(
+                                "text-xs h-4 px-1.5",
+                                message.sender === 'user'
+                                  ? "bg-primary-foreground/20 text-primary-foreground/80"
+                                  : "bg-secondary text-secondary-foreground"
+                              )}
+                            >
                               {message.emotion}
                             </Badge>
                           )}
                         </div>
-                      )}
+                        <span className={cn(
+                          "text-xs opacity-70",
+                          message.sender === 'user' 
+                            ? "text-primary-foreground/70" 
+                            : "text-muted-foreground"
+                        )}>
+                          {message.timestamp.toLocaleTimeString()}
+                        </span>
+                      </div>
 
                       {/* Attachment Display */}
                       {message.attachments && message.attachments.length > 0 && (
@@ -725,9 +951,6 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
                           ? "leading-relaxed text-base"
                           : "leading-relaxed"
                       )}>{message.content}</p>
-                      <p className="text-xs opacity-70 mt-1">
-                        {message.timestamp.toLocaleTimeString()}
-                      </p>
                     </div>
                   </div>
                 ))}
@@ -785,7 +1008,7 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
                     placeholder="Ask Alfred anything about your Batman universe..."
                     value={currentMessage}
                     onChange={(e) => setCurrentMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
+                    onKeyDown={handleKeyPress}
                     className="flex-1 bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-ring"
                   />
                 )}
@@ -871,6 +1094,204 @@ export function AlfredAssistant({ className }: AlfredAssistantProps) {
 
       {/* Notification Permission Request */}
       <NotificationPermissionRequest />
+
+      {/* Remind Me Later Modal */}
+      {showRemindLater && remindLaterData && (
+        <RemindMeLaterModal
+          isOpen={showRemindLater}
+          onClose={() => {
+            setShowRemindLater(false);
+            setRemindLaterData(null);
+          }}
+          notificationTitle={remindLaterData.title}
+          notificationMessage={remindLaterData.message}
+        />
+      )}
+
+      {/* Chat History Modal */}
+      {showChatHistory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setShowChatHistory(false)} />
+          <Card className="relative w-full max-w-md mx-4 bg-card border-border shadow-xl">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <Image
+                    src="/alfred-avatar.png"
+                    alt="Alfred"
+                    width={24}
+                    height={24}
+                    className="w-6 h-6 object-cover"
+                    style={{
+                      filter: 'drop-shadow(0 0 3px rgba(255, 255, 255, 0.3))',
+                      borderRadius: '0'
+                    }}
+                  />
+                  <h3 className="text-lg font-semibold">Chat History</h3>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowChatHistory(false)}
+                  className="h-8 w-8 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {chatList.map((chatId) => (
+                  <Button
+                    key={chatId}
+                    variant={chatId === currentChatId ? "default" : "ghost"}
+                    className="w-full justify-start text-left h-auto p-3"
+                    onClick={() => loadChat(chatId)}
+                  >
+                    <div className="flex flex-col items-start w-full">
+                      <span className="font-medium text-sm">
+                        {chatId === 'default' ? 'Main Chat' : 
+                         chatId === currentChatId ? 'Current Chat' :
+                         `Chat ${chatId.replace('chat-', '')}`}
+                      </span>
+                      <span className="text-xs text-muted-foreground mt-1 truncate w-full">
+                        {getChatPreview(chatId)}
+                      </span>
+                    </div>
+                  </Button>
+                ))}
+              </div>
+              
+              <div className="mt-4 pt-4 border-t">
+                <Button
+                  onClick={() => {
+                    createNewChat();
+                    setShowChatHistory(false);
+                  }}
+                  className="w-full"
+                  variant="outline"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create New Chat
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Notification Popup */}
+      {showNotificationPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setShowNotificationPopup(false)} />
+          <Card className="relative w-full max-w-lg mx-4 bg-card border-border shadow-xl">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <Bell className="h-6 w-6 text-primary" />
+                  <h3 className="text-lg font-semibold">Notifications</h3>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowNotificationPopup(false)}
+                  className="h-8 w-8 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {unseenNotifications.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Bell className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>No notifications</p>
+                    <p className="text-sm mt-1">Alfred will send you helpful updates here</p>
+                  </div>
+                ) : (
+                  unseenNotifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className="p-3 border border-border rounded-lg bg-background/50"
+                    >
+                      <div className="flex items-start space-x-3">
+                        <Image
+                          src="/alfred-avatar.png"
+                          alt="Alfred"
+                          width={20}
+                          height={20}
+                          className="w-5 h-5 object-cover flex-shrink-0 mt-0.5"
+                          style={{
+                            filter: 'drop-shadow(0 0 2px rgba(255, 255, 255, 0.3))',
+                            borderRadius: '0'
+                          }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-medium">{notification.title}</h4>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {notification.message}
+                          </p>
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(notification.timestamp).toLocaleTimeString()}
+                            </span>
+                            <Badge variant="secondary" className="text-xs">
+                              {notification.priority}
+                            </Badge>
+                          </div>
+                          {notification.actions && notification.actions.length > 0 && (
+                            <div className="flex space-x-2 mt-2">
+                              {notification.actions.map((action: any) => (
+                                <Button
+                                  key={action.id}
+                                  variant={action.style === 'primary' ? 'default' : 'outline'}
+                                  size="sm"
+                                  className="text-xs h-6"
+                                  onClick={() => {
+                                    action.handler?.();
+                                    // Remove this notification from the list
+                                    setUnseenNotifications(prev => prev.filter(n => n.id !== notification.id));
+                                  }}
+                                >
+                                  {action.label}
+                                </Button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            alfredNotifications.removeNotification(notification.id);
+                          }}
+                          className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              
+              {unseenNotifications.length > 0 && (
+                <div className="mt-4 pt-4 border-t">
+                  <Button
+                    onClick={() => {
+                      alfredNotifications.clearAll();
+                      setShowNotificationPopup(false);
+                    }}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Clear All Notifications
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

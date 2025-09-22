@@ -29,7 +29,7 @@ import {
   RESOURCE_STATUS_OPTIONS,
   FACTION_ALIGNMENT_OPTIONS
 } from '@/hooks/use-bible';
-import { PlusCircle, Trash2, Sparkles, BookUser, List, Loader2, Upload, Download, Eye, Edit, Camera, Users, FileText, Plus, FileUp, MapPin, Bot } from 'lucide-react';
+import { PlusCircle, Trash2, Sparkles, BookUser, List, Loader2, Upload, Download, Eye, Edit, Camera, Users, FileText, Plus, FileUp, MapPin, Bot, Network, Clock } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from './ui/textarea';
@@ -41,6 +41,8 @@ import { Card } from './ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { ProfilePageEditor } from './profile-page-editor';
 import { suggestBibleFields } from '@/ai/flows/bible-fields-flow';
+import { RelationshipMindmap } from './relationship-mindmap';
+import { BackstoryTimeline } from './backstory-timeline';
 
 interface BibleEditorProps {
   entry: BibleEntry | null;
@@ -51,7 +53,7 @@ interface BibleEditorProps {
   onClose: () => void;
 }
 
-type EditorView = 'identity' | 'traits' | 'relationships' | 'arcs' | 'dossier' | 'overview' | 'description' | 'fields';
+type EditorView = 'identity' | 'traits' | 'relationships' | 'arcs' | 'backstory' | 'mindmap' | 'dossier' | 'overview' | 'description' | 'fields';
 type EditMode = 'view' | 'edit';
 
 type TabConfig = {
@@ -68,6 +70,8 @@ const getTabsForCategory = (category: string): TabConfig[] => {
         { value: 'traits', label: 'Traits', icon: List },
         { value: 'relationships', label: 'Relationships', icon: Users },
         { value: 'arcs', label: 'Arcs', icon: FileText },
+        { value: 'backstory', label: 'Backstory', icon: Clock },
+        { value: 'mindmap', label: 'Mindmap', icon: Network },
         { value: 'dossier', label: 'Dossier', icon: FileText }
       ];
     default:
@@ -80,7 +84,7 @@ const getTabsForCategory = (category: string): TabConfig[] => {
 };
 
 const getTabGridCols = (category: string): string => {
-  return category === 'Characters' ? 'grid-cols-5' : 'grid-cols-3';
+  return category === 'Characters' ? 'grid-cols-7' : 'grid-cols-3';
 };
 
 export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, onClose }: BibleEditorProps) {
@@ -435,46 +439,50 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
           </TabsList>
 
           {/* Identity Tab - Characters Only */}
-          <TabsContent value="identity" className="flex-1 overflow-y-auto space-y-6 p-1">
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Picture Section */}
-                <div className="space-y-4">
-                  <Label className="text-sm font-medium">Picture</Label>
-                  <div className="relative">
-                    <Avatar className="w-32 h-32 mx-auto">
-                      <AvatarImage 
-                        src={currentEntry.fixedFields?.picture} 
-                        alt={currentEntry.title} 
-                      />
-                      <AvatarFallback className="text-lg">
-                        {currentEntry.title.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    {editMode === 'edit' && (
-                      <div className="mt-2">
-                        <label htmlFor="picture-upload" className="cursor-pointer">
-                          <Button variant="outline" size="sm" asChild>
-                            <span>
-                              <Camera className="h-4 w-4 mr-2" />
-                              Upload
-                            </span>
-                          </Button>
-                        </label>
-                        <input
-                          id="picture-upload"
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          className="hidden"
+          <TabsContent value="identity" className="flex-1 overflow-y-auto">
+            <div className="p-6 space-y-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Left Column - Picture and Basic Info */}
+                <div className="space-y-6">
+                  {/* Picture Section */}
+                  <div className="text-center">
+                    <Label className="text-sm font-medium block mb-4">Picture</Label>
+                    <div className="relative inline-block">
+                      <Avatar className="w-32 h-32 mx-auto">
+                        <AvatarImage 
+                          src={currentEntry.fixedFields?.picture} 
+                          alt={currentEntry.title} 
                         />
-                      </div>
-                    )}
+                        <AvatarFallback className="text-lg">
+                          {currentEntry.title.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      {editMode === 'edit' && (
+                        <div className="mt-3">
+                          <label htmlFor="picture-upload" className="cursor-pointer">
+                            <Button variant="outline" size="sm" asChild>
+                              <span>
+                                <Camera className="h-4 w-4 mr-2" />
+                                Upload
+                              </span>
+                            </Button>
+                          </label>
+                          <input
+                            id="picture-upload"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="hidden"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* Fixed Fields */}
-                <div className="md:col-span-2 space-y-4">
+                  {/* Basic Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold border-b pb-2">Basic Information</h3>
+                    <div className="space-y-4">
                   {/* Real Name */}
                   <div>
                     <Label className="text-sm font-medium">Real Name</Label>
@@ -483,7 +491,7 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
                         value={currentEntry.fixedFields?.realName || ''}
                         onChange={(e) => handleFixedFieldChange('realName', e.target.value)}
                         placeholder="Real name"
-                        className="mt-1"
+                        className="mt-1 bg-card border-border text-foreground"
                       />
                     ) : (
                       <p className="mt-1 text-sm">{currentEntry.fixedFields?.realName || 'Unknown'}</p>
@@ -498,95 +506,105 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
                         value={currentEntry.fixedFields?.aliases || ''}
                         onChange={(e) => handleFixedFieldChange('aliases', e.target.value)}
                         placeholder="Known aliases (comma separated)"
-                        className="mt-1"
+                        className="mt-1 bg-card border-border text-foreground"
                       />
                     ) : (
                       <p className="mt-1 text-sm">{currentEntry.fixedFields?.aliases || 'None'}</p>
                     )}
                   </div>
 
-                  {/* Age */}
-                  <div>
-                    <Label className="text-sm font-medium">Age</Label>
-                    {editMode === 'edit' ? (
-                      <Input
-                        value={currentEntry.fixedFields?.age || ''}
-                        onChange={(e) => handleFixedFieldChange('age', e.target.value)}
-                        placeholder="Age or age range"
-                        className="mt-1"
-                      />
-                    ) : (
-                      <p className="mt-1 text-sm">{currentEntry.fixedFields?.age || 'Unknown'}</p>
-                    )}
-                  </div>
-
-                  {/* Nationality */}
-                  <div>
-                    <Label className="text-sm font-medium">Nationality</Label>
-                    {editMode === 'edit' ? (
-                      <Input
-                        value={currentEntry.fixedFields?.nationality || ''}
-                        onChange={(e) => handleFixedFieldChange('nationality', e.target.value)}
-                        placeholder="Nationality"
-                        className="mt-1"
-                      />
-                    ) : (
-                      <p className="mt-1 text-sm">{currentEntry.fixedFields?.nationality || 'Unknown'}</p>
-                    )}
-                  </div>
-
-                  {/* Alignment */}
-                  <div>
-                    <Label className="text-sm font-medium">Alignment</Label>
-                    {editMode === 'edit' ? (
-                      <Select
-                        value={currentEntry.fixedFields?.alignment || ''}
-                        onValueChange={(value) => handleFixedFieldChange('alignment', value)}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Select alignment" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ALIGNMENT_OPTIONS.map((option) => (
-                            <SelectItem key={option} value={option}>
-                              {option}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <div className="mt-1">
-                        <Badge variant="secondary">{currentEntry.fixedFields?.alignment || 'Unknown'}</Badge>
+                      {/* Age */}
+                      <div>
+                        <Label className="text-sm font-medium">Age</Label>
+                        {editMode === 'edit' ? (
+                          <Input
+                            value={currentEntry.fixedFields?.age || ''}
+                            onChange={(e) => handleFixedFieldChange('age', e.target.value)}
+                            placeholder="Age or age range"
+                            className="mt-1 bg-card border-border text-foreground"
+                          />
+                        ) : (
+                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.age || 'Unknown'}</p>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
+                </div>
 
-                  {/* Affiliation */}
-                  <div>
-                    <Label className="text-sm font-medium">Affiliation</Label>
-                    {editMode === 'edit' ? (
-                      <Select
-                        value={currentEntry.fixedFields?.affiliation?.[0] || ''}
-                        onValueChange={(value) => handleFixedFieldChange('affiliation', [value])}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Select affiliation" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {AFFILIATION_OPTIONS.map((option) => (
-                            <SelectItem key={option} value={option}>
-                              {option}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {currentEntry.fixedFields?.affiliation?.map((group) => (
-                          <Badge key={group} variant="outline">{group}</Badge>
-                        )) || <span className="text-sm text-muted-foreground">Independent</span>}
+                {/* Right Column - Additional Information */}
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold border-b pb-2">Additional Information</h3>
+                    <div className="space-y-4">
+                      {/* Nationality */}
+                      <div>
+                        <Label className="text-sm font-medium">Nationality</Label>
+                        {editMode === 'edit' ? (
+                          <Input
+                            value={currentEntry.fixedFields?.nationality || ''}
+                            onChange={(e) => handleFixedFieldChange('nationality', e.target.value)}
+                            placeholder="Nationality"
+                            className="mt-1 bg-card border-border text-foreground"
+                          />
+                        ) : (
+                          <p className="mt-1 text-sm">{currentEntry.fixedFields?.nationality || 'Unknown'}</p>
+                        )}
                       </div>
-                    )}
+
+                      {/* Alignment */}
+                      <div>
+                        <Label className="text-sm font-medium">Alignment</Label>
+                        {editMode === 'edit' ? (
+                          <Select
+                            value={currentEntry.fixedFields?.alignment || ''}
+                            onValueChange={(value) => handleFixedFieldChange('alignment', value)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select alignment" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ALIGNMENT_OPTIONS.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="mt-1">
+                            <Badge variant="secondary">{currentEntry.fixedFields?.alignment || 'Unknown'}</Badge>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Affiliation */}
+                      <div>
+                        <Label className="text-sm font-medium">Affiliation</Label>
+                        {editMode === 'edit' ? (
+                          <Select
+                            value={currentEntry.fixedFields?.affiliation?.[0] || ''}
+                            onValueChange={(value) => handleFixedFieldChange('affiliation', [value])}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select affiliation" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {AFFILIATION_OPTIONS.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {currentEntry.fixedFields?.affiliation?.map((group) => (
+                              <Badge key={group} variant="outline">{group}</Badge>
+                            )) || <span className="text-sm text-muted-foreground">Independent</span>}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -760,7 +778,7 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
                             value={relationship.description || ''}
                             onChange={(e) => handleRelationshipChange(index, 'description', e.target.value)}
                             placeholder="Describe the relationship"
-                            className="mt-1"
+                            className="mt-1 bg-card border-border text-foreground"
                           />
                         </div>
                       </div>
@@ -867,36 +885,140 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
             </div>
           </TabsContent>
 
+          {/* Backstory Tab - Characters Only */}
+          <TabsContent value="backstory" className="flex-1 overflow-y-auto space-y-4 p-1">
+            <div className="space-y-4">
+              <BackstoryTimeline />
+            </div>
+          </TabsContent>
+
+          {/* Mindmap Tab - Characters Only */}
+          <TabsContent value="mindmap" className="flex-1 overflow-y-auto space-y-4 p-1">
+            <div className="space-y-4">
+              <RelationshipMindmap />
+            </div>
+          </TabsContent>
+
           {/* Dossier Tab - Characters Only */}
           <TabsContent value="dossier" className="flex-1 overflow-y-auto space-y-4 p-1">
-            <div className="space-y-4">
-              {editMode === 'edit' && (
-                <div className="flex justify-between items-center">
-                  <Label className="text-base font-medium">Character Dossier</Label>
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-xl font-bold">Character Dossier</h3>
+                  <p className="text-sm text-muted-foreground">Comprehensive information archive</p>
+                </div>
+                {editMode === 'edit' && (
                   <Button variant="outline" size="sm" onClick={handleAddNewPage}>
                     <PlusCircle className="h-4 w-4 mr-2" />
-                    Add Page
+                    Add Section
                   </Button>
-                </div>
-              )}
+                )}
+              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {(currentEntry.pages || []).map((page) => (
+              {/* Notion-like Layout */}
+              <div className="space-y-4">
+                {(currentEntry.pages || []).map((page, index) => (
                   <div 
                     key={page.id} 
-                    className="p-4 border rounded-lg hover:bg-accent cursor-pointer transition-colors"
-                    onClick={() => setEditingPage(page)}
+                    className="group border rounded-lg hover:shadow-lg transition-all duration-200 bg-card"
                   >
-                    <h4 className="font-medium">{page.title}</h4>
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                      {page.content || 'No content yet'}
-                    </p>
+                    {/* Section Header */}
+                    <div 
+                      className="p-4 border-b cursor-pointer hover:bg-accent/50 transition-colors"
+                      onClick={() => setEditingPage(page)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 rounded-full bg-primary"></div>
+                          <h4 className="font-semibold text-lg">{page.title}</h4>
+                        </div>
+                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Badge variant="secondary" className="text-xs">
+                            {page.content?.length || 0} chars
+                          </Badge>
+                          {editMode === 'edit' && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingPage(page);
+                              }}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section Content Preview */}
+                    <div className="p-4">
+                      {page.content ? (
+                        <div className="prose prose-sm max-w-none">
+                          <div className="text-sm text-muted-foreground line-clamp-3">
+                            {page.content.split('\n').slice(0, 3).join(' ').slice(0, 200)}
+                            {page.content.length > 200 && '...'}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 text-muted-foreground">
+                          <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">No content yet. Click to add.</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Quick Actions */}
+                    {editMode === 'view' && page.content && (
+                      <div className="px-4 pb-4">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setEditingPage(page)}
+                          className="w-full"
+                        >
+                          <Eye className="h-3 w-3 mr-2" />
+                          View Full Content
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
 
+              {/* Empty State */}
               {(!currentEntry.pages || currentEntry.pages.length === 0) && (
-                <p className="text-center text-muted-foreground py-8">No dossier pages created yet.</p>
+                <div className="text-center py-12 border-2 border-dashed border-border rounded-lg bg-accent/20">
+                  <div className="space-y-4">
+                    <div className="w-16 h-16 mx-auto bg-accent rounded-full flex items-center justify-center">
+                      <FileText className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium">No dossier sections yet</h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Create organized sections to document this character's complete profile
+                      </p>
+                    </div>
+                    {editMode === 'edit' && (
+                      <Button variant="outline" onClick={handleAddNewPage}>
+                        <PlusCircle className="h-4 w-4 mr-2" />
+                        Create First Section
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Add sections footer for edit mode */}
+              {editMode === 'edit' && currentEntry.pages && currentEntry.pages.length > 0 && (
+                <div className="text-center pt-4 border-t">
+                  <Button variant="ghost" onClick={handleAddNewPage} className="text-muted-foreground">
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Add Another Section
+                  </Button>
+                </div>
               )}
             </div>
           </TabsContent>
@@ -1078,7 +1200,7 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
                             value={currentEntry.fixedFields?.currentOwner || ''}
                             onChange={(e) => handleFixedFieldChange('currentOwner', e.target.value)}
                             placeholder="Current owner"
-                            className="mt-1"
+                            className="mt-1 bg-card border-border text-foreground"
                           />
                         ) : (
                           <p className="mt-1 text-sm">{currentEntry.fixedFields?.currentOwner || 'Unknown'}</p>
@@ -1123,7 +1245,7 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
                             value={currentEntry.fixedFields?.vehicleName || ''}
                             onChange={(e) => handleFixedFieldChange('vehicleName', e.target.value)}
                             placeholder="Vehicle name"
-                            className="mt-1"
+                            className="mt-1 bg-card border-border text-foreground"
                           />
                         ) : (
                           <p className="mt-1 text-sm">{currentEntry.fixedFields?.vehicleName || 'Unknown'}</p>
@@ -1138,7 +1260,7 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
                             value={currentEntry.fixedFields?.owner || ''}
                             onChange={(e) => handleFixedFieldChange('owner', e.target.value)}
                             placeholder="Vehicle owner"
-                            className="mt-1"
+                            className="mt-1 bg-card border-border text-foreground"
                           />
                         ) : (
                           <p className="mt-1 text-sm">{currentEntry.fixedFields?.owner || 'Unknown'}</p>
@@ -1181,7 +1303,7 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
                             value={currentEntry.fixedFields?.species || ''}
                             onChange={(e) => handleFixedFieldChange('species', e.target.value)}
                             placeholder="Animal species"
-                            className="mt-1"
+                            className="mt-1 bg-card border-border text-foreground"
                           />
                         ) : (
                           <p className="mt-1 text-sm">{currentEntry.fixedFields?.species || 'Unknown'}</p>
@@ -1196,7 +1318,7 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
                             value={currentEntry.fixedFields?.animalAlias || ''}
                             onChange={(e) => handleFixedFieldChange('animalAlias', e.target.value)}
                             placeholder="Animal alias or codename"
-                            className="mt-1"
+                            className="mt-1 bg-card border-border text-foreground"
                           />
                         ) : (
                           <p className="mt-1 text-sm">{currentEntry.fixedFields?.animalAlias || 'None'}</p>
@@ -1211,7 +1333,7 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
                             value={currentEntry.fixedFields?.companionOf || ''}
                             onChange={(e) => handleFixedFieldChange('companionOf', e.target.value)}
                             placeholder="Character this animal companions"
-                            className="mt-1"
+                            className="mt-1 bg-card border-border text-foreground"
                           />
                         ) : (
                           <p className="mt-1 text-sm">{currentEntry.fixedFields?.companionOf || 'None'}</p>
@@ -1256,7 +1378,7 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
                             value={currentEntry.fixedFields?.members || ''}
                             onChange={(e) => handleFixedFieldChange('members', e.target.value)}
                             placeholder="Couple members"
-                            className="mt-1"
+                            className="mt-1 bg-card border-border text-foreground"
                           />
                         ) : (
                           <p className="mt-1 text-sm">{currentEntry.fixedFields?.members || 'Unknown'}</p>
@@ -1297,7 +1419,7 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
                             value={currentEntry.fixedFields?.volumes || ''}
                             onChange={(e) => handleFixedFieldChange('volumes', e.target.value)}
                             placeholder="Story volumes (e.g., I-VI)"
-                            className="mt-1"
+                            className="mt-1 bg-card border-border text-foreground"
                           />
                         ) : (
                           <p className="mt-1 text-sm">{currentEntry.fixedFields?.volumes || 'Unknown'}</p>
@@ -1312,7 +1434,7 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
                             value={currentEntry.fixedFields?.themes || ''}
                             onChange={(e) => handleFixedFieldChange('themes', e.target.value)}
                             placeholder="Relationship themes"
-                            className="mt-1"
+                            className="mt-1 bg-card border-border text-foreground"
                           />
                         ) : (
                           <p className="mt-1 text-sm">{currentEntry.fixedFields?.themes || 'None'}</p>
@@ -1331,7 +1453,7 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
                             value={currentEntry.fixedFields?.source || ''}
                             onChange={(e) => handleFixedFieldChange('source', e.target.value)}
                             placeholder="Resource source"
-                            className="mt-1"
+                            className="mt-1 bg-card border-border text-foreground"
                           />
                         ) : (
                           <p className="mt-1 text-sm">{currentEntry.fixedFields?.source || 'Unknown'}</p>
@@ -1346,7 +1468,7 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
                             value={currentEntry.fixedFields?.linkedTo || ''}
                             onChange={(e) => handleFixedFieldChange('linkedTo', e.target.value)}
                             placeholder="Character or entity linked to"
-                            className="mt-1"
+                            className="mt-1 bg-card border-border text-foreground"
                           />
                         ) : (
                           <p className="mt-1 text-sm">{currentEntry.fixedFields?.linkedTo || 'None'}</p>
@@ -1361,7 +1483,7 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
                             value={currentEntry.fixedFields?.volume || ''}
                             onChange={(e) => handleFixedFieldChange('volume', e.target.value)}
                             placeholder="Story volume"
-                            className="mt-1"
+                            className="mt-1 bg-card border-border text-foreground"
                           />
                         ) : (
                           <p className="mt-1 text-sm">{currentEntry.fixedFields?.volume || 'Unknown'}</p>
@@ -1406,7 +1528,7 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
                             value={currentEntry.fixedFields?.purpose || ''}
                             onChange={(e) => handleFixedFieldChange('purpose', e.target.value)}
                             placeholder="Faction purpose"
-                            className="mt-1"
+                            className="mt-1 bg-card border-border text-foreground"
                           />
                         ) : (
                           <p className="mt-1 text-sm">{currentEntry.fixedFields?.purpose || 'Unknown'}</p>
@@ -1447,7 +1569,7 @@ export function BibleEditor({ entry, category, onSave, onDelete, onViewOnMap, on
                             value={currentEntry.fixedFields?.strengths || ''}
                             onChange={(e) => handleFixedFieldChange('strengths', e.target.value)}
                             placeholder="Faction strengths"
-                            className="mt-1"
+                            className="mt-1 bg-card border-border text-foreground"
                           />
                         ) : (
                           <p className="mt-1 text-sm">{currentEntry.fixedFields?.strengths || 'Unknown'}</p>

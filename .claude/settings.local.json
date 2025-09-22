@@ -4,7 +4,9 @@
       "Read(//c/Users/Yekta/Pictures/Screenshots/**)",
       "Bash(npm run build:*)",
       "Bash(curl:*)",
-      "Bash(npm run typecheck:*)"
+      "Bash(npm run typecheck:*)",
+      "Read(/Users/yekta/Downloads/ExportBlock-94ae44ab-4ef6-40bb-9d5a-9ab7bc79dc70-Part-1/Liv Freya Character Profile 24fd09d29edd80208f2fc9dcef6022d8/**)",
+      "Read(/Users/yekta/Downloads/ExportBlock-94ae44ab-4ef6-40bb-9d5a-9ab7bc79dc70-Part-1/Liv Freya Character Profile 24fd09d29edd80208f2fc9dcef6022d8/**)"
     ],
     "deny": [],
     "ask": []
