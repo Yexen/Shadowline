@@ -1,5 +1,6 @@
-interface CharacterData {
+interface ContentData {
   name: string;
+  type: 'character' | 'location' | 'concept' | 'event' | 'document';
   realName?: string;
   aliases?: string[];
   backstory?: string;
@@ -14,12 +15,12 @@ interface CharacterData {
   details: Record<string, string>;
 }
 
-export interface ImportedCharacter {
+export interface ImportedContent {
   id: string;
   path: string;
   title: string;
   content: string;
-  type: 'character';
+  type: 'character' | 'location' | 'concept' | 'event' | 'document';
   lastModified: Date;
   bibleEntry?: {
     title: string;
@@ -40,7 +41,7 @@ export interface ImportedCharacter {
   };
 }
 
-export function parseCharacterHTML(htmlContent: string, fileName: string): CharacterData | null {
+export function parseContentHTML(htmlContent: string, fileName: string): ContentData | null {
   try {
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlContent, 'text/html');
@@ -137,22 +138,26 @@ export function parseCharacterHTML(htmlContent: string, fileName: string): Chara
       }
     });
 
-    // Parse specific character information
-    const characterData: CharacterData = {
+    // Determine content type based on content analysis
+    const contentType = determineContentType(details, cleanTitle);
+
+    // Parse specific content information
+    const contentData: ContentData = {
       name: cleanTitle,
+      type: contentType,
       details
     };
 
-    // Try to extract common character fields
+    // Try to extract common fields
     const nameData = extractNameData(details);
-    if (nameData.realName) characterData.realName = nameData.realName;
-    if (nameData.aliases.length > 0) characterData.aliases = nameData.aliases;
+    if (nameData.realName) contentData.realName = nameData.realName;
+    if (nameData.aliases.length > 0) contentData.aliases = nameData.aliases;
 
     // Extract backstory
     const backstoryKeys = ['Backstory', 'Background', 'History', 'Origin'];
     for (const key of backstoryKeys) {
       if (details[key]) {
-        characterData.backstory = details[key];
+        contentData.backstory = details[key];
         break;
       }
     }
@@ -161,7 +166,7 @@ export function parseCharacterHTML(htmlContent: string, fileName: string): Chara
     const personalityKeys = ['Personality', 'Personality Overview', 'Character', 'Traits'];
     for (const key of personalityKeys) {
       if (details[key]) {
-        characterData.personality = details[key];
+        contentData.personality = details[key];
         break;
       }
     }
@@ -170,15 +175,15 @@ export function parseCharacterHTML(htmlContent: string, fileName: string): Chara
     const physicalKeys = ['Physical Appearance', 'Physical Appearances', 'Appearance', 'Physical Description', 'Physical Traits and Presence'];
     for (const key of physicalKeys) {
       if (details[key]) {
-        characterData.physicalDescription = details[key];
+        contentData.physicalDescription = details[key];
         break;
       }
     }
 
     // Extract relationships
-    characterData.relationships = extractRelationships(details);
+    contentData.relationships = extractRelationships(details);
 
-    return characterData;
+    return contentData;
   } catch (error) {
     console.error('Error parsing character HTML:', error);
     return null;
@@ -194,6 +199,54 @@ function getPrecedingHeading(element: Element): string | null {
     current = current.previousElementSibling;
   }
   return null;
+}
+
+function determineContentType(details: Record<string, string>, title: string): 'character' | 'location' | 'concept' | 'event' | 'document' {
+  const titleLower = title.toLowerCase();
+  const allContent = Object.entries(details).map(([k, v]) => `${k}: ${v}`).join(' ').toLowerCase();
+
+  // Character indicators
+  if (titleLower.includes('character') ||
+      allContent.includes('personality') ||
+      allContent.includes('real name') ||
+      allContent.includes('aliases') ||
+      allContent.includes('backstory') ||
+      allContent.includes('relationships')) {
+    return 'character';
+  }
+
+  // Location indicators
+  if (titleLower.includes('location') ||
+      titleLower.includes('place') ||
+      titleLower.includes('city') ||
+      titleLower.includes('building') ||
+      allContent.includes('address') ||
+      allContent.includes('coordinates') ||
+      allContent.includes('district')) {
+    return 'location';
+  }
+
+  // Event indicators
+  if (titleLower.includes('event') ||
+      titleLower.includes('battle') ||
+      titleLower.includes('incident') ||
+      allContent.includes('date') ||
+      allContent.includes('timeline') ||
+      allContent.includes('occurred')) {
+    return 'event';
+  }
+
+  // Concept indicators
+  if (titleLower.includes('concept') ||
+      titleLower.includes('theory') ||
+      titleLower.includes('philosophy') ||
+      allContent.includes('definition') ||
+      allContent.includes('meaning')) {
+    return 'concept';
+  }
+
+  // Default to document
+  return 'document';
 }
 
 function extractNameData(details: Record<string, string>): { realName?: string; aliases: string[] } {
@@ -271,75 +324,89 @@ function extractRelationships(details: Record<string, string>): Array<{ name: st
   return relationships;
 }
 
-export function createCodexNodeFromCharacter(character: CharacterData): ImportedCharacter {
-  const id = `char-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  const safeName = character.name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '-').toLowerCase();
-  const path = `/characters/${safeName}`;
+export function createCodexNodeFromContent(content: ContentData, customPath?: string): ImportedContent {
+  const id = `content-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const safeName = content.name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '-').toLowerCase();
+
+  // Use custom path if provided, otherwise default based on content type
+  let path: string;
+  if (customPath) {
+    path = customPath.endsWith('/') ? customPath + safeName : customPath + '/' + safeName;
+  } else {
+    const typePrefix = {
+      'character': '/characters',
+      'location': '/locations',
+      'event': '/events',
+      'concept': '/concepts',
+      'document': '/documents'
+    };
+    path = `${typePrefix[content.type]}/${safeName}`;
+  }
 
   // Create markdown content
-  let content = `# ${character.name}\n\n`;
+  let markdownContent = `# ${content.name}\n\n`;
 
-  if (character.realName) {
-    content += `**Real Name:** ${character.realName}\n\n`;
+  if (content.realName) {
+    markdownContent += `**Real Name:** ${content.realName}\n\n`;
   }
 
-  if (character.aliases && character.aliases.length > 0) {
-    content += `**Aliases:** ${character.aliases.join(', ')}\n\n`;
+  if (content.aliases && content.aliases.length > 0) {
+    markdownContent += `**Aliases:** ${content.aliases.join(', ')}\n\n`;
   }
 
-  if (character.backstory) {
-    content += `## Backstory\n\n${character.backstory}\n\n`;
+  if (content.backstory) {
+    markdownContent += `## Backstory\n\n${content.backstory}\n\n`;
   }
 
-  if (character.personality) {
-    content += `## Personality\n\n${character.personality}\n\n`;
+  if (content.personality) {
+    markdownContent += `## Personality\n\n${content.personality}\n\n`;
   }
 
-  if (character.physicalDescription) {
-    content += `## Physical Description\n\n${character.physicalDescription}\n\n`;
+  if (content.physicalDescription) {
+    markdownContent += `## Physical Description\n\n${content.physicalDescription}\n\n`;
   }
 
-  if (character.relationships && character.relationships.length > 0) {
-    content += `## Relationships\n\n`;
-    character.relationships.forEach(rel => {
-      content += `- **${rel.name}**: ${rel.description}\n`;
+  if (content.relationships && content.relationships.length > 0) {
+    markdownContent += `## Relationships\n\n`;
+    content.relationships.forEach(rel => {
+      markdownContent += `- **${rel.name}**: ${rel.description}\n`;
     });
-    content += '\n';
+    markdownContent += '\n';
   }
 
   // Add other details
-  if (Object.keys(character.details).length > 0) {
-    content += `## Additional Information\n\n`;
-    Object.entries(character.details).forEach(([key, value]) => {
+  if (Object.keys(content.details).length > 0) {
+    markdownContent += `## Additional Information\n\n`;
+    Object.entries(content.details).forEach(([key, value]) => {
       if (!['Backstory', 'Personality', 'Physical Appearance', 'Physical Appearances', 'Relationships'].includes(key)) {
-        content += `### ${key}\n\n${value}\n\n`;
+        markdownContent += `### ${key}\n\n${value}\n\n`;
       }
     });
   }
 
-  // Create Bible entry
-  const bibleEntry = {
-    title: character.name,
-    fields: Object.entries(character.details).map(([label, value]) => ({ label, value })),
+  // Create Bible entry (only for characters)
+  const bibleEntry = content.type === 'character' ? {
+    title: content.name,
+    fields: Object.entries(content.details).map(([label, value]) => ({ label, value })),
     fixedFields: {
-      realName: character.realName,
-      aliases: character.aliases?.join(', '),
-      nationality: extractFieldValue(character.details, ['Nationality', 'Origin']),
-      age: extractFieldValue(character.details, ['Age']),
+      realName: content.realName,
+      aliases: content.aliases?.join(', '),
+      nationality: extractFieldValue(content.details, ['Nationality', 'Origin']),
+      age: extractFieldValue(content.details, ['Age']),
     },
-    relationships: character.relationships?.map(rel => ({
+    relationships: content.relationships?.map(rel => ({
       characterName: rel.name,
       relationshipType: rel.type,
       description: rel.description
     })) || []
-  };
+  } : undefined;
 
   return {
     id,
     path,
-    title: character.name,
-    content,
-    type: 'character',
+    title: content.name,
+    content: markdownContent,
+    type: content.type,
     lastModified: new Date(),
     bibleEntry
   };
@@ -354,18 +421,18 @@ function extractFieldValue(details: Record<string, string>, possibleKeys: string
   return undefined;
 }
 
-export async function importCharacterFromFiles(files: FileList): Promise<ImportedCharacter[]> {
-  const characters: ImportedCharacter[] = [];
+export async function importContentFromFiles(files: FileList, customPath?: string): Promise<ImportedContent[]> {
+  const contents: ImportedContent[] = [];
 
   for (const file of Array.from(files)) {
     if (file.type === 'text/html' || file.name.endsWith('.html')) {
       try {
-        const content = await file.text();
-        const characterData = parseCharacterHTML(content, file.name);
+        const fileContent = await file.text();
+        const contentData = parseContentHTML(fileContent, file.name);
 
-        if (characterData) {
-          const codexNode = createCodexNodeFromCharacter(characterData);
-          characters.push(codexNode);
+        if (contentData) {
+          const codexNode = createCodexNodeFromContent(contentData, customPath);
+          contents.push(codexNode);
         }
       } catch (error) {
         console.error(`Error processing file ${file.name}:`, error);
@@ -373,5 +440,5 @@ export async function importCharacterFromFiles(files: FileList): Promise<Importe
     }
   }
 
-  return characters;
+  return contents;
 }

@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { importCharacterFromFiles, type ImportedCharacter } from '@/lib/character-importer';
+import { importContentFromFiles, type ImportedContent } from '@/lib/character-importer';
 import { useBible } from '@/hooks/use-bible';
 import { SyncManager } from '@/lib/sync-manager';
 
@@ -44,7 +44,7 @@ export default function CodexPage() {
   const [currentNode, setCurrentNode] = useState<CodexNode | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
-  const [importPath, setImportPath] = useState('/characters/');
+  const [importPath, setImportPath] = useState('/');
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [selectedNodes, setSelectedNodes] = useState<Set<string>>(new Set());
   const [showMoveDialog, setShowMoveDialog] = useState(false);
@@ -66,7 +66,23 @@ export default function CodexPage() {
       addEntry(category, entry);
     }
   );
-  const [nodes, setNodes] = useState<CodexNode[]>([
+  // Load nodes from localStorage on mount
+  const [nodes, setNodes] = useState<CodexNode[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('codex-nodes');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          return parsed.map((node: any) => ({
+            ...node,
+            lastModified: new Date(node.lastModified)
+          }));
+        } catch (error) {
+          console.error('Failed to parse saved nodes:', error);
+        }
+      }
+    }
+    return [
     {
       id: '1',
       path: '/characters/batman/bruce-wayne',
@@ -142,7 +158,15 @@ Gothic revival architecture with:
       type: 'location',
       lastModified: new Date('2025-09-18')
     }
-  ]);
+  ];
+  });
+
+  // Save nodes to localStorage whenever they change
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('codex-nodes', JSON.stringify(nodes));
+    }
+  }, [nodes]);
 
   // Load current node based on path
   useEffect(() => {
@@ -186,40 +210,33 @@ Gothic revival architecture with:
     setShowImportDialog(false);
 
     try {
-      const importedCharacters = await importCharacterFromFiles(selectedFiles);
+      const importedContent = await importContentFromFiles(selectedFiles, importPath);
 
-      if (importedCharacters.length > 0) {
-        // Update paths with user-specified path
-        const updatedCharacters = importedCharacters.map(char => {
-          const pathSuffix = char.path.split('/').pop() || char.title.toLowerCase().replace(/\s+/g, '-');
-          const newPath = importPath.endsWith('/') ? importPath + pathSuffix : importPath + '/' + pathSuffix;
-          return { ...char, path: newPath };
-        });
+      if (importedContent.length > 0) {
+        // Add content to Codex
+        setNodes(prev => [...prev, ...importedContent]);
 
-        // Add characters to Codex
-        setNodes(prev => [...prev, ...updatedCharacters]);
-
-        // Add characters to Bible with bidirectional sync
-        for (const character of updatedCharacters) {
-          if (character.bibleEntry) {
-            addEntry('Characters', character.bibleEntry);
+        // Add characters to Bible with bidirectional sync (only for character types)
+        for (const content of importedContent) {
+          if (content.bibleEntry && content.type === 'character') {
+            addEntry('Characters', content.bibleEntry);
           }
         }
 
         toast({
-          title: 'Characters Imported',
-          description: `Successfully imported ${updatedCharacters.length} character(s) to ${importPath}`,
+          title: 'Content Imported',
+          description: `Successfully imported ${importedContent.length} item(s) to ${importPath}`,
         });
 
-        // Navigate to the first imported character
-        if (updatedCharacters.length === 1) {
-          setCurrentPath(updatedCharacters[0].path);
+        // Navigate to the first imported item
+        if (importedContent.length === 1) {
+          setCurrentPath(importedContent[0].path);
         }
       } else {
         toast({
           variant: 'destructive',
           title: 'Import Failed',
-          description: 'No valid character data found in the uploaded files.',
+          description: 'No valid content data found in the uploaded files.',
         });
       }
     } catch (error) {
@@ -346,9 +363,9 @@ Gothic revival architecture with:
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Import Characters</DialogTitle>
+            <DialogTitle>Import Content</DialogTitle>
             <DialogDescription>
-              Choose where to import the selected character files in your Codex.
+              Choose where to import the selected files in your Codex. New paths will be created automatically.
             </DialogDescription>
           </DialogHeader>
 
@@ -359,11 +376,11 @@ Gothic revival architecture with:
                 id="import-path"
                 value={importPath}
                 onChange={(e) => setImportPath(e.target.value)}
-                placeholder="/characters/"
+                placeholder="/characters/ or /locations/ or /custom-folder/"
                 className="mt-1"
               />
               <p className="text-sm text-muted-foreground mt-1">
-                Characters will be imported to this path. Use forward slashes for hierarchy.
+                Content will be imported to this path. New folders will be created if they don't exist.
               </p>
             </div>
 
@@ -384,7 +401,7 @@ Gothic revival architecture with:
               Cancel
             </Button>
             <Button onClick={handleImportConfirm} disabled={!importPath.trim()}>
-              Import Characters
+              Import Content
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -565,7 +582,7 @@ function CodexHomePage({
               ) : (
                 <>
                   <Upload className="w-4 h-4 mr-2" />
-                  Import Character
+                  Import Content
                 </>
               )}
             </Button>
