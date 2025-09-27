@@ -5,8 +5,25 @@ import { PathBreadcrumb } from '@/components/codex/path-breadcrumb';
 import { PathTreeSidebar } from '@/components/codex/path-tree-sidebar';
 import { BlockEditor } from '@/components/codex/block-editor';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookOpen, Users, MapPin, Lightbulb, Calendar, Plus, Upload } from 'lucide-react';
+import { BookOpen, Users, MapPin, Lightbulb, Calendar, Plus, Upload, Trash2, Move, MoreHorizontal, Edit, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { importCharacterFromFiles, type ImportedCharacter } from '@/lib/character-importer';
 import { useBible } from '@/hooks/use-bible';
@@ -26,6 +43,12 @@ export default function CodexPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [currentNode, setCurrentNode] = useState<CodexNode | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importPath, setImportPath] = useState('/characters/');
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
+  const [selectedNodes, setSelectedNodes] = useState<Set<string>>(new Set());
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
+  const [movePath, setMovePath] = useState('');
   const { toast } = useToast();
   const { addEntry, updateEntry, entries } = useBible();
 
@@ -146,20 +169,38 @@ Gothic revival architecture with:
     }
   };
 
-  const handleCharacterImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files || files.length === 0) return;
+    if (files && files.length > 0) {
+      setSelectedFiles(files);
+      setShowImportDialog(true);
+      // Reset file input
+      event.target.value = '';
+    }
+  };
+
+  const handleImportConfirm = async () => {
+    if (!selectedFiles) return;
 
     setIsImporting(true);
+    setShowImportDialog(false);
+
     try {
-      const importedCharacters = await importCharacterFromFiles(files);
+      const importedCharacters = await importCharacterFromFiles(selectedFiles);
 
       if (importedCharacters.length > 0) {
+        // Update paths with user-specified path
+        const updatedCharacters = importedCharacters.map(char => {
+          const pathSuffix = char.path.split('/').pop() || char.title.toLowerCase().replace(/\s+/g, '-');
+          const newPath = importPath.endsWith('/') ? importPath + pathSuffix : importPath + '/' + pathSuffix;
+          return { ...char, path: newPath };
+        });
+
         // Add characters to Codex
-        setNodes(prev => [...prev, ...importedCharacters]);
+        setNodes(prev => [...prev, ...updatedCharacters]);
 
         // Add characters to Bible with bidirectional sync
-        for (const character of importedCharacters) {
+        for (const character of updatedCharacters) {
           if (character.bibleEntry) {
             addEntry('Characters', character.bibleEntry);
           }
@@ -167,12 +208,12 @@ Gothic revival architecture with:
 
         toast({
           title: 'Characters Imported',
-          description: `Successfully imported ${importedCharacters.length} character(s) to both Codex and Bible.`,
+          description: `Successfully imported ${updatedCharacters.length} character(s) to ${importPath}`,
         });
 
         // Navigate to the first imported character
-        if (importedCharacters.length === 1) {
-          setCurrentPath(importedCharacters[0].path);
+        if (updatedCharacters.length === 1) {
+          setCurrentPath(updatedCharacters[0].path);
         }
       } else {
         toast({
@@ -190,9 +231,55 @@ Gothic revival architecture with:
       });
     } finally {
       setIsImporting(false);
-      // Reset file input
-      event.target.value = '';
+      setSelectedFiles(null);
     }
+  };
+
+  const handleSelectNode = (nodeId: string, checked: boolean) => {
+    const newSelected = new Set(selectedNodes);
+    if (checked) {
+      newSelected.add(nodeId);
+    } else {
+      newSelected.delete(nodeId);
+    }
+    setSelectedNodes(newSelected);
+  };
+
+  const handleDeleteSelected = () => {
+    const nodesToDelete = Array.from(selectedNodes);
+    setNodes(prev => prev.filter(node => !nodesToDelete.includes(node.id)));
+    setSelectedNodes(new Set());
+
+    toast({
+      title: 'Nodes Deleted',
+      description: `Deleted ${nodesToDelete.length} node(s) from Codex.`,
+    });
+  };
+
+  const handleMoveSelected = () => {
+    setMovePath(currentPath);
+    setShowMoveDialog(true);
+  };
+
+  const handleMoveConfirm = () => {
+    const nodesToMove = Array.from(selectedNodes);
+
+    setNodes(prev => prev.map(node => {
+      if (nodesToMove.includes(node.id)) {
+        const pathSuffix = node.path.split('/').pop() || node.title.toLowerCase().replace(/\s+/g, '-');
+        const newPath = movePath.endsWith('/') ? movePath + pathSuffix : movePath + '/' + pathSuffix;
+        return { ...node, path: newPath };
+      }
+      return node;
+    }));
+
+    setSelectedNodes(new Set());
+    setShowMoveDialog(false);
+
+    toast({
+      title: 'Nodes Moved',
+      description: `Moved ${nodesToMove.length} node(s) to ${movePath}`,
+    });
   };
 
   return (
@@ -224,8 +311,12 @@ Gothic revival architecture with:
             <CodexHomePage
               nodes={nodes}
               onNavigate={handleNavigate}
-              onCharacterImport={handleCharacterImport}
+              onCharacterImport={handleFileSelect}
               isImporting={isImporting}
+              selectedNodes={selectedNodes}
+              onSelectNode={handleSelectNode}
+              onDeleteSelected={handleDeleteSelected}
+              onMoveSelected={handleMoveSelected}
             />
           ) : currentNode ? (
             <BlockEditor
@@ -250,15 +341,125 @@ Gothic revival architecture with:
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         onNavigate={handleNavigate}
       />
+
+      {/* Import Path Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Import Characters</DialogTitle>
+            <DialogDescription>
+              Choose where to import the selected character files in your Codex.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="import-path">Import Path</Label>
+              <Input
+                id="import-path"
+                value={importPath}
+                onChange={(e) => setImportPath(e.target.value)}
+                placeholder="/characters/"
+                className="mt-1"
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                Characters will be imported to this path. Use forward slashes for hierarchy.
+              </p>
+            </div>
+
+            {selectedFiles && (
+              <div>
+                <Label>Selected Files</Label>
+                <div className="mt-1 p-2 border rounded text-sm">
+                  {Array.from(selectedFiles).map((file, index) => (
+                    <div key={index}>{file.name}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowImportDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleImportConfirm} disabled={!importPath.trim()}>
+              Import Characters
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Move Dialog */}
+      <Dialog open={showMoveDialog} onOpenChange={setShowMoveDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Move Selected Nodes</DialogTitle>
+            <DialogDescription>
+              Choose the new path for the selected nodes.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="move-path">New Path</Label>
+              <Input
+                id="move-path"
+                value={movePath}
+                onChange={(e) => setMovePath(e.target.value)}
+                placeholder="/new/location/"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label>Selected Nodes ({selectedNodes.size})</Label>
+              <div className="mt-1 p-2 border rounded text-sm max-h-32 overflow-y-auto">
+                {Array.from(selectedNodes).map(nodeId => {
+                  const node = nodes.find(n => n.id === nodeId);
+                  return node ? (
+                    <div key={nodeId} className="flex justify-between">
+                      <span>{node.title}</span>
+                      <span className="text-muted-foreground">{node.path}</span>
+                    </div>
+                  ) : null;
+                })}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowMoveDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleMoveConfirm} disabled={!movePath.trim()}>
+              Move Nodes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-function CodexHomePage({ nodes, onNavigate, onCharacterImport, isImporting }: {
+function CodexHomePage({
+  nodes,
+  onNavigate,
+  onCharacterImport,
+  isImporting,
+  selectedNodes,
+  onSelectNode,
+  onDeleteSelected,
+  onMoveSelected
+}: {
   nodes: CodexNode[],
   onNavigate: (path: string) => void,
   onCharacterImport: (event: React.ChangeEvent<HTMLInputElement>) => void,
-  isImporting: boolean
+  isImporting: boolean,
+  selectedNodes: Set<string>,
+  onSelectNode: (nodeId: string, checked: boolean) => void,
+  onDeleteSelected: () => void,
+  onMoveSelected: () => void
 }) {
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -322,6 +523,26 @@ function CodexHomePage({ nodes, onNavigate, onCharacterImport, isImporting }: {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-semibold">Recent Activity</h2>
           <div className="flex gap-2">
+            {selectedNodes.size > 0 && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onMoveSelected}
+                >
+                  <Move className="w-4 h-4 mr-2" />
+                  Move ({selectedNodes.size})
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={onDeleteSelected}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete ({selectedNodes.size})
+                </Button>
+              </>
+            )}
             <input
               type="file"
               accept=".html"
@@ -359,16 +580,46 @@ function CodexHomePage({ nodes, onNavigate, onCharacterImport, isImporting }: {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {recentNodes.map((node) => {
               const Icon = getTypeIcon(node.type);
+              const isSelected = selectedNodes.has(node.id);
+
               return (
                 <Card
                   key={node.id}
-                  className="cursor-pointer hover:border-primary/50 transition-colors"
-                  onClick={() => onNavigate(node.path)}
+                  className={`relative transition-colors ${
+                    isSelected ? 'border-primary bg-primary/5' : 'hover:border-primary/50'
+                  }`}
                 >
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-2">
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={(checked) => onSelectNode(node.id, checked as boolean)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
                       <Icon className="w-4 h-4 text-primary" />
-                      <CardTitle className="text-sm">{node.title}</CardTitle>
+                      <CardTitle
+                        className="text-sm cursor-pointer flex-1"
+                        onClick={() => onNavigate(node.path)}
+                      >
+                        {node.title}
+                      </CardTitle>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                            <MoreHorizontal className="w-3 h-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => onNavigate(node.path)}>
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onSelectNode(node.id, !isSelected)}>
+                            <FolderOpen className="w-4 h-4 mr-2" />
+                            {isSelected ? 'Deselect' : 'Select'}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </CardHeader>
                   <CardContent>
