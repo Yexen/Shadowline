@@ -38,13 +38,13 @@ export function generateViewport() {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <ClientProviders>
           <main className="min-h-screen">{children}</main>
           <footer className="border-t border-white/10 bg-black/40">
             <div className="mx-auto max-w-6xl px-4 py-6 text-xs opacity-75">
-              © {new Date().getFullYear()} Shadowline
+              © 2024 Shadowline
             </div>
           </footer>
           <AlfredAssistant />

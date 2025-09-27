@@ -127,6 +127,60 @@ div[data-radix-scroll-area-viewport] > div {
 div[data-radix-scroll-area-viewport] > div > [data-radix-scroll-area-scrollbar] {
     background-color: transparent;
 }
+
+/* Custom Gotham-themed scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted)) hsl(var(--background));
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+  border: 1px solid hsl(var(--border));
+  transition: all 0.2s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.6);
+  border-color: hsl(var(--primary) / 0.5);
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background: hsl(var(--primary) / 0.8);
+  border-color: hsl(var(--primary));
+}
+
+*::-webkit-scrollbar-corner {
+  background: hsl(var(--background));
+}
+
+/* Enhanced scrollbars for window content */
+.window-content *::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.window-content *::-webkit-scrollbar-thumb {
+  background: hsl(var(--accent));
+  border: none;
+  border-radius: 3px;
+}
+
+.window-content *::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--accent-foreground) / 0.3);
+  box-shadow: 0 0 4px hsl(var(--primary) / 0.3);
+}
 [data-radix-scroll-area-thumb] {
   background-color: rgba(255, 255, 255, 0.1) !important;
   border-radius: 9999px;

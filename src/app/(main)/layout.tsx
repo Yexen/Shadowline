@@ -47,7 +47,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { FloatingNotificationBadge } from '@/components/notification-badge';
 
 import { useBible, type BibleEntry } from '@/hooks/use-bible';
@@ -57,6 +57,7 @@ import { useWriters } from '@/hooks/use-writers';
 import { useTimer } from '@/hooks/use-timer';
 import { useAuth } from '@/hooks/use-auth';
 import { useWindowManager } from '@/lib/window-manager';
+import { WindowManager } from '@/components/window-manager';
 
 import { BibleEditor } from '@/components/bible-editor';
 import { WriterProfile } from '@/components/writer-profile';
@@ -142,19 +143,19 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     }
   }, [modalType, modalData, getChapter]);
 
-  const handleSaveEntry = (category: string, entry: BibleEntry) => {
+  const handleSaveEntry = useCallback((category: string, entry: BibleEntry) => {
     addOrUpdateEntry(category, entry, editingEntry?.entry.title);
     setEditingEntry(null);
     closeModal();
-  };
+  }, [addOrUpdateEntry, editingEntry?.entry.title, closeModal]);
 
-  const handleDeleteEntry = (category: string, entryTitle: string) => {
+  const handleDeleteEntry = useCallback((category: string, entryTitle: string) => {
     deleteEntry(category, entryTitle);
     setEditingEntry(null);
     closeModal();
-  };
+  }, [deleteEntry, closeModal]);
 
-  const handleViewOnMap = (locationName: string) => {
+  const handleViewOnMap = useCallback((locationName: string) => {
     console.log('handleViewOnMap called with:', locationName);
     // Navigate to the 3D Gotham map with location parameter
     const encodedLocation = encodeURIComponent(locationName);
@@ -162,7 +163,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     // Close the Bible editor
     setEditingEntry(null);
     closeModal();
-  };
+  }, [router, closeModal]);
 
   // Window management for Bible Editor
   useEffect(() => {
@@ -185,7 +186,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         closeWindow(windowId);
       };
     }
-  }, [editingEntry, openWindow, closeWindow, handleSaveEntry, handleDeleteEntry, handleViewOnMap]);
+  }, [editingEntry?.entry.title, editingEntry?.category, openWindow, closeWindow]);
 
   const handleAddNewEntry = (category: string) => {
     setEditingEntry({ category, entry: { title: 'New Entry', fields: [{label: "Description", value: ""}] } });
@@ -459,6 +460,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
       {/* Floating Notification Badge */}
       <FloatingNotificationBadge />
+
+      {/* Window Manager for floating windows */}
+      <WindowManager />
 
     </SidebarProvider>
   );

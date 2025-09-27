@@ -97,8 +97,8 @@ export const useWindowManager = create<WindowStore>()(
                 isMaximized: !window.isMaximized,
                 x: window.isMaximized ? window.x : 0,
                 y: window.isMaximized ? window.y : 0,
-                width: window.isMaximized ? window.width : window.innerWidth || 1200,
-                height: window.isMaximized ? window.height : window.innerHeight || 800,
+                width: window.isMaximized ? window.width : (globalThis.innerWidth || 1200),
+                height: window.isMaximized ? window.height : (globalThis.innerHeight || 800),
               };
             }
             return window;

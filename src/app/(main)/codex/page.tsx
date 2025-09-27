@@ -1,551 +1,400 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect } from 'react';
+import { PathBreadcrumb } from '@/components/codex/path-breadcrumb';
+import { PathTreeSidebar } from '@/components/codex/path-tree-sidebar';
+import { BlockEditor } from '@/components/codex/block-editor';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Search,
-  Plus,
-  FolderTree,
-  Hash,
-  Brain,
-  Link2,
-  FileText,
-  Zap,
-  BookOpen,
-  Archive,
-  Star,
-  Clock,
-  Filter
-} from 'lucide-react';
-import { CodexEditor } from '@/components/codex-editor';
+import { BookOpen, Users, MapPin, Lightbulb, Calendar, Plus, Upload } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { importCharacterFromFiles, type ImportedCharacter } from '@/lib/character-importer';
+import { useBible } from '@/hooks/use-bible';
+import { SyncManager } from '@/lib/sync-manager';
 
 interface CodexNode {
   id: string;
   path: string;
   title: string;
   content: string;
-  type: 'document' | 'reference' | 'concept' | 'character' | 'location' | 'event';
-  tags: string[];
-  mentions: string[];
+  type: 'document' | 'character' | 'location' | 'concept' | 'event';
   lastModified: Date;
-  aiExtracted?: {
-    summary: string;
-    keyPoints: string[];
-    connections: string[];
-  };
-}
-
-interface PathHierarchy {
-  path: string;
-  children: PathHierarchy[];
-  nodeCount: number;
 }
 
 export default function CodexPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedNode, setSelectedNode] = useState<CodexNode | null>(null);
+  const [currentPath, setCurrentPath] = useState('/');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [currentNode, setCurrentNode] = useState<CodexNode | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const { toast } = useToast();
+  const { addEntry, updateEntry, entries } = useBible();
+
+  // Initialize sync manager
+  const syncManager = new SyncManager(
+    (nodeId: string, updates: Partial<CodexNode>) => {
+      setNodes(prev => prev.map(node =>
+        node.id === nodeId ? { ...node, ...updates } : node
+      ));
+    },
+    (category: string, entryTitle: string, updates: any) => {
+      updateEntry(category, entryTitle, updates);
+    },
+    (category: string, entry: any) => {
+      addEntry(category, entry);
+    }
+  );
   const [nodes, setNodes] = useState<CodexNode[]>([
     {
       id: '1',
       path: '/characters/batman/bruce-wayne',
       title: 'Bruce Wayne - The Dark Knight',
-      content: 'Bruce Wayne is the secret identity of Batman, a billionaire industrialist who fights crime in Gotham City...',
+      content: `# Bruce Wayne - The Dark Knight
+
+Born into wealth but orphaned at age 8, Bruce Wayne transformed his tragedy into purpose, becoming Gotham's greatest protector.
+
+## Identity
+- **Real Name**: Bruce Wayne
+- **Aliases**: Batman, The Dark Knight, World's Greatest Detective
+- **Age**: 35-40 (varies by continuity)
+
+## Relationships
+- @alfred-pennyworth - Butler, father figure, and closest confidant
+- @commissioner-gordon - Trusted ally in the GCPD
+- @joker - Greatest enemy and philosophical opposite
+
+## Background
+The murder of his parents Thomas and Martha Wayne in Crime Alley forever changed young Bruce. After years of training around the world, he returned to Gotham to wage war on crime as Batman.
+
+## Resources
+- Wayne Enterprises - Multi-billion dollar corporation
+- Wayne Manor - Ancestral home and secret base
+- The Batcave - High-tech command center beneath Wayne Manor`,
       type: 'character',
-      tags: ['batman', 'protagonist', 'wayne-enterprises'],
-      mentions: ['/locations/gotham/wayne-manor', '/events/parents-death'],
-      lastModified: new Date('2025-09-20'),
-      aiExtracted: {
-        summary: 'Billionaire vigilante operating as Batman in Gotham City',
-        keyPoints: ['Secret identity', 'Wealthy industrialist', 'Crime fighter', 'Orphaned as child'],
-        connections: ['Alfred Pennyworth', 'Wayne Enterprises', 'Gotham City', 'Bat Family']
-      }
+      lastModified: new Date('2025-09-20')
     },
     {
       id: '2',
-      path: '/locations/gotham/arkham-asylum',
-      title: 'Arkham Asylum',
-      content: 'Arkham Asylum is a psychiatric hospital serving the Gotham City area, housing many of Batman\'s most dangerous foes...',
-      type: 'location',
-      tags: ['gotham', 'asylum', 'villains'],
-      mentions: ['/characters/batman/bruce-wayne', '/characters/villains/joker'],
-      lastModified: new Date('2025-09-19'),
-      aiExtracted: {
-        summary: 'Psychiatric facility for Gotham\'s criminal insane',
-        keyPoints: ['High security', 'Houses supervillains', 'Frequent escapes', 'Gothic architecture'],
-        connections: ['Joker', 'Two-Face', 'Scarecrow', 'Batman']
-      }
+      path: '/characters/batman/alfred-pennyworth',
+      title: 'Alfred Pennyworth',
+      content: `# Alfred Pennyworth
+
+The loyal butler of Wayne Manor and surrogate father to Bruce Wayne.
+
+## Identity
+- **Real Name**: Alfred Thaddeus Crane Pennyworth
+- **Occupation**: Butler, Medical Assistant, Technical Support
+- **Background**: Former British Intelligence
+
+## Role
+More than just a butler, Alfred serves as:
+- Medical support for Batman's injuries
+- Technical assistance with gadgets and vehicles
+- Emotional anchor and moral compass
+- Guardian of Bruce Wayne's secret identity`,
+      type: 'character',
+      lastModified: new Date('2025-09-19')
     },
     {
       id: '3',
-      path: '/concepts/aesthetic-language-theory',
-      title: 'Aesthetic Language Theory',
-      content: 'A philosophical framework exploring the intersection of language, aesthetics, and meaning formation...',
-      type: 'concept',
-      tags: ['philosophy', 'language', 'aesthetics'],
-      mentions: ['/concepts/anti-essentialism'],
-      lastModified: new Date('2025-09-21'),
-      aiExtracted: {
-        summary: 'Philosophical exploration of language and aesthetic meaning',
-        keyPoints: ['Language as art', 'Meaning formation', 'Anti-essentialist stance', 'Creative expression'],
-        connections: ['Post-structuralism', 'Literary theory', 'Semiotics']
-      }
+      path: '/locations/gotham/arkham-asylum',
+      title: 'Arkham Asylum',
+      content: `# Arkham Asylum
+
+## Overview
+Arkham Asylum is Gotham City's psychiatric hospital for the criminally insane.
+
+## Notable Inmates
+- The Joker
+- Two-Face
+- Scarecrow
+- Poison Ivy
+- The Riddler
+
+## Architecture
+Gothic revival architecture with:
+- High security wings
+- Solitary confinement cells
+- Medical facilities
+- Underground tunnels (frequent escape routes)`,
+      type: 'location',
+      lastModified: new Date('2025-09-18')
     }
   ]);
-  const [hierarchy, setHierarchy] = useState<PathHierarchy[]>([]);
-  const [activeTab, setActiveTab] = useState('explorer');
-  const [showEditor, setShowEditor] = useState(false);
-  const [editingNode, setEditingNode] = useState<CodexNode | null>(null);
 
+  // Load current node based on path
   useEffect(() => {
-    // Build path hierarchy from nodes
-    const buildHierarchy = (nodes: CodexNode[]): PathHierarchy[] => {
-      const pathMap = new Map<string, PathHierarchy>();
+    const node = nodes.find(n => n.path === currentPath);
+    setCurrentNode(node || null);
+  }, [currentPath, nodes]);
 
-      // Initialize with all paths
-      nodes.forEach(node => {
-        const parts = node.path.split('/').filter(Boolean);
-        let currentPath = '';
+  const handleNavigate = (path: string) => {
+    setCurrentPath(path);
+  };
 
-        parts.forEach((part, index) => {
-          const parentPath = currentPath;
-          currentPath += '/' + part;
+  const handleContentChange = (content: string) => {
+    if (currentNode) {
+      const updatedNode = { ...currentNode, content, lastModified: new Date() };
 
-          if (!pathMap.has(currentPath)) {
-            pathMap.set(currentPath, {
-              path: currentPath,
-              children: [],
-              nodeCount: 0
-            });
+      setNodes(prev => prev.map(node =>
+        node.id === currentNode.id ? updatedNode : node
+      ));
+
+      // Sync changes to Bible for character nodes
+      if (updatedNode.type === 'character') {
+        syncManager.syncCodexToBible(updatedNode);
+      }
+    }
+  };
+
+  const handleCharacterImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsImporting(true);
+    try {
+      const importedCharacters = await importCharacterFromFiles(files);
+
+      if (importedCharacters.length > 0) {
+        // Add characters to Codex
+        setNodes(prev => [...prev, ...importedCharacters]);
+
+        // Add characters to Bible with bidirectional sync
+        for (const character of importedCharacters) {
+          if (character.bibleEntry) {
+            addEntry('Characters', character.bibleEntry);
           }
+        }
 
-          if (parentPath && pathMap.has(parentPath)) {
-            const parent = pathMap.get(parentPath)!;
-            const current = pathMap.get(currentPath)!;
-            if (!parent.children.includes(current)) {
-              parent.children.push(current);
-            }
-          }
+        toast({
+          title: 'Characters Imported',
+          description: `Successfully imported ${importedCharacters.length} character(s) to both Codex and Bible.`,
         });
 
-        // Increment node count for the exact path
-        const nodeHierarchy = pathMap.get(node.path);
-        if (nodeHierarchy) {
-          nodeHierarchy.nodeCount++;
+        // Navigate to the first imported character
+        if (importedCharacters.length === 1) {
+          setCurrentPath(importedCharacters[0].path);
         }
-      });
-
-      // Return root level items
-      return Array.from(pathMap.values()).filter(h => !h.path.includes('/', 1));
-    };
-
-    setHierarchy(buildHierarchy(nodes));
-  }, [nodes]);
-
-  const filteredNodes = nodes.filter(node =>
-    node.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    node.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    node.path.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    node.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
-
-  const renderHierarchy = (items: PathHierarchy[], level = 0) => {
-    return items.map(item => (
-      <div key={item.path} className={`ml-${level * 4}`}>
-        <div className="flex items-center space-x-2 py-1 px-2 hover:bg-accent rounded-md cursor-pointer">
-          <FolderTree className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm">{item.path.split('/').pop()}</span>
-          {item.nodeCount > 0 && (
-            <Badge variant="secondary" className="text-xs">
-              {item.nodeCount}
-            </Badge>
-          )}
-        </div>
-        {item.children.length > 0 && renderHierarchy(item.children, level + 1)}
-      </div>
-    ));
-  };
-
-  const getTypeIcon = (type: CodexNode['type']) => {
-    switch (type) {
-      case 'character': return '👤';
-      case 'location': return '🏛️';
-      case 'concept': return '💭';
-      case 'event': return '⚡';
-      case 'reference': return '📎';
-      default: return '📄';
-    }
-  };
-
-  const getTypeColor = (type: CodexNode['type']) => {
-    switch (type) {
-      case 'character': return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-      case 'location': return 'bg-green-500/10 text-green-400 border-green-500/20';
-      case 'concept': return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
-      case 'event': return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
-      case 'reference': return 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20';
-      default: return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
-    }
-  };
-
-  const handleCreateNode = () => {
-    setEditingNode(null);
-    setShowEditor(true);
-  };
-
-  const handleEditNode = (node: CodexNode) => {
-    setEditingNode(node);
-    setShowEditor(true);
-  };
-
-  const handleSaveNode = async (nodeData: any) => {
-    try {
-      const method = editingNode ? 'PUT' : 'POST';
-      const url = editingNode
-        ? `/api/codex/nodes/${editingNode.id}`
-        : '/api/codex/nodes';
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(nodeData)
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save node');
-      }
-
-      const result = await response.json();
-
-      if (editingNode) {
-        // Update existing node
-        setNodes(prev => prev.map(n =>
-          n.id === editingNode.id ? result.node : n
-        ));
       } else {
-        // Add new node
-        setNodes(prev => [...prev, result.node]);
+        toast({
+          variant: 'destructive',
+          title: 'Import Failed',
+          description: 'No valid character data found in the uploaded files.',
+        });
       }
-
-      setShowEditor(false);
-      setEditingNode(null);
     } catch (error) {
-      console.error('Error saving node:', error);
-      // In a real app, show error notification
+      console.error('Character import error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Import Error',
+        description: 'Failed to import character files. Please try again.',
+      });
+    } finally {
+      setIsImporting(false);
+      // Reset file input
+      event.target.value = '';
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-3 bg-primary/10 rounded-lg">
-              <BookOpen className="h-8 w-8 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
-                Codex
+    <div className="flex h-screen bg-background">
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Content */}
+        <div className="flex-1 p-8 overflow-auto">
+          {/* Path Breadcrumb */}
+          <PathBreadcrumb
+            path={currentPath}
+            onNavigate={handleNavigate}
+          />
+
+          {/* Page Title */}
+          {currentNode && (
+            <div className="mb-8">
+              <h1 className="text-4xl font-bold mb-2 text-foreground">
+                {currentNode.title}
               </h1>
-              <p className="text-muted-foreground text-lg">
-                Universal Content Management System
+              <p className="text-sm text-muted-foreground">
+                Last modified {currentNode.lastModified.toLocaleDateString()}
               </p>
             </div>
-          </div>
+          )}
 
-          <div className="flex items-center space-x-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search content, paths, @mentions..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+          {/* Content */}
+          {currentPath === '/' ? (
+            <CodexHomePage
+              nodes={nodes}
+              onNavigate={handleNavigate}
+              onCharacterImport={handleCharacterImport}
+              isImporting={isImporting}
+            />
+          ) : currentNode ? (
+            <BlockEditor
+              initialContent={currentNode.content}
+              onChange={handleContentChange}
+            />
+          ) : (
+            <div className="text-center py-20 text-muted-foreground">
+              <div className="text-6xl mb-4">📄</div>
+              <h2 className="text-2xl font-semibold mb-2">Page not found</h2>
+              <p>The path <code className="bg-muted px-2 py-1 rounded">{currentPath}</code> doesn't exist.</p>
             </div>
-            <Button className="bg-primary hover:bg-primary/90" onClick={handleCreateNode}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Node
+          )}
+        </div>
+      </div>
+
+      {/* Path Tree Sidebar */}
+      <PathTreeSidebar
+        nodes={nodes}
+        currentPath={currentPath}
+        collapsed={sidebarCollapsed}
+        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        onNavigate={handleNavigate}
+      />
+    </div>
+  );
+}
+
+function CodexHomePage({ nodes, onNavigate, onCharacterImport, isImporting }: {
+  nodes: CodexNode[],
+  onNavigate: (path: string) => void,
+  onCharacterImport: (event: React.ChangeEvent<HTMLInputElement>) => void,
+  isImporting: boolean
+}) {
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'character': return Users;
+      case 'location': return MapPin;
+      case 'concept': return Lightbulb;
+      case 'event': return Calendar;
+      default: return BookOpen;
+    }
+  };
+
+  const getTypeStats = () => {
+    const stats = nodes.reduce((acc, node) => {
+      acc[node.type] = (acc[node.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return [
+      { type: 'character', count: stats.character || 0, icon: Users, label: 'Characters' },
+      { type: 'location', count: stats.location || 0, icon: MapPin, label: 'Locations' },
+      { type: 'concept', count: stats.concept || 0, icon: Lightbulb, label: 'Concepts' },
+      { type: 'event', count: stats.event || 0, icon: Calendar, label: 'Events' },
+    ];
+  };
+
+  const recentNodes = nodes
+    .sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime())
+    .slice(0, 6);
+
+  return (
+    <div className="space-y-8">
+      {/* Welcome Section */}
+      <div className="text-center py-12">
+        <BookOpen className="w-16 h-16 text-primary mx-auto mb-4" />
+        <h1 className="text-4xl font-bold font-headline bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent mb-2">
+          Codex
+        </h1>
+        <p className="text-muted-foreground text-lg">
+          Your world-building knowledge base
+        </p>
+      </div>
+
+      {/* Stats Overview */}
+      <section>
+        <h2 className="text-2xl font-semibold mb-4">Overview</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {getTypeStats().map(({ type, count, icon: Icon, label }) => (
+            <Card key={type} className="text-center">
+              <CardContent className="pt-6">
+                <Icon className="w-8 h-8 text-primary mx-auto mb-2" />
+                <div className="text-2xl font-bold">{count}</div>
+                <div className="text-sm text-muted-foreground">{label}</div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* Recent Activity */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-semibold">Recent Activity</h2>
+          <div className="flex gap-2">
+            <input
+              type="file"
+              accept=".html"
+              multiple
+              onChange={onCharacterImport}
+              className="hidden"
+              id="character-import-input"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => document.getElementById('character-import-input')?.click()}
+              disabled={isImporting}
+            >
+              {isImporting ? (
+                <>
+                  <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  Importing...
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4 mr-2" />
+                  Import Character
+                </>
+              )}
+            </Button>
+            <Button variant="outline" size="sm">
+              <Plus className="w-4 h-4 mr-2" />
+              New Page
             </Button>
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-12 gap-6">
-          {/* Sidebar */}
-          <div className="col-span-3">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <FolderTree className="h-5 w-5" />
-                  <span>Path Explorer</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[600px]">
-                  {renderHierarchy(hierarchy)}
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Content Area */}
-          <div className="col-span-9">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="explorer" className="flex items-center space-x-2">
-                  <Archive className="h-4 w-4" />
-                  <span>Explorer</span>
-                </TabsTrigger>
-                <TabsTrigger value="search" className="flex items-center space-x-2">
-                  <Search className="h-4 w-4" />
-                  <span>Search</span>
-                </TabsTrigger>
-                <TabsTrigger value="ai-insights" className="flex items-center space-x-2">
-                  <Brain className="h-4 w-4" />
-                  <span>AI Insights</span>
-                </TabsTrigger>
-                <TabsTrigger value="connections" className="flex items-center space-x-2">
-                  <Link2 className="h-4 w-4" />
-                  <span>Connections</span>
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="explorer" className="space-y-4">
-                <div className="grid gap-4">
-                  {filteredNodes.map(node => (
-                    <Card
-                      key={node.id}
-                      className="hover:shadow-lg transition-shadow cursor-pointer"
-                      onClick={() => setSelectedNode(node)}
-                    >
-                      <CardHeader>
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center space-x-3">
-                            <span className="text-2xl">{getTypeIcon(node.type)}</span>
-                            <div>
-                              <CardTitle className="text-lg">{node.title}</CardTitle>
-                              <p className="text-sm text-muted-foreground font-mono">
-                                {node.path}
-                              </p>
-                            </div>
-                          </div>
-                          <Badge className={getTypeColor(node.type)}>
-                            {node.type}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                          {node.content}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <div className="flex flex-wrap gap-1">
-                            {node.tags.slice(0, 3).map(tag => (
-                              <Badge key={tag} variant="outline" className="text-xs">
-                                #{tag}
-                              </Badge>
-                            ))}
-                            {node.tags.length > 3 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{node.tags.length - 3}
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            <span>{node.lastModified.toLocaleDateString()}</span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="search" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Advanced Search</CardTitle>
+        {recentNodes.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {recentNodes.map((node) => {
+              const Icon = getTypeIcon(node.type);
+              return (
+                <Card
+                  key={node.id}
+                  className="cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => onNavigate(node.path)}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-2">
+                      <Icon className="w-4 h-4 text-primary" />
+                      <CardTitle className="text-sm">{node.title}</CardTitle>
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-medium mb-2 block">Content Type</label>
-                          <select className="w-full p-2 border rounded-md">
-                            <option>All Types</option>
-                            <option>Character</option>
-                            <option>Location</option>
-                            <option>Concept</option>
-                            <option>Event</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium mb-2 block">Path Filter</label>
-                          <Input placeholder="/characters/batman/*" />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">@Mentions</label>
-                        <Input placeholder="Find content mentioning..." />
-                      </div>
-                    </div>
+                    <p className="text-xs text-muted-foreground mb-2">{node.path}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Modified {node.lastModified.toLocaleDateString()}
+                    </p>
                   </CardContent>
                 </Card>
-              </TabsContent>
-
-              <TabsContent value="ai-insights" className="space-y-4">
-                <div className="grid gap-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center space-x-2">
-                        <Brain className="h-5 w-5" />
-                        <span>Consistency Analysis</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                          <span className="text-sm">Character consistency across all references</span>
-                          <Badge className="bg-green-500/20 text-green-400">98%</Badge>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                          <span className="text-sm">Timeline consistency needs review</span>
-                          <Badge className="bg-yellow-500/20 text-yellow-400">3 conflicts</Badge>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                          <span className="text-sm">Missing connections detected</span>
-                          <Badge className="bg-blue-500/20 text-blue-400">12 suggestions</Badge>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="connections" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Link2 className="h-5 w-5" />
-                      <span>Content Network</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center py-12 text-muted-foreground">
-                      <Link2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>Connection visualization coming soon</p>
-                      <p className="text-sm">Explore relationships between content nodes</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+              );
+            })}
           </div>
-        </div>
-
-        {/* Selected Node Detail Modal */}
-        {selectedNode && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <Card className="max-w-4xl w-full max-h-[90vh] overflow-auto">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-3xl">{getTypeIcon(selectedNode.type)}</span>
-                    <div>
-                      <CardTitle className="text-xl">{selectedNode.title}</CardTitle>
-                      <p className="text-muted-foreground font-mono text-sm">
-                        {selectedNode.path}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedNode(null)}
-                  >
-                    ✕
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <h3 className="font-semibold mb-2">Content</h3>
-                  <div className="p-4 bg-muted/30 rounded-lg">
-                    <p className="whitespace-pre-wrap">{selectedNode.content}</p>
-                  </div>
-                </div>
-
-                {selectedNode.aiExtracted && (
-                  <div>
-                    <h3 className="font-semibold mb-2 flex items-center space-x-2">
-                      <Brain className="h-4 w-4" />
-                      <span>AI Analysis</span>
-                    </h3>
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground mb-1">Summary</p>
-                        <p className="text-sm">{selectedNode.aiExtracted.summary}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground mb-1">Key Points</p>
-                        <ul className="text-sm space-y-1">
-                          {selectedNode.aiExtracted.keyPoints.map((point, i) => (
-                            <li key={i} className="flex items-center space-x-2">
-                              <span className="w-1 h-1 bg-primary rounded-full"></span>
-                              <span>{point}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="font-semibold mb-2">Tags</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedNode.tags.map(tag => (
-                        <Badge key={tag} variant="outline">
-                          #{tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-2">Mentions</h3>
-                    <div className="space-y-1">
-                      {selectedNode.mentions.map(mention => (
-                        <div key={mention} className="text-sm text-primary hover:underline cursor-pointer">
-                          @{mention}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        ) : (
+          <Card className="text-center py-12">
+            <CardContent>
+              <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No pages yet</h3>
+              <p className="text-muted-foreground mb-4">Start building your world by creating your first page</p>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Create First Page
+              </Button>
+            </CardContent>
+          </Card>
         )}
-
-        {/* Codex Editor */}
-        <CodexEditor
-          node={editingNode || undefined}
-          isOpen={showEditor}
-          onClose={() => {
-            setShowEditor(false);
-            setEditingNode(null);
-          }}
-          onSave={handleSaveNode}
-        />
-      </div>
+      </section>
     </div>
   );
 }

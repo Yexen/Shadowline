@@ -7,7 +7,13 @@
       "Bash(npm run typecheck:*)",
       "Read(/Users/yekta/Downloads/ExportBlock-94ae44ab-4ef6-40bb-9d5a-9ab7bc79dc70-Part-1/Liv Freya Character Profile 24fd09d29edd80208f2fc9dcef6022d8/**)",
       "Read(/Users/yekta/Downloads/ExportBlock-94ae44ab-4ef6-40bb-9d5a-9ab7bc79dc70-Part-1/Liv Freya Character Profile 24fd09d29edd80208f2fc9dcef6022d8/**)",
-      "Read(/Users/yekta/Desktop/**)"
+      "Read(/Users/yekta/Desktop/**)",
+      "Bash(git commit:*)",
+      "Read(//c/Users/Yekta/Academic-and-creative-Atlas/academic-dossier/**)",
+      "Read(//c/Users/Yekta/Nyxen/**)",
+      "Bash(git add:*)",
+      "Read(//c/Users/Yekta/Downloads/**)",
+      "Bash(unzip:*)"
     ],
     "deny": [],
     "ask": []

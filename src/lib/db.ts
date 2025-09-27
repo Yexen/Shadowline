@@ -202,11 +202,21 @@ export async function createUser(
 }
 
 export async function getUserByEmail(email: string): Promise<User | null> {
-  const { rows } = await sql`
-    SELECT * FROM users WHERE email = ${email.toLowerCase()};
-  `;
+  // In development mode without proper DB connection, return null
+  if (process.env.NODE_ENV === 'development' && !process.env.POSTGRES_URL?.startsWith('postgresql://')) {
+    return null;
+  }
 
-  return rows.length > 0 ? mapRowToUser(rows[0]) : null;
+  try {
+    const { rows } = await sql`
+      SELECT * FROM users WHERE email = ${email.toLowerCase()};
+    `;
+
+    return rows.length > 0 ? mapRowToUser(rows[0]) : null;
+  } catch (error) {
+    console.warn('Database query failed, returning null:', error);
+    return null;
+  }
 }
 
 export async function getUserById(id: string): Promise<User | null> {
@@ -218,11 +228,21 @@ export async function getUserById(id: string): Promise<User | null> {
 }
 
 export async function getAllUsers(): Promise<User[]> {
-  const { rows } = await sql`
-    SELECT * FROM users ORDER BY created_at DESC;
-  `;
+  // In development mode without proper DB connection, return empty array
+  if (process.env.NODE_ENV === 'development' && !process.env.POSTGRES_URL?.startsWith('postgresql://')) {
+    return [];
+  }
 
-  return rows.map(mapRowToUser);
+  try {
+    const { rows } = await sql`
+      SELECT * FROM users ORDER BY created_at DESC;
+    `;
+
+    return rows.map(mapRowToUser);
+  } catch (error) {
+    console.warn('Database query failed, returning empty array:', error);
+    return [];
+  }
 }
 
 export async function updateUserStatus(userId: string, status: UserStatus, approvedBy?: string): Promise<void> {
